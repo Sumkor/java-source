@@ -10,10 +10,10 @@ import java.util.Map;
 /**
  * HashMap 源码注释翻译
  * https://cloud.tencent.com/developer/article/1580487
- *
+ * <p>
  * Java 8系列之重新认识HashMap
  * https://zhuanlan.zhihu.com/p/21673805
- *
+ * <p>
  * (1) HashMap：它根据键的hashCode值存储数据，大多数情况下可以直接定位到它的值，因而具有很快的访问速度，但遍历顺序却是不确定的。
  * HashMap最多只允许一条记录的键为null，允许多条记录的值为null。HashMap非线程安全，即任一时刻可以有多个线程同时写HashMap，可能会导致数据的不一致。
  * 如果需要满足线程安全，可以用 Collections的synchronizedMap方法使HashMap具有线程安全的能力，或者使用ConcurrentHashMap。
@@ -23,11 +23,10 @@ import java.util.Map;
  * (4) TreeMap：TreeMap实现SortedMap接口，能够把它保存的记录根据键排序，默认是按键值的升序排序，也可以指定排序的比较器，
  * 当用Iterator遍历TreeMap时，得到的记录是排过序的。如果使用排序的映射，建议使用TreeMap。
  * 在使用TreeMap时，key必须实现Comparable接口或者在构造TreeMap传入自定义的Comparator，否则会在运行时抛出java.lang.ClassCastException类型的异常。
- *
+ * <p>
  * 对于上述四种Map类型的类，要求映射中的key是不可变对象。不可变对象是该对象在创建后它的哈希值不会被改变。如果对象的哈希值发生变化，Map对象很可能就定位不到映射的位置了。
- *
+ * <p>
  * 从结构实现来讲，HashMap是数组+链表+红黑树（JDK1.8增加了红黑树部分）实现的。
- *
  *
  * @author Sumkor
  * @since 2020/10/21
@@ -68,6 +67,95 @@ public class HashMapTest {
         System.out.println("map = " + map);
 
         iterator.next();// 正常
+    }
+
+    /**
+     * 哈希桶数组索引位置的计算
+     * <p>
+     * 这里的Hash算法本质上就是三步：
+     * 取key的hashCode值、高位运算、取模运算。
+     */
+    @Test
+    public void hash() {
+        int capacity = 1 << 4;// 值为16。见 java.util.HashMap.DEFAULT_INITIAL_CAPACITY
+        Object key = 17;
+
+        int h = key.hashCode();// 第一步取hashCode值
+        h = h ^ (h >>> 16);// 第二步高位参与运算
+        h = h & (capacity - 1);// 第三步取模运算
+        /**
+         * @see HashMap#hash(java.lang.Object)
+         */
+
+        System.out.println("h = " + h);
+    }
+
+    /**
+     * JDK7阈值计算
+     */
+    @Test
+    public void threshold_jdk7() {
+        int initialCapacity = 3;
+        float loadFactor = 0.75f;
+
+        int capacity = 1;
+        while (capacity < initialCapacity)
+            capacity <<= 1;
+        System.out.println("capacity = " + capacity);// 4
+
+        int threshold = (int) (capacity * loadFactor);
+        System.out.println("threshold = " + threshold);// 3
+    }
+
+
+    /**
+     * JDK8阈值计算：
+     * threshold = tableSizeFor(initialCapacity)
+     * capacity = threshold
+     * threshold = capacity * Load factor
+     */
+    @Test
+    public void threshold_jdk8() {
+        int initialCapacity = 3;
+        float loadFactor = 0.75f;
+
+        /**
+         * @see HashMap#HashMap(int, float)
+         * @see HashMap#tableSizeFor(int)
+         */
+        int threshold = tableSizeFor(initialCapacity);
+
+        /**
+         * @see HashMap#resize()
+         */
+        int capacity = threshold;
+        System.out.println("capacity = " + capacity);// 4
+
+        threshold = (int) (capacity * loadFactor);
+        System.out.println("threshold = " + threshold);// 3
+    }
+
+    private int tableSizeFor(int cap) {
+        final int MAXIMUM_CAPACITY = 1 << 30;
+        int n = cap - 1;
+        n |= n >>> 1;
+        n |= n >>> 2;
+        n |= n >>> 4;
+        n |= n >>> 8;
+        n |= n >>> 16;
+        return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
+    }
+
+    /**
+     * 注意，table初始大小并不是构造函数中的 initialCapacity
+     */
+    @Test
+    public void resize() {
+        HashMap<Object, Object> map = new HashMap<>(3);
+        map.put("111", "aaa");
+        map.put("222", "bbb");
+        map.put("333", "ccc");
+        map.put("444", "ddd");
     }
 
 }

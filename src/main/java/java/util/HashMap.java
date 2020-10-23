@@ -372,7 +372,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     }
 
     /**
-     * Returns a power of two size for the given target capacity.
+     * Returns a power of two size for the given target capacity. // 找到大于等于 cap 的最小的 2 的幂（cap 如果就是 2 的幂，则返回的还是这个数）
      */
     static final int tableSizeFor(int cap) {
         int n = cap - 1;
@@ -678,22 +678,22 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         int oldCap = (oldTab == null) ? 0 : oldTab.length;
         int oldThr = threshold;
         int newCap, newThr = 0;
-        if (oldCap > 0) {
-            if (oldCap >= MAXIMUM_CAPACITY) {
-                threshold = Integer.MAX_VALUE;
+        if (oldCap > 0) { // 第一次进来，table为null，oldCap为0，不会进入这里
+            if (oldCap >= MAXIMUM_CAPACITY) { // 扩容前的数组大小如果已经达到最大(2^30)了
+                threshold = Integer.MAX_VALUE; // 取整型最大值(2^31-1)，这样以后就不会扩容了
                 return oldTab;
             }
-            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+            else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY && // oldCap翻倍得到newCap
                      oldCap >= DEFAULT_INITIAL_CAPACITY)
                 newThr = oldThr << 1; // double threshold
         }
         else if (oldThr > 0) // initial capacity was placed in threshold
-            newCap = oldThr;
+            newCap = oldThr; // 第一次进来，将threshold作为初始容量
         else {               // zero initial threshold signifies using defaults
             newCap = DEFAULT_INITIAL_CAPACITY;
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
-        if (newThr == 0) {
+        if (newThr == 0) { // 第一次进来，这里为true，重新计算 threshold = capacity * Load factor
             float ft = (float)newCap * loadFactor;
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                       (int)ft : Integer.MAX_VALUE);
