@@ -2,10 +2,7 @@ package com.sumkor.map;
 
 import org.junit.Test;
 
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * HashMap 源码注释翻译
@@ -72,8 +69,11 @@ public class HashMapTest {
     /**
      * 哈希桶数组索引位置的计算
      * <p>
-     * 这里的Hash算法本质上就是三步：
-     * 取key的hashCode值、高位运算、取模运算。
+     * 这里的 Hash 算法本质上就是三步：
+     * 取 key 的 hashCode 值、高位运算、取模运算。
+     * <p>
+     * 一般是把 capacity 设计为素数，相对来说素数导致冲突的概率要小于合数。采用合数，主要是为了在取模和扩容时做优化，同时为了减少冲突。
+     * 当 capacity 总是 2 的 n 次方时，h & (capacity-1) 运算等价于对 capacity 取模，也就是 h % capacity，但是 & 比 % 具有更高的效率
      */
     @Test
     public void hash() {
@@ -135,9 +135,15 @@ public class HashMapTest {
         System.out.println("threshold = " + threshold);// 3
     }
 
+    /**
+     * 找到大于等于 cap 的最小的 2 的幂（cap 如果就是 2 的幂，则返回的还是这个数）
+     * <p>
+     * HashMap中tableSizeFor
+     * https://www.cnblogs.com/shujiying/p/12460808.html
+     */
     private int tableSizeFor(int cap) {
         final int MAXIMUM_CAPACITY = 1 << 30;
-        int n = cap - 1;
+        int n = cap - 1;// 为什么要对cap做减1操作：如果cap已经是2的幂，又没有执行这个减1操作，则执行完后面的几条无符号右移操作之后，返回的capacity将是这个cap的2倍
         n |= n >>> 1;
         n |= n >>> 2;
         n |= n >>> 4;
@@ -147,7 +153,7 @@ public class HashMapTest {
     }
 
     /**
-     * 注意，table初始大小并不是构造函数中的 initialCapacity
+     * 注意，table初始大小（即capacity）并不是构造函数中的 initialCapacity
      */
     @Test
     public void resize() {
@@ -156,6 +162,172 @@ public class HashMapTest {
         map.put("222", "bbb");
         map.put("333", "ccc");
         map.put("444", "ddd");
+    }
+
+    /**
+     * 旧链表数据迁移至新链表
+     */
+    @Test
+    public void resizeLink() {
+        Node[] oldTable = new Node[1];
+        Node[] newTable = new Node[1];
+
+        // A -> B -> C
+        Node firstLinkNode03 = new Node(1, 3, "C", null);
+        Node firstLinkNode02 = new Node(1, 2, "B", firstLinkNode03);
+        Node firstLinkNode01 = new Node(1, 1, "A", firstLinkNode02);
+        oldTable[0] = firstLinkNode01;
+        // print
+        printTable(oldTable);
+
+        /**
+         * HashMap中resize迁移算法，简化
+         * @see HashMap#resize()
+         */
+        Node loHead = null, loTail = null; // low位链表，其桶位置不变，head和tail分别代表首尾指针
+        Node e = oldTable[0];// 将要处理的元素
+        Node next;
+        do {
+            next = e.next;
+            if (loTail == null) {
+                loHead = e; // 总是指向头结点
+            }
+            else {
+                loTail.next = e;// 本例中赋值前就是相同的
+            }
+            loTail = e; // 总是指向下一个节点
+        } while ((e = next) != null);
+        if (loTail != null) {
+            loTail.next = null;
+            newTable[0] = loHead; // 原索引
+        }
+        // print
+        printTable(newTable);
+    }
+
+    /**
+     * 旧链表数据迁移至新链表
+     *
+     * HashMap扩容时的rehash方法中(e.hash & oldCap) == 0算法推导
+     * https://blog.csdn.net/u010425839/article/details/106620440/
+     */
+    @Test
+    public void resizeLink02() {
+        int oldCap = 1;
+        int newCap = 2;
+        Node[] oldTable = new Node[oldCap];
+        Node[] newTable = new Node[newCap];
+
+        // A -> B -> C
+        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", null);
+        Node firstLinkNode02 = new Node(new Integer(2).hashCode(), 2, "B", firstLinkNode03);
+        Node firstLinkNode01 = new Node(new Integer(1).hashCode(), 1, "A", firstLinkNode02);
+        oldTable[0] = firstLinkNode01;
+        // print
+        printTable(oldTable);
+
+        /**
+         * HashMap中resize迁移算法
+         * @see HashMap#resize()
+         */
+        for (int j = 0; j < oldCap; ++j) {
+            Node loHead = null, loTail = null; // low位链表，其桶位置不变，head和tail分别代表首尾指针
+            Node hiHead = null, hiTail = null; // high位链表，其桶位于追加后的新数组中
+            Node e = oldTable[j];// 将要处理的元素
+            Node next;
+            do {
+                next = e.next;
+                if ((e.hash & oldCap) == 0) {
+                    if (loTail == null)
+                        loHead = e; // 总是指向头结点
+                    else
+                        loTail.next = e; // 这一行没什么卵用
+                    loTail = e; // 总是指向下一个节点，直到尾节点
+                }
+                else {
+                    if (hiTail == null)
+                        hiHead = e;
+                    else
+                        hiTail.next = e;
+                    hiTail = e;
+                }
+            } while ((e = next) != null);
+            if (loTail != null) {
+                loTail.next = null;
+                newTable[j] = loHead; // 原索引
+            }
+            if (hiTail != null) {
+                hiTail.next = null;
+                newTable[j + oldCap] = hiHead; // 原索引+oldCap
+            }
+        }
+        printTable(newTable);
+    }
+
+    /**
+     * HashMap 中的 Node 结构，打印
+     */
+    private void printTable(Node[] table) {
+        for (int i = 0; i < table.length; i++) {
+            Node tmpNode = table[i];// 用于打印，不改变table的结构
+            while (tmpNode != null) {
+                System.out.print(tmpNode + " -> ");
+                tmpNode = tmpNode.next;
+            }
+            System.out.println();
+        }
+        System.out.println("--------------------------");
+    }
+
+    /**
+     * HashMap 中的 Node 结构
+     */
+    static class Node<K, V> implements Map.Entry<K, V> {
+        final int hash;
+        final K key;
+        V value;
+        Node<K, V> next;
+
+        Node(int hash, K key, V value, Node<K, V> next) {
+            this.hash = hash;
+            this.key = key;
+            this.value = value;
+            this.next = next;
+        }
+
+        public final K getKey() {
+            return key;
+        }
+
+        public final V getValue() {
+            return value;
+        }
+
+        public final String toString() {
+            return key + "=" + value;
+        }
+
+        public final int hashCode() {
+            return Objects.hashCode(key) ^ Objects.hashCode(value);
+        }
+
+        public final V setValue(V newValue) {
+            V oldValue = value;
+            value = newValue;
+            return oldValue;
+        }
+
+        public final boolean equals(Object o) {
+            if (o == this)
+                return true;
+            if (o instanceof Map.Entry) {
+                Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
+                if (Objects.equals(key, e.getKey()) &&
+                        Objects.equals(value, e.getValue()))
+                    return true;
+            }
+            return false;
+        }
     }
 
 }

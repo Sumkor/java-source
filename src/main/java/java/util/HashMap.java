@@ -637,7 +637,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
             else {
                 for (int binCount = 0; ; ++binCount) {
-                    if ((e = p.next) == null) { // 遍历链表，若尾节点为空，则插入新节点
+                    if ((e = p.next) == null) { // 遍历链表，若尾节点为空，则插入新节点（尾插法）
                         p.next = newNode(hash, key, value, null);
                         if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                             treeifyBin(tab, hash); // 转换为树结构
@@ -654,7 +654,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 if (!onlyIfAbsent || oldValue == null)
                     e.value = value;
                 afterNodeAccess(e);
-                return oldValue;
+                return oldValue; // 覆盖旧值的，从这里返回旧值
             }
         }
         ++modCount;
@@ -687,13 +687,13 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                      oldCap >= DEFAULT_INITIAL_CAPACITY)
                 newThr = oldThr << 1; // double threshold
         }
-        else if (oldThr > 0) // initial capacity was placed in threshold
-            newCap = oldThr; // 第一次进来，将threshold作为初始容量
-        else {               // zero initial threshold signifies using defaults
+        else if (oldThr > 0) // initial capacity was placed in threshold // 第一次进来，如果手动设置了初始容量initialCapacity，这里为true，则将threshold作为初始容量
+            newCap = oldThr;
+        else {               // zero initial threshold signifies using defaults // 如果没有手动设置initialCapacity，则设为默认值16
             newCap = DEFAULT_INITIAL_CAPACITY;
             newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
         }
-        if (newThr == 0) { // 第一次进来，这里为true，重新计算 threshold = capacity * Load factor
+        if (newThr == 0) { // 第一次进来，这里必为true，重新计算 threshold = capacity * Load factor
             float ft = (float)newCap * loadFactor;
             newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
                       (int)ft : Integer.MAX_VALUE);
@@ -702,27 +702,27 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         @SuppressWarnings({"rawtypes","unchecked"})
             Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap];
         table = newTab;
-        if (oldTab != null) {
+        if (oldTab != null) { // 对oldTab中所有元素进行rehash。由于每次扩容是2次幂的扩展(指数组长度/桶数量扩为原来2倍)，所以，元素的位置要么是在原位置，要么是在原位置再移动2次幂的位置
             for (int j = 0; j < oldCap; ++j) {
                 Node<K,V> e;
-                if ((e = oldTab[j]) != null) {
+                if ((e = oldTab[j]) != null) { // 数组j位置的元素不为空，需要该位置上的所有元素进行rehash
                     oldTab[j] = null;
-                    if (e.next == null)
+                    if (e.next == null) // 桶中只有一个元素，则直接rehash
                         newTab[e.hash & (newCap - 1)] = e;
-                    else if (e instanceof TreeNode)
+                    else if (e instanceof TreeNode) // 桶中是树结构
                         ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
-                    else { // preserve order
-                        Node<K,V> loHead = null, loTail = null;
-                        Node<K,V> hiHead = null, hiTail = null;
+                    else { // preserve order // 桶中是链表结构（JDK1.7中旧链表迁移新链表的时候，用的是头插法，如果在新表的数组索引位置相同，则链表元素会倒置；但是JDK1.8不会倒置，用的是双指针）
+                        Node<K,V> loHead = null, loTail = null; // low位链表，其桶位置不变，head和tail分别代表首尾指针
+                        Node<K,V> hiHead = null, hiTail = null; // high位链表，其桶位于追加后的新数组中
                         Node<K,V> next;
                         do {
                             next = e.next;
-                            if ((e.hash & oldCap) == 0) {
+                            if ((e.hash & oldCap) == 0) { // 是0的话索引没变，是1的话索引变成“原索引+oldCap”
                                 if (loTail == null)
-                                    loHead = e;
+                                    loHead = e; // 总是指向头结点
                                 else
-                                    loTail.next = e;
-                                loTail = e;
+                                    loTail.next = e; // 这一行没什么卵用
+                                loTail = e; // 总是指向下一个节点，直到尾节点
                             }
                             else {
                                 if (hiTail == null)
@@ -734,11 +734,11 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                         } while ((e = next) != null);
                         if (loTail != null) {
                             loTail.next = null;
-                            newTab[j] = loHead;
+                            newTab[j] = loHead; // 原索引
                         }
                         if (hiTail != null) {
                             hiTail.next = null;
-                            newTab[j + oldCap] = hiHead;
+                            newTab[j + oldCap] = hiHead; // 原索引+oldCap
                         }
                     }
                 }
