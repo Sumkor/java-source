@@ -721,7 +721,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                                 if (loTail == null)
                                     loHead = e; // 总是指向头结点
                                 else
-                                    loTail.next = e; // 这一行没什么卵用
+                                    loTail.next = e; // 该操作有可能会改变原链表结构
                                 loTail = e; // 总是指向下一个节点，直到尾节点
                             }
                             else {

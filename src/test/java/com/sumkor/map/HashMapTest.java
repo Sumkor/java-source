@@ -193,13 +193,13 @@ public class HashMapTest {
                 loHead = e; // 总是指向头结点
             }
             else {
-                loTail.next = e;// 本例中赋值前就是相同的
+                loTail.next = e; // 本例中，赋值前就是相同的：即loTail.next就是指向e
             }
-            loTail = e; // 总是指向下一个节点
-        } while ((e = next) != null);
+            loTail = e; // loTail和e两者指向的节点同步
+        } while ((e = next) != null); // 这里e指向下一个节点，但是loTail还是指向e原来的节点，没有变。当e指向null时，说明loTail已经指向尾节点
         if (loTail != null) {
             loTail.next = null;
-            newTable[0] = loHead; // 原索引
+            newTable[0] = loHead; // 原索引位置。本例中，以loHead为首节点的链表结构，没有变，即还是 A -> B -> C
         }
         // print
         printTable(newTable);
@@ -241,19 +241,19 @@ public class HashMapTest {
                     if (loTail == null)
                         loHead = e; // 总是指向头结点
                     else
-                        loTail.next = e; // 这一行没什么卵用
-                    loTail = e; // 总是指向下一个节点，直到尾节点
+                        loTail.next = e;
+                    loTail = e;
                 }
                 else {
                     if (hiTail == null)
                         hiHead = e;
                     else
-                        hiTail.next = e;
+                        hiTail.next = e; // 把hiTail.next指向e。若hiTail.next原先并不指向e，表示loTail原先后续的节点链都不要了，改为从e位置开始的节点链。该操作会改变原链表oldTable[j]的结构，也会导致hiHead为首节点的链表结构变化！
                     hiTail = e;
                 }
             } while ((e = next) != null);
             if (loTail != null) {
-                loTail.next = null;
+                loTail.next = null; // 这一步是必须的，loTail.next有可能还其他节点，需要设为null
                 newTable[j] = loHead; // 原索引
             }
             if (hiTail != null) {
