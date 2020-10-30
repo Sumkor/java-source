@@ -44,7 +44,7 @@ public class HashMapTest {
 
         Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator();// 创建迭代器
 
-        map.put("3", "c");// 改变结构
+        map.put("3", "c");// 改变结构。强调一点，内部结构发生变化指的是结构发生变化，如put新键值对。而某个key对应的value值被覆盖不属于结构变化。
         System.out.println("map = " + map);
 
         iterator.next();// 快速失败，抛异常ConcurrentModificationException
@@ -74,6 +74,9 @@ public class HashMapTest {
      * <p>
      * 一般是把 capacity 设计为素数，相对来说素数导致冲突的概率要小于合数。采用合数，主要是为了在取模和扩容时做优化，同时为了减少冲突。
      * 当 capacity 总是 2 的 n 次方时，h & (capacity-1) 运算等价于对 capacity 取模，也就是 h % capacity，但是 & 比 % 具有更高的效率
+     * <p>
+     * 为什么一般hashtable的桶数会取一个素数
+     * https://blog.csdn.net/liuqiyao_01/article/details/14475159
      */
     @Test
     public void hash() {
@@ -113,6 +116,10 @@ public class HashMapTest {
      * threshold = tableSizeFor(initialCapacity)
      * capacity = threshold
      * threshold = capacity * Load factor
+     * <p>
+     * 默认的负载因子0.75是对空间和时间效率的一个平衡选择。
+     * 如果内存空间很多而又对时间效率要求很高，可以降低负载因子Load factor的值；
+     * 相反，如果内存空间紧张而对时间效率要求不高，可以增加负载因子loadFactor的值，这个值可以大于1。
      */
     @Test
     public void threshold_jdk8() {
@@ -166,6 +173,7 @@ public class HashMapTest {
 
     /**
      * 旧链表数据迁移至新链表
+     * 本例中，扩容前后桶的个数相同，均为1
      */
     @Test
     public void resizeLink() {
@@ -207,7 +215,9 @@ public class HashMapTest {
 
     /**
      * 旧链表数据迁移至新链表
-     *
+     * 由于每次扩容是2次幂的扩展(指数组长度/桶数量扩为原来2倍)，所以，元素的位置要么是在原位置，要么是在原位置再移动2次幂的位置。
+     * 本例中，桶的数量由1扩容为2.
+     * <p>
      * HashMap扩容时的rehash方法中(e.hash & oldCap) == 0算法推导
      * https://blog.csdn.net/u010425839/article/details/106620440/
      */
@@ -237,7 +247,7 @@ public class HashMapTest {
             Node next;
             do {
                 next = e.next;
-                if ((e.hash & oldCap) == 0) {
+                if ((e.hash & oldCap) == 0) { // 是0的话索引没变，是1的话索引变成“原索引+oldCap”
                     if (loTail == null)
                         loHead = e; // 总是指向头结点
                     else
