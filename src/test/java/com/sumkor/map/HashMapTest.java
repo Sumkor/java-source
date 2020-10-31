@@ -259,7 +259,7 @@ public class HashMapTest {
                         hiHead = e;
                     else
                         hiTail.next = e; // 把hiTail.next指向e。若hiTail.next原先并不指向e，表示loTail原先后续的节点链都不要了，改为从e位置开始的节点链。该操作会改变原链表oldTable[j]的结构，也会导致hiHead为首节点的链表结构变化！
-                    hiTail = e;
+                    hiTail = e; // 把hiTail指向e所指向的节点，此时hiTail.next指向e.next相同的节点
                 }
             } while ((e = next) != null);
             if (loTail != null) {
