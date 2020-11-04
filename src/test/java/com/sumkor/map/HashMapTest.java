@@ -161,6 +161,15 @@ public class HashMapTest {
 
     /**
      * 注意，table初始大小（即capacity）并不是构造函数中的 initialCapacity
+     * <p>
+     * 新的 Entry 节点在插入链表的时候，是怎么插入的？
+     * java7 用的是头插法，就是说新来的值会取代原有的值的位置，原有的值就顺推到链表中去，因为写这个代码的作者认为后来的值被查找的可能性更大一点，提升查找的效率。
+     * 但是，在 java8 之后，都是所用尾部插入了。
+     * <p>
+     * 为啥 java7 用头插法，java8 之后改成尾插了呢？
+     * 在 rehash 扩容操作中，旧链表迁移新链表的时候，由于 java7 用头插法，如果在新表的数组索引位置相同，则链表元素会倒置；但是 java8 用的是双指针，rehash 操作后元素不会倒置。
+     * 使用头插会改变链表的上的顺序，并发情况下的同时 put 触发 rehash，可能会导致链表中出现环。但是如果使用尾插，在扩容时会保持链表元素原本的顺序，就不会出现链表成环的问题了。
+     * https://www.cnblogs.com/aobing/p/12014271.html
      */
     @Test
     public void resize() {
@@ -199,8 +208,7 @@ public class HashMapTest {
             next = e.next;
             if (loTail == null) {
                 loHead = e; // 总是指向头结点
-            }
-            else {
+            } else {
                 loTail.next = e; // 本例中，赋值前就是相同的：即loTail.next就是指向e
             }
             loTail = e; // loTail和e两者指向的节点同步
@@ -253,8 +261,7 @@ public class HashMapTest {
                     else
                         loTail.next = e;
                     loTail = e;
-                }
-                else {
+                } else {
                     if (hiTail == null)
                         hiHead = e;
                     else
