@@ -31,12 +31,12 @@ import java.util.*;
 public class HashMapTest {
 
     /**
-     * 由所有此类的 collection 视图方法所返回的迭代器都是快速失败的：
+     * HashMap 的所有 collection 视图方法所返回的迭代器都是快速失败的：
      * 在迭代器创建之后，如果从结构上对映射进行修改，除非通过迭代器本身的 remove 方法，其他任何时间任何方式的修改，迭代器都将抛出 ConcurrentModificationException。
      * 因此，面对并发的修改，迭代器很快就会完全失败，而不冒在将来不确定的时间发生任意不确定行为的风险。
      */
     @Test(expected = ConcurrentModificationException.class)
-    public void fastFail01() {
+    public void failFast01() {
         HashMap<Object, Object> map = new HashMap<>();
         map.put("1", "a");
         map.put("2", "b");
@@ -51,7 +51,7 @@ public class HashMapTest {
     }
 
     @Test
-    public void fastFail02() {
+    public void failFast02() {
         HashMap<Object, Object> map = new HashMap<>();
         map.put("1", "a");
         map.put("2", "b");
@@ -228,6 +228,13 @@ public class HashMapTest {
      * <p>
      * HashMap扩容时的rehash方法中(e.hash & oldCap) == 0算法推导
      * https://blog.csdn.net/u010425839/article/details/106620440/
+     * <p>
+     * 打印结果：
+     * 1=A -> 2=B -> 3=C ->
+     * --------------------------
+     * 2=B ->
+     * 1=A -> 3=C ->
+     * --------------------------
      */
     @Test
     public void resizeLink02() {
@@ -259,13 +266,13 @@ public class HashMapTest {
                     if (loTail == null)
                         loHead = e; // 总是指向头结点
                     else
-                        loTail.next = e;
+                        loTail.next = e; // 把loTail.next指向e。
                     loTail = e;
                 } else {
                     if (hiTail == null)
                         hiHead = e;
                     else
-                        hiTail.next = e; // 把hiTail.next指向e。若hiTail.next原先并不指向e，表示loTail原先后续的节点链都不要了，改为从e位置开始的节点链。该操作会改变原链表oldTable[j]的结构，也会导致hiHead为首节点的链表结构变化！
+                        hiTail.next = e; // 把hiTail.next指向e。若hiTail.next原先并不指向e，该操作会改变oldTable[j]上的旧链表结构
                     hiTail = e; // 把hiTail指向e所指向的节点，此时hiTail.next指向e.next相同的节点
                 }
             } while ((e = next) != null);

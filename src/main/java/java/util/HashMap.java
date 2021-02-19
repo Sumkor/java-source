@@ -834,12 +834,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 }
             }
             if (node != null && (!matchValue || (v = node.value) == value ||
-                                 (value != null && value.equals(v)))) {
+                                 (value != null && value.equals(v)))) { // 找到了需要移除的node节点之后，执行移除操作
                 if (node instanceof TreeNode)
                     ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
-                else if (node == p)
+                else if (node == p) // 如果node是链表头节点
                     tab[index] = node.next;
-                else
+                else // 如果node位于链表中间
                     p.next = node.next;
                 ++modCount;
                 --size;
@@ -1425,7 +1425,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         final Node<K,V> nextNode() {
             Node<K,V>[] t;
             Node<K,V> e = next;
-            if (modCount != expectedModCount)
+            if (modCount != expectedModCount) // 快速失败
                 throw new ConcurrentModificationException();
             if (e == null)
                 throw new NoSuchElementException();
