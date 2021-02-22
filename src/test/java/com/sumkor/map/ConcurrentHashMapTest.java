@@ -78,4 +78,75 @@ public class ConcurrentHashMapTest {
         System.out.println("a = " + a);
         System.out.println("b = " + b);
     }
+
+    /**
+     * 扩容时 sizeCtl = -N
+     * N是int类型，分为两部分，高15位是指定容量标识，低16位表示并行扩容线程数+1
+     *
+     * https://blog.csdn.net/tp7309/article/details/76532366
+     */
+    @Test
+    public void resizeCtl() {
+        /**
+         * 插入元素的时候，检查 sizeCtl 看是否需要扩容，此时
+         * {@link ConcurrentHashMap#putVal} 操作调用了 {@link ConcurrentHashMap#addCount}
+         * 若这里检查到 size > sizeCtl阈值，则进行扩容。
+         */
+
+        /**
+         * 首先关注其中的 {@link ConcurrentHashMap#resizeStamp} 方法
+         */
+        int n = 8;
+        /**
+         * 设置容量为 8，二进制表示如下：
+         * 0000 0000 0000 0000 0000 0000 0000 1000
+         */
+
+        n = Integer.numberOfLeadingZeros(n);
+        /**
+         * Integer.numberOfLeadingZeros(n) 用于计算 n 转换成二进制后前面有几个 0。
+         * 已知 ConcurrentHashMap 的容量必定是 2 的幂次方，所以不同的容量 n 前面 0 的个数必然不同，
+         * 这里相当于用 0 的个数来记录 n 的值。
+         *
+         * Integer.numberOfLeadingZeros(8)=28，二进制表示如下：
+         * 0000 0000 0000 0000 0000 0000 0001 1100
+         */
+
+        int rs = n | (1 << (RESIZE_STAMP_BITS - 1));
+        /**
+         * (1 << (RESIZE_STAMP_BITS - 1)即是 1<<15，表示为二进制即是高 16 位为 0，低 16 位为 1：
+         * 0000 0000 0000 0000 1000 0000 0000 0000
+         *
+         * 再与 n 作或运算，得到二进制如下：
+         * 0000 0000 0000 0000 1000 0000 0001 1100
+         */
+        System.out.println("rs = " + Integer.toBinaryString(rs));
+        /**
+         * 结论：resizeStamp()的返回值：高16位置0，第16位为1，低15位存放当前容量n扩容标识，用于表示是对n的扩容。
+         */
+
+        int sizeCtl = (rs << RESIZE_STAMP_SHIFT) + 2;
+        /**
+         * rs << 16，左移 16 后最高位为 1，所以成了一个负数。计算得到 sizeCtl 二进制如下：
+         * 1000 0000 0001 1100 0000 0000 0000 0010
+         */
+        System.out.println("sizeCtl = " + Integer.toBinaryString(sizeCtl));
+        /**
+         * 那么在扩容时 sizeCtl 值的意义便如下所示：
+         * 高15位：容量n扩容标识
+         * 低16位：并行扩容线程数+1
+         */
+    }
+
+    /**
+     * The number of bits used for generation stamp in sizeCtl.
+     * Must be at least 6 for 32bit arrays.
+     */
+    private static int RESIZE_STAMP_BITS = 16;
+
+    /**
+     * The bit shift for recording size stamp in sizeCtl.
+     */
+    private static final int RESIZE_STAMP_SHIFT = 32 - RESIZE_STAMP_BITS;
+
 }

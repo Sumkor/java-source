@@ -2268,23 +2268,23 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             }
             if (check <= 1)
                 return;
-            s = sumCount();
+            s = sumCount(); // s表示加入新元素后的size大小-元素总量
         }
-        if (check >= 0) {
+        if (check >= 0) { // check值为桶上节点数量，有新元素加入成功才检查是否要扩容
             Node<K,V>[] tab, nt; int n, sc;
             while (s >= (long)(sc = sizeCtl) && (tab = table) != null &&
-                   (n = tab.length) < MAXIMUM_CAPACITY) {
-                int rs = resizeStamp(n);
-                if (sc < 0) {
+                   (n = tab.length) < MAXIMUM_CAPACITY) { // size大于sizeCtl阈值，及其他边界条件符合，则扩容
+                int rs = resizeStamp(n); // 高16位置0，第16位为1，低15位存放当前容量n扩容标识，用于表示是对n的扩容。
+                if (sc < 0) { // sizeCtl<0表示已经有线程在进行扩容工作
                     if ((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 ||
                         sc == rs + MAX_RESIZERS || (nt = nextTable) == null ||
                         transferIndex <= 0)
                         break;
-                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1))
+                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1)) // 有新线程参与扩容，sizeCtl加1
                         transfer(tab, nt);
                 }
                 else if (U.compareAndSwapInt(this, SIZECTL, sc,
-                                             (rs << RESIZE_STAMP_SHIFT) + 2))
+                                             (rs << RESIZE_STAMP_SHIFT) + 2)) // 没有其他线程在进行扩容，则修改sizeCtl的值，将其高15位存放容量n扩容标识，低16位存放并行扩容线程数+1
                     transfer(tab, null);
                 s = sumCount();
             }
