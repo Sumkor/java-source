@@ -43,11 +43,22 @@ public class HashMapTest {
         System.out.println("map = " + map);
 
         Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator();// 创建迭代器
+        /**
+         * @see HashMap.EntrySet#iterator()
+         * 这里创建了 {@link HashMap.EntryIterator} 对象。
+         * 由于 EntryIterator extends HashIterator，因此执行 HashIterator 构造函数
+         * @see HashMap.HashIterator#HashIterator()
+         * 将 modCount 赋值给 expectedModCount
+         */
 
         map.put("3", "c");// 改变结构。强调一点，内部结构发生变化指的是结构发生变化，如put新键值对。而某个key对应的value值被覆盖不属于结构变化。
         System.out.println("map = " + map);
 
         iterator.next();// 快速失败，抛异常ConcurrentModificationException
+        /**
+         * @see HashMap.EntryIterator#next()
+         * @see HashMap.HashIterator#nextNode()
+         */
     }
 
     @Test
@@ -61,9 +72,32 @@ public class HashMapTest {
 
         iterator.next();
         iterator.remove();// 这里改变结构不会导致快速失败
+        /**
+         * @see HashMap.HashIterator#remove()
+         * 其中执行 expectedModCount = modCount 对两者的值进行同步
+         */
         System.out.println("map = " + map);
 
         iterator.next();// 正常
+    }
+
+    @Test(expected = ConcurrentModificationException.class)
+    public void failFast03() {
+        HashMap<Object, Object> map = new HashMap<>();
+        map.put("1", "a");
+        map.put("2", "b");
+        System.out.println("map = " + map);
+        for (Map.Entry<Object, Object> entry : map.entrySet()) {
+            map.put("3", "c");
+        }
+        /**
+         * 等价于：
+         *         Iterator var2 = map.entrySet().iterator();
+         *         while(var2.hasNext()) {
+         *             Entry<Object, Object> entry = (Entry)var2.next();
+         *             map.put("3", "c");
+         *         }
+         */
     }
 
     /**
