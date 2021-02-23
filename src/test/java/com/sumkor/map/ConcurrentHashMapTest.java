@@ -107,7 +107,7 @@ public class ConcurrentHashMapTest {
     }
 
     @Test
-    public void testInt() {
+    public void testCopy() {
         int a = 1;
         int b = a;
 
@@ -115,6 +115,16 @@ public class ConcurrentHashMapTest {
 
         System.out.println("a = " + a);// 2
         System.out.println("b = " + b);// 1
+
+        Node aNode = new Node(1, 1, 1, null);
+        Node bNode = new Node(2, 2, 2, null);
+        Node cNode = new Node(3, 3, 3, null);
+
+        aNode = bNode;
+        bNode = cNode;
+        System.out.println("aNode = " + aNode);// bNode
+        System.out.println("bNode = " + bNode);// cNode
+        System.out.println("cNode = " + cNode);// cNode
     }
 
     /**
