@@ -126,10 +126,10 @@ public class ArrayList<E> extends AbstractList<E>
     private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
 
     /**
-     * The array buffer into which the elements of the ArrayList are stored.
+     * The array buffer into which the elements of the ArrayList are stored. // 具体存放元素的数组
      * The capacity of the ArrayList is the length of this array buffer. Any
      * empty ArrayList with elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA
-     * will be expanded to DEFAULT_CAPACITY when the first element is added.
+     * will be expanded to DEFAULT_CAPACITY when the first element is added. // 第一次添加元素，扩容至 DEFAULT_CAPACITY
      */
     transient Object[] elementData; // non-private to simplify nested class access
 
@@ -186,7 +186,7 @@ public class ArrayList<E> extends AbstractList<E>
     }
 
     /**
-     * Trims the capacity of this <tt>ArrayList</tt> instance to be the
+     * Trims the capacity of this <tt>ArrayList</tt> instance to be the // 最小化实例容量方法，可以根据实际元素个数，将数组容量优化，防止浪费
      * list's current size.  An application can use this operation to minimize
      * the storage of an <tt>ArrayList</tt> instance.
      */
