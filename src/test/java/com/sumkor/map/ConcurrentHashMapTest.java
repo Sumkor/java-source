@@ -220,4 +220,149 @@ public class ConcurrentHashMapTest {
         System.out.println(atomicInteger.get()); // 57
     }
 
+    /**
+     * 扩容时，链表迁移算法
+     *
+     * 执行结果：
+     *
+     * 1=A -> 2=B -> 3=C ->
+     * --------------------------
+     * 2=B ->
+     * 1=A -> 3=C ->
+     * --------------------------
+     */
+    @Test
+    public void transferLink() {
+        int oldCap = 1;
+        int newCap = 2;
+        Node[] oldTable = new Node[oldCap];
+        Node[] newTable = new Node[newCap];
+        // A -> B -> C
+//        Node firstLinkNode03 = new Node(new Integer(4).hashCode(), 4, "D", null);
+        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", null);
+        Node firstLinkNode02 = new Node(new Integer(2).hashCode(), 2, "B", firstLinkNode03);
+        Node firstLinkNode01 = new Node(new Integer(1).hashCode(), 1, "A", firstLinkNode02);
+        oldTable[0] = firstLinkNode01;
+        printTable(oldTable);
+
+        // 赋值
+        int i = 0;
+        int n = oldCap;
+        Node f = firstLinkNode01;
+        int fh = firstLinkNode01.hash;
+
+        /**
+         * 单个桶元素扩容
+         * @see ConcurrentHashMap#transfer(java.util.concurrent.ConcurrentHashMap.Node[], java.util.concurrent.ConcurrentHashMap.Node[])
+         */
+        Node ln, hn;
+        if (fh >= 0) { // 链表节点。非链表节点hash值小于0
+            int runBit = fh & n; // 根据 hash&n 的结果，将所有结点分为两部分
+            Node lastRun = f;
+            for (Node p = f.next; p != null; p = p.next) { // 遍历原链表得到lastRun，该节点作为新链表的起始节点（新链表采用头插法）
+                int b = p.hash & n; // 遍历链表的每个节点，依次计算 hash&n
+                if (b != runBit) {
+                    runBit = b;
+                    lastRun = p;
+                }
+            }
+            if (runBit == 0) { // 判断lastRun节点是属于高位还是地位
+                ln = lastRun;
+                hn = null;
+            } else {
+                hn = lastRun;
+                ln = null;
+            }
+            for (Node p = f; p != lastRun; p = p.next) {
+                int ph = p.hash;
+                Object pk = p.key;
+                Object pv = p.val;
+                if ((ph & n) == 0)
+                    ln = new Node(ph, pk, pv, ln); // hash&n为0，索引位置不变，作低位链表。这里采用头插法
+                else
+                    hn = new Node(ph, pk, pv, hn); // hash&n不为0，索引变成“原索引+oldCap”，作高位链表
+            }
+            newTable[i] = ln;
+            newTable[i + n] = hn;
+            printTable(newTable);
+        }
+    }
+
+    /**
+     * ConcurrentHashMap 中的 Node 结构
+     */
+    static class Node<K, V> implements Map.Entry<K, V> {
+        final int hash;
+        final K key;
+        volatile V val;
+        volatile Node<K, V> next;
+
+        Node(int hash, K key, V val, Node<K, V> next) {
+            this.hash = hash;
+            this.key = key;
+            this.val = val;
+            this.next = next;
+        }
+
+        public final K getKey() {
+            return key;
+        }
+
+        public final V getValue() {
+            return val;
+        }
+
+        public final int hashCode() {
+            return key.hashCode() ^ val.hashCode();
+        }
+
+        public final String toString() {
+            return key + "=" + val;
+        }
+
+        public final V setValue(V value) {
+            throw new UnsupportedOperationException();
+        }
+
+        public final boolean equals(Object o) {
+            Object k, v, u;
+            Map.Entry<?, ?> e;
+            return ((o instanceof Map.Entry) &&
+                    (k = (e = (Map.Entry<?, ?>) o).getKey()) != null &&
+                    (v = e.getValue()) != null &&
+                    (k == key || k.equals(key)) &&
+                    (v == (u = val) || v.equals(u)));
+        }
+
+        /**
+         * Virtualized support for map.get(); overridden in subclasses.
+         */
+        Node<K, V> find(int h, Object k) {
+            Node<K, V> e = this;
+            if (k != null) {
+                do {
+                    K ek;
+                    if (e.hash == h &&
+                            ((ek = e.key) == k || (ek != null && k.equals(ek))))
+                        return e;
+                } while ((e = e.next) != null);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * HashMap 中的 Node 结构，打印
+     */
+    private void printTable(Node[] table) {
+        for (int i = 0; i < table.length; i++) {
+            Node tmpNode = table[i];// 用于打印，不改变table的结构
+            while (tmpNode != null) {
+                System.out.print(tmpNode + " -> ");
+                tmpNode = tmpNode.next;
+            }
+            System.out.println();
+        }
+        System.out.println("--------------------------");
+    }
 }
