@@ -2268,7 +2268,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             }
             if (check <= 1)
                 return;
-            s = sumCount(); // s表示加入新元素后的size大小-元素总量
+            s = sumCount(); // s表示加入新元素后的size大小，即元素总量
         }
         if (check >= 0) { // check值为桶上节点数量，有新元素加入成功才检查是否要扩容
             Node<K,V>[] tab, nt; int n, sc;
@@ -2278,9 +2278,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 if (sc < 0) { // sizeCtl<0表示已经有线程在进行扩容工作
                     if ((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 ||
                         sc == rs + MAX_RESIZERS || (nt = nextTable) == null ||
-                        transferIndex <= 0)
-                        break;
-                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1)) // 有新线程参与扩容，sizeCtl加1
+                        transferIndex <= 0) // 条件1校验容量n扩容标识，条件2和3校验sc的边界，条件4和5校验扩容逻辑是否完成
+                        break; // 跳出循环，表示当前线程无需参与扩容
+                    if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1)) // 当前线程参与扩容，sizeCtl加1
                         transfer(tab, nt);
                 }
                 else if (U.compareAndSwapInt(this, SIZECTL, sc,
@@ -2378,7 +2378,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 return;
             }
             nextTable = nextTab;
-            transferIndex = n; // 迁移总进度，值范围为[0,n]？？
+            transferIndex = n; // 迁移总进度，值范围为[0,n]，表示从table的第n-1位开始处理直到第0位。
         }
         int nextn = nextTab.length;
         ForwardingNode<K,V> fwd = new ForwardingNode<K,V>(nextTab); // 扩容时的特殊节点，hash固定为-1，标明此节点正在进行迁移。扩容期间的元素查找要调用其find方法在nextTable中查找元素
@@ -2388,7 +2388,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             Node<K,V> f; int fh;
             while (advance) { // 此循环的作用是 1.确定当前线程要迁移的桶的范围；2.通过更新i的值确定当前范围内下一个要处理的节点
                 int nextIndex, nextBound;
-                if (--i >= bound || finishing) // 每次循环都检查结束条件
+                if (--i >= bound || finishing) // 每次循环都检查结束条件：i自减没有超过下界，finishing标识为true时，跳出while循环
                     advance = false;
                 else if ((nextIndex = transferIndex) <= 0) { // 迁移总进度<=0，表示所有桶都已迁移完成
                     i = -1;
@@ -2397,9 +2397,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 else if (U.compareAndSwapInt
                          (this, TRANSFERINDEX, nextIndex,
                           nextBound = (nextIndex > stride ?
-                                       nextIndex - stride : 0))) { // transferIndex减去已分配出去的桶
-                    bound = nextBound;
-                    i = nextIndex - 1;
+                                       nextIndex - stride : 0))) { // CAS执行transferIndex=transferIndex-stride，即transferIndex减去已分配出去的桶，得到边界，这里为下界
+                    bound = nextBound; // 当前线程需要处理的桶下标的下界
+                    i = nextIndex - 1; // 当前线程需要处理的桶下标
                     advance = false;
                 }
             }
@@ -2412,25 +2412,25 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                     return;
                 }
                 if (U.compareAndSwapInt(this, SIZECTL, sc = sizeCtl, sc - 1)) { // 当前线程已结束扩容，sizeCtl-1表示参与扩容线程数-1
-                    if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT)
+                    if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT) // 相等时说明没有线程在参与扩容了，置finishing=advance=true，为保险让i=n再检查一次
                         return;
                     finishing = advance = true;
                     i = n; // recheck before commit
                 }
             }
-            else if ((f = tabAt(tab, i)) == null)
-                advance = casTabAt(tab, i, null, fwd); // 如果i处是ForwardingNode，表示第i个桶已经有线程在负责迁移了
-            else if ((fh = f.hash) == MOVED)
+            else if ((f = tabAt(tab, i)) == null) // 遍历到i位置为null，则放入ForwardingNode节点，标志该桶扩容完成。
+                advance = casTabAt(tab, i, null, fwd);
+            else if ((fh = f.hash) == MOVED) // f.hash == -1 表示遍历到了ForwardingNode节点，意味着该节点已经处理过了
                 advance = true; // already processed
             else {
-                synchronized (f) {
+                synchronized (f) { // 桶内元素迁移需要加锁
                     if (tabAt(tab, i) == f) {
                         Node<K,V> ln, hn;
-                        if (fh >= 0) {
-                            int runBit = fh & n;
+                        if (fh >= 0) { // 链表节点。非链表节点hash值小于0
+                            int runBit = fh & n; // 根据 hash&n 的结果，将所有结点分为两部分
                             Node<K,V> lastRun = f;
                             for (Node<K,V> p = f.next; p != null; p = p.next) {
-                                int b = p.hash & n;
+                                int b = p.hash & n; // 遍历链表的每个节点，依次计算 hash&n
                                 if (b != runBit) {
                                     runBit = b;
                                     lastRun = p;
@@ -2447,13 +2447,13 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                             for (Node<K,V> p = f; p != lastRun; p = p.next) {
                                 int ph = p.hash; K pk = p.key; V pv = p.val;
                                 if ((ph & n) == 0)
-                                    ln = new Node<K,V>(ph, pk, pv, ln);
+                                    ln = new Node<K,V>(ph, pk, pv, ln); // hash&n为0，索引位置不变，作低位链表
                                 else
-                                    hn = new Node<K,V>(ph, pk, pv, hn);
+                                    hn = new Node<K,V>(ph, pk, pv, hn); // hash&n不为0，索引变成“原索引+oldCap”，作高位链表
                             }
-                            setTabAt(nextTab, i, ln);
-                            setTabAt(nextTab, i + n, hn);
-                            setTabAt(tab, i, fwd);
+                            setTabAt(nextTab, i, ln); // 低位链表放在i处
+                            setTabAt(nextTab, i + n, hn); // 高位链表放在i+n处
+                            setTabAt(tab, i, fwd); // 在原table的i位置设置ForwardingNode节点，以提示该桶扩容完成
                             advance = true;
                         }
                         else if (f instanceof TreeBin) {

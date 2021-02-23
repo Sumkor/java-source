@@ -5,6 +5,8 @@ import org.junit.Test;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * @author Sumkor
@@ -12,6 +14,29 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ConcurrentHashMapTest {
 
+    /**
+     * 存入
+     * @see ConcurrentHashMap#putVal(java.lang.Object, java.lang.Object, boolean)
+     *
+     * 取出
+     * @see ConcurrentHashMap#get(java.lang.Object)
+     *
+     * 初始化 table
+     * @see ConcurrentHashMap#initTable()
+     *
+     * 帮助扩容
+     * @see ConcurrentHashMap#helpTransfer(java.util.concurrent.ConcurrentHashMap.Node[], java.util.concurrent.ConcurrentHashMap.Node)
+     *
+     * 计算 size，判断扩容
+     * @see ConcurrentHashMap#addCount(long, int)
+     *
+     * 扩容
+     * @see ConcurrentHashMap#transfer(java.util.concurrent.ConcurrentHashMap.Node[], java.util.concurrent.ConcurrentHashMap.Node[])
+     */
+
+    /**
+     * 失败安全
+     */
     @Test
     public void failSafe() {
         ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
@@ -68,6 +93,19 @@ public class ConcurrentHashMapTest {
         System.out.println("h = " + h);
     }
 
+    /**
+     * 负数与0x7fffffff相与，得到正数
+     */
+    @Test
+    public void hash02() {
+        int h = -1231545;
+        System.out.println("h = " + Integer.toBinaryString(h));
+        System.out.println(Integer.toBinaryString(0x7fffffff));// 0111 1111 1111 1111 1111 1111 1111 1111
+        h = h & 0x7fffffff;
+        System.out.println("h = " + Integer.toBinaryString(h));
+        System.out.println(h);
+    }
+
     @Test
     public void testInt() {
         int a = 1;
@@ -75,8 +113,8 @@ public class ConcurrentHashMapTest {
 
         ++a;
 
-        System.out.println("a = " + a);
-        System.out.println("b = " + b);
+        System.out.println("a = " + a);// 2
+        System.out.println("b = " + b);// 1
     }
 
     /**
@@ -86,7 +124,7 @@ public class ConcurrentHashMapTest {
      * https://blog.csdn.net/tp7309/article/details/76532366
      */
     @Test
-    public void resizeCtl() {
+    public void sizeCtl() {
         /**
          * 插入元素的时候，检查 sizeCtl 看是否需要扩容，此时
          * {@link ConcurrentHashMap#putVal} 操作调用了 {@link ConcurrentHashMap#addCount}
@@ -136,6 +174,11 @@ public class ConcurrentHashMapTest {
          * 高15位：容量n扩容标识
          * 低16位：并行扩容线程数+1
          */
+
+        System.out.println("MAX_RESIZERS = " + MAX_RESIZERS);
+        /**
+         * 最大的可参与扩容的线程数：65535
+         */
     }
 
     /**
@@ -148,5 +191,33 @@ public class ConcurrentHashMapTest {
      * The bit shift for recording size stamp in sizeCtl.
      */
     private static final int RESIZE_STAMP_SHIFT = 32 - RESIZE_STAMP_BITS;
+
+    /**
+     * The maximum number of threads that can help resize.
+     * Must fit in 32 - RESIZE_STAMP_BITS bits.
+     */
+    private static final int MAX_RESIZERS = (1 << (32 - RESIZE_STAMP_BITS)) - 1;
+
+    @Test
+    public void cas() {
+        /**
+         * Unsafe.compareAndSwapInt() 方法解读
+         *
+         * public final native boolean compareAndSwapInt(Object o, long offset, int expected, int x);
+         *
+         * 此方法是 Java 的 native 方法，并不由 Java 语言实现。
+         * 方法的作用是，读取传入对象 o 在内存中偏移量为 offset 位置的值与期望值 expected 作比较。
+         * 相等就把 x 值赋值给 offset 位置的值。方法返回 true。
+         * 不相等，就取消赋值，方法返回 false。
+         * 这也是 CAS 的思想，及比较并交换。用于保证并发时的无锁并发的安全性。
+         *
+         * 可使用 {@link AtomicInteger} {@link AtomicIntegerFieldUpdater}达到同样的效果
+         */
+        AtomicInteger atomicInteger = new AtomicInteger(55);
+        System.out.println(atomicInteger.getAndIncrement()); // 55
+        System.out.println(atomicInteger.get()); // 56
+        System.out.println(atomicInteger.incrementAndGet()); // 57
+        System.out.println(atomicInteger.get()); // 57
+    }
 
 }
