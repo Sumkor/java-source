@@ -127,6 +127,68 @@ public class HashMapTest {
         System.out.println("h = " + h);
     }
 
+    @Test
+    public void mod() {
+        System.out.println(Integer.toBinaryString(4));// 100
+        System.out.println(Integer.toBinaryString(3));// 11
+        System.out.println(Integer.toBinaryString(7));// 111
+        System.out.println(7 % 4);// 3
+        System.out.println(7 & 3);// 3
+        System.out.println();
+
+        /**
+         * 整数除法取整
+         *
+         * 考虑这样一个计算题：18 除以 5，要得到一个整数结果，究竟应该是 3 还是 4？这就是一个问题了。计算机上有几种对于结果取整的方法：
+         *
+         *     向上取整，向+∞方向取最接近精确值的整数，也就是取比实际结果稍大的最小整数，也叫 Ceiling 取整。这种取整方式下，17 / 10 == 2，5 / 2 == 3, -9 / 4 == -2。
+         *     向下取整，向-∞方向取最接近精确值的整数，也就是取比实际结果稍小的最大整数，也叫 Floor 取整。这种取整方式下，17 / 10 == 1，5 / 2 == 2, -9 / 4 == -3。
+         *     向零取整，向0方向取最接近精确值的整数，换言之就是舍去小数部分，因此又称截断取整（Truncate）。这种取整方式下，17 / 10 == 1，5 / 2 == 2, -9 / 4 == -2。
+         *
+         * 作者：丰俊文
+         * 链接：https://www.jianshu.com/p/452c1a5acd31
+         * 来源：简书
+         * 著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+         *
+         *
+         * 取模运算实际上是计算两数相除以后的余数。假设 q 是 a、b 相除产生的商(quotient)，r 是相应的余数(remainder)，
+         * 那么在几乎所有的计算系统中，都满足：
+         * a = b x q + r，其中 |r|<|a|
+         * r = a - (a / b) x b
+         */
+
+        /**
+         * 例子：
+         * Truncate 法：
+         * r = (-7)-(-7/4)x4 = (-7)-(-1)x4 = -3
+         * Ceiling 法：
+         * r = (-7)-(-7/4)x4 = (-7)-(-1)x4 = -3
+         * Floor 法：
+         * r = (-7)-(-7/4)x4 = (-7)-(-2)x4 = 1
+         */
+        System.out.println(-7 % 4);// -3
+        System.out.println(-7 & 3);// 1
+        System.out.println();
+
+        /**
+         * 例子：
+         * Truncate 法：
+         * r = (-9)-(-9/4)x4 = (-9)-(-2)x4 = -1
+         * Ceiling 法：
+         * r = (-9)-(-9/4)x4 = (-9)-(-2)x4 = -1
+         * Floor 法：
+         * r = (-9)-(-9/4)x4 = (-9)-(-3)x4 = 3
+         */
+        System.out.println(-9 % 4);// -1
+        System.out.println(-9 & 3);// 3
+        System.out.println();
+
+        System.out.println(11 / 8);
+        System.out.println(11 >>> 3);
+        System.out.println();
+
+    }
+
     /**
      * JDK7阈值计算
      */
