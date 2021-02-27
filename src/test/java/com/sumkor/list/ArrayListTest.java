@@ -3,6 +3,7 @@ package com.sumkor.list;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * List子类的特点（总结）
@@ -62,7 +63,7 @@ public class ArrayListTest {
      */
     @Test
     public void listIterator() {
-        List<String> list = new ArrayList<>();
+        ArrayList<String> list = new ArrayList<>();
         list.add("a");
         list.add("b");
         list.add("c");
@@ -82,4 +83,26 @@ public class ArrayListTest {
         }
     }
 
+    @Test
+    public void arrayCopy() {
+        int[] array01 = {1, 2, 3, 4, 5};
+        int[] array02 = new int[array01.length];
+        System.arraycopy(array01, 0, array02, 0, 5);
+
+        // int[] 类型转换为 List
+        List<Integer> list = Arrays.stream(array02).boxed().collect(Collectors.toList());
+        System.out.println("list = " + list); // [1, 2, 3, 4, 5]
+
+        /**
+         * 模拟插入
+         * @see ArrayList#add(int, java.lang.Object)
+         */
+        int index = 2;
+        int element = 9;
+        int[] array03 = {1, 2, 3, 4, 5, 0, 0, 0, 0, 0};
+        System.arraycopy(array03, index, array03, index + 1, 5 - index);
+        System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 3, 3, 4, 5, 0, 0, 0, 0]
+        array03[index] = element;
+        System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 9, 3, 4, 5, 0, 0, 0, 0]
+    }
 }

@@ -121,10 +121,26 @@ public class ConcurrentHashMapTest {
         Node cNode = new Node(3, 3, 3, null);
 
         aNode = bNode;
-        bNode = cNode;
+        bNode = cNode; // 这里并不会连带修改aNode
         System.out.println("aNode = " + aNode);// bNode
         System.out.println("bNode = " + bNode);// cNode
         System.out.println("cNode = " + cNode);// cNode
+
+        /**
+         * 编译后的字节码文件 .class
+         *
+         *         int a = 1;
+         *         int b = a;
+         *         int a = a + 1;
+         *         System.out.println("a = " + a);
+         *         System.out.println("b = " + b);
+         *         new ConcurrentHashMapTest.Node(1, 1, 1, (ConcurrentHashMapTest.Node)null);
+         *         ConcurrentHashMapTest.Node bNode = new ConcurrentHashMapTest.Node(2, 2, 2, (ConcurrentHashMapTest.Node)null);
+         *         ConcurrentHashMapTest.Node cNode = new ConcurrentHashMapTest.Node(3, 3, 3, (ConcurrentHashMapTest.Node)null);
+         *         System.out.println("aNode = " + bNode);
+         *         System.out.println("bNode = " + cNode);
+         *         System.out.println("cNode = " + cNode);
+         */
     }
 
     /**
