@@ -813,14 +813,14 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                                boolean matchValue, boolean movable) {
         Node<K,V>[] tab; Node<K,V> p; int n, index;
         if ((tab = table) != null && (n = tab.length) > 0 &&
-            (p = tab[index = (n - 1) & hash]) != null) {
+            (p = tab[index = (n - 1) & hash]) != null) { // hash取模得到索引，找到数组上的节点
             Node<K,V> node = null, e; K k; V v;
             if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
                 node = p;
             else if ((e = p.next) != null) {
                 if (p instanceof TreeNode)
-                    node = ((TreeNode<K,V>)p).getTreeNode(hash, key);
+                    node = ((TreeNode<K,V>)p).getTreeNode(hash, key); // 从树结构上查找节点
                 else {
                     do {
                         if (e.hash == hash &&
@@ -830,7 +830,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                             break;
                         }
                         p = e;
-                    } while ((e = e.next) != null);
+                    } while ((e = e.next) != null); // 遍历链表查找节点
                 }
             }
             if (node != null && (!matchValue || (v = node.value) == value ||

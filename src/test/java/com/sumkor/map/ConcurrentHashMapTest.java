@@ -80,7 +80,7 @@ public class ConcurrentHashMapTest {
          * @see ConcurrentHashMap#spread(int)
          *
          * 在 ConcurrentHashMap 之中，hash值为负数有特殊的含义：
-         * -1 表示 ForwardingNode 节点
+         * -1 表示 ForwardingNode 节点 {@link ConcurrentHashMap#MOVED}
          * -2 表示 TreeBin 节点 {@link ConcurrentHashMap#TREEBIN}
          */
 

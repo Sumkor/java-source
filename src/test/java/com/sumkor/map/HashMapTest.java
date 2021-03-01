@@ -183,8 +183,19 @@ public class HashMapTest {
         System.out.println(-9 & 3);// 3
         System.out.println();
 
-        System.out.println(11 / 8);
-        System.out.println(11 >>> 3);
+        /**
+         * 当被除数为 2^n 时，java 中的除法和取余如何用位运算代替
+         */
+        System.out.println(Integer.toBinaryString(9));// 1001
+        System.out.println(9 / 4);// 2 除数
+        System.out.println(9 % 4);// 1 余数
+        System.out.println(9 >>> 2);// 9 >> 2^n = 9 >> n = 2
+        System.out.println(9 & 3);// 9 & (2^n - 1) = 9 & 3 = 1
+        System.out.println(Integer.toBinaryString(-9));// 1111 1111 1111 1111  1111 1111 1111 0111 (补码=原码的反码+1)
+        System.out.println(-9 / 4);// -2
+        System.out.println(-9 % 4);// -1
+        System.out.println(-9 >> 2);// -3
+        System.out.println(-9 & 3);// 3
         System.out.println();
 
     }
