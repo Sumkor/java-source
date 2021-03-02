@@ -109,18 +109,24 @@ public class ArrayListTest {
         ArrayList<Integer> list = new ArrayList<>(3);
         list.add(1);
         list.add(2);
-        List<Integer> subList = list.subList(0, 1); // 返回的是 ArrayList$SubList 对象
-        System.out.println("subList = " + subList);// [1]
+        list.add(3);
+        list.add(4);
+        List<Integer> subList = list.subList(1, 3); // 返回的是 ArrayList$SubList 对象
+        System.out.println("subList = " + subList);// [2, 3]
 
-        subList.add(3);
+        subList.add(5);
         /**
          * @see AbstractList#add(java.lang.Object)
          * @see ArrayList.SubList#add(int, java.lang.Object)
          */
-        subList.add(4);
-        subList.add(5);
-        System.out.println("subList = " + subList); // [1, 3, 4, 5]
-        System.out.println("list = " + list);// [1, 3, 4, 5, 2]
+        subList.add(6);
+        subList.add(7);
+        System.out.println("subList = " + subList); // [2, 3, 5, 6, 7]
+        System.out.println("list = " + list);// [1, 2, 3, 5, 6, 7, 4]
+
+        list.add(1, 0);
+        System.out.println("list = " + list);// [1, 0, 2, 3, 5, 6, 7, 4]
+        System.out.println("subList = " + subList); // java.util.ConcurrentModificationException
     }
 
     @Test
