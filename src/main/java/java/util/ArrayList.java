@@ -134,7 +134,7 @@ public class ArrayList<E> extends AbstractList<E>
     transient Object[] elementData; // non-private to simplify nested class access
 
     /**
-     * The size of the ArrayList (the number of elements it contains).
+     * The size of the ArrayList (the number of elements it contains). // elementData 数组中包含元素的数量，并不是 elementData 数组的大小
      *
      * @serial
      */
@@ -221,7 +221,7 @@ public class ArrayList<E> extends AbstractList<E>
 
     private void ensureCapacityInternal(int minCapacity) {
         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
-            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity); // 默认大小
         }
 
         ensureExplicitCapacity(minCapacity);
@@ -231,7 +231,7 @@ public class ArrayList<E> extends AbstractList<E>
         modCount++;
 
         // overflow-conscious code
-        if (minCapacity - elementData.length > 0)
+        if (minCapacity - elementData.length > 0) // minCapacity理解为新的容量，大于已有容量，则扩容
             grow(minCapacity);
     }
 

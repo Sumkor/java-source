@@ -83,6 +83,46 @@ public class ArrayListTest {
         }
     }
 
+    /**
+     * list.size() 计算的是往 list 中添加元素的数量，并不是 list 底层数组的大小
+     */
+    @Test
+    public void size() {
+        ArrayList<Integer> list = new ArrayList<>(8);
+        list.add(0);
+        System.out.println("list.size() = " + list.size());
+    }
+
+    @Test
+    public void add() {
+        ArrayList<Integer> list = new ArrayList<>(3);
+        list.add(0);
+        list.add(0, 1);
+        System.out.println("list = " + list);// [1, 0]
+
+        List<Integer> subList = list.subList(0, 1); // 返回的是 ArrayList$SubList 对象
+        System.out.println("subList = " + subList);// [1]
+    }
+
+    @Test
+    public void subList() {
+        ArrayList<Integer> list = new ArrayList<>(3);
+        list.add(1);
+        list.add(2);
+        List<Integer> subList = list.subList(0, 1); // 返回的是 ArrayList$SubList 对象
+        System.out.println("subList = " + subList);// [1]
+
+        subList.add(3);
+        /**
+         * @see AbstractList#add(java.lang.Object)
+         * @see ArrayList.SubList#add(int, java.lang.Object)
+         */
+        subList.add(4);
+        subList.add(5);
+        System.out.println("subList = " + subList); // [1, 3, 4, 5]
+        System.out.println("list = " + list);// [1, 3, 4, 5, 2]
+    }
+
     @Test
     public void arrayCopy() {
         int[] array01 = {1, 2, 3, 4, 5};
@@ -91,7 +131,7 @@ public class ArrayListTest {
 
         // int[] 类型转换为 List
         List<Integer> list = Arrays.stream(array02).boxed().collect(Collectors.toList());
-        System.out.println("list = " + list); // [1, 2, 3, 4, 5]
+        System.out.println("array02 = " + list); // [1, 2, 3, 4, 5]
 
         /**
          * 模拟插入
@@ -101,6 +141,7 @@ public class ArrayListTest {
         int element = 9;
         int[] array03 = {1, 2, 3, 4, 5, 0, 0, 0, 0, 0};
         System.arraycopy(array03, index, array03, index + 1, 5 - index);
+        // 将 array03 中的从 index 位开始（包含index位）的数列 [3, 4, 5]，复制到新数组的 index + 1 位置
         System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 3, 3, 4, 5, 0, 0, 0, 0]
         array03[index] = element;
         System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 9, 3, 4, 5, 0, 0, 0, 0]

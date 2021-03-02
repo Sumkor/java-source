@@ -3209,9 +3209,9 @@ public class Arrays {
         @SuppressWarnings("unchecked")
         T[] copy = ((Object)newType == (Object)Object[].class)
             ? (T[]) new Object[newLength]
-            : (T[]) Array.newInstance(newType.getComponentType(), newLength);
+            : (T[]) Array.newInstance(newType.getComponentType(), newLength); // 创建 newLength 大小的新数组，数组元素类型为 Object 或 newType元素类型
         System.arraycopy(original, 0, copy, 0,
-                         Math.min(original.length, newLength));
+                         Math.min(original.length, newLength)); // 复制
         return copy;
     }
 

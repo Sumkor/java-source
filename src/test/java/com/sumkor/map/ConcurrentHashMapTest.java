@@ -2,6 +2,7 @@ package com.sumkor.map;
 
 import org.junit.Test;
 
+import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +36,7 @@ public class ConcurrentHashMapTest {
      */
 
     /**
-     * 失败安全
+     * 失败安全 Iterator
      */
     @Test
     public void failSafe() {
@@ -50,6 +51,23 @@ public class ConcurrentHashMapTest {
         System.out.println("map = " + map);
 
         iterator.next();// 失败安全，不抛异常
+    }
+
+    /**
+     * 失败安全 Enumeration
+     */
+    @Test
+    public void failSafe02() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put("1", "a");
+        map.put("2", "b");
+        System.out.println("map = " + map);
+
+        Enumeration<Object> elements = map.elements();
+        while (elements.hasMoreElements()) {
+            Object element = elements.nextElement();
+            System.out.println("element = " + element);
+        }
     }
 
     /**
