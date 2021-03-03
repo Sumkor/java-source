@@ -355,7 +355,7 @@ public abstract class AbstractList<E> extends AbstractCollection<E> implements L
             checkForComodification();
             try {
                 int i = cursor;
-                E next = get(i);
+                E next = get(i); // 获取i位置的节点
                 lastRet = i;
                 cursor = i + 1;
                 return next;

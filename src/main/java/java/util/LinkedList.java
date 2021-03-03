@@ -142,9 +142,9 @@ public class LinkedList<E>
         final Node<E> newNode = new Node<>(l, e, null);
         last = newNode;
         if (l == null)
-            first = newNode;
+            first = newNode; // 初始化，作为第一个节点
         else
-            l.next = newNode;
+            l.next = newNode; // 追加节点
         size++;
         modCount++;
     }
@@ -566,12 +566,12 @@ public class LinkedList<E>
     Node<E> node(int index) {
         // assert isElementIndex(index);
 
-        if (index < (size >> 1)) {
+        if (index < (size >> 1)) { // 位于链表前半部分，则使用头指针来查找
             Node<E> x = first;
             for (int i = 0; i < index; i++)
                 x = x.next;
             return x;
-        } else {
+        } else { // 使用尾指针来查找，i > index 递减
             Node<E> x = last;
             for (int i = size - 1; i > index; i--)
                 x = x.prev;

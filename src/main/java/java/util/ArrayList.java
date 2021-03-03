@@ -855,7 +855,7 @@ public class ArrayList<E> extends AbstractList<E>
             Object[] elementData = ArrayList.this.elementData;
             if (i >= elementData.length)
                 throw new ConcurrentModificationException();
-            cursor = i + 1;
+            cursor = i + 1; // 遍历下一个节点
             return (E) elementData[lastRet = i];
         }
 

@@ -1,4 +1,4 @@
-package com.sumkor.list;
+package com.sumkor.collection;
 
 import org.junit.Test;
 
@@ -46,7 +46,9 @@ public class ArrayListTest {
         Iterator<String> iterator = list.iterator();
         /**
          * @see ArrayList#iterator()
-         * 创建迭代器时，将 modCount 赋值给 expectedModCount
+         * @see ArrayList.Itr
+         * 其中 int expectedModCount = modCount;
+         * 即创建迭代器时，将 modCount 赋值给 expectedModCount
          */
         list.add("c");
         System.out.println("list = " + list);
@@ -105,6 +107,33 @@ public class ArrayListTest {
     }
 
     @Test
+    public void arrayCopy() {
+        int[] array01 = {1, 2, 3, 4, 5};
+        int[] array02 = new int[array01.length];
+        System.arraycopy(array01, 0, array02, 0, 5);
+
+        // int[] 类型转换为 List
+        List<Integer> list = Arrays.stream(array02).boxed().collect(Collectors.toList());
+        System.out.println("array02 = " + list); // [1, 2, 3, 4, 5]
+
+        /**
+         * 模拟插入
+         * @see ArrayList#add(int, java.lang.Object)
+         */
+        int index = 2;
+        int element = 9;
+        int[] array03 = {1, 2, 3, 4, 5, 0, 0, 0, 0, 0};
+        System.arraycopy(array03, index, array03, index + 1, 5 - index);
+        // 将 array03 中的从 index 位开始（包含index位）的数列 [3, 4, 5]，复制到新数组的 index + 1 位置
+        System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 3, 3, 4, 5, 0, 0, 0, 0]
+        array03[index] = element;
+        System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 9, 3, 4, 5, 0, 0, 0, 0]
+    }
+
+    /**
+     * subList() 方法返回的是 ArrayList$SubList 对象，可理解为是原数组的一个视图
+     */
+    @Test
     public void subList() {
         ArrayList<Integer> list = new ArrayList<>(3);
         list.add(1);
@@ -127,29 +156,11 @@ public class ArrayListTest {
         list.add(1, 0);
         System.out.println("list = " + list);// [1, 0, 2, 3, 5, 6, 7, 4]
         System.out.println("subList = " + subList); // java.util.ConcurrentModificationException
-    }
-
-    @Test
-    public void arrayCopy() {
-        int[] array01 = {1, 2, 3, 4, 5};
-        int[] array02 = new int[array01.length];
-        System.arraycopy(array01, 0, array02, 0, 5);
-
-        // int[] 类型转换为 List
-        List<Integer> list = Arrays.stream(array02).boxed().collect(Collectors.toList());
-        System.out.println("array02 = " + list); // [1, 2, 3, 4, 5]
-
         /**
-         * 模拟插入
-         * @see ArrayList#add(int, java.lang.Object)
+         * subList#add 等操作是对原始 list进行操作，并把操作后的 modCount 赋给自己
+         * 对原始的 list 进行 add 的时候，subList 的 modCount 感知不到。
+         * 导致 subList#checkForComodification 失败
+         * https://www.cnblogs.com/turn2i/p/10576682.html
          */
-        int index = 2;
-        int element = 9;
-        int[] array03 = {1, 2, 3, 4, 5, 0, 0, 0, 0, 0};
-        System.arraycopy(array03, index, array03, index + 1, 5 - index);
-        // 将 array03 中的从 index 位开始（包含index位）的数列 [3, 4, 5]，复制到新数组的 index + 1 位置
-        System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 3, 3, 4, 5, 0, 0, 0, 0]
-        array03[index] = element;
-        System.out.println("array03 = " + Arrays.stream(array03).boxed().collect(Collectors.toList()));// [1, 2, 9, 3, 4, 5, 0, 0, 0, 0]
     }
 }

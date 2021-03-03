@@ -25,11 +25,21 @@ public class HashtableTest {
         System.out.println("map = " + map);
 
         Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator();// 创建迭代器
+        /**
+         * @see Hashtable.EntrySet#iterator()
+         * @see Hashtable#getIterator(int)
+         * @see Hashtable.Enumerator
+         * 这里创建 Enumerator 对象，其中属性：protected int expectedModCount = modCount;
+         */
 
         map.put("3", "c");// 改变结构
         System.out.println("map = " + map);
 
         iterator.next();// 快速失败，抛异常ConcurrentModificationException
+        /**
+         * @see Hashtable.Enumerator#next()
+         * 判断 modCount != expectedModCount
+         */
     }
 
     /**
@@ -46,10 +56,20 @@ public class HashtableTest {
         System.out.println("map = " + map);
 
         Enumeration<Object> elements = map.elements(); // Enumeration 不是快速失败的，因为无法由 Enumeration 改变 map 结构。
-        while (elements.hasMoreElements()) {
-            Object element = elements.nextElement();
-            System.out.println("element = " + element);
-        }
+        /**
+         * @see Hashtable#elements()
+         * @see Hashtable.Enumerator
+         * 也是创建 Enumerator 对象，其中属性：protected int expectedModCount = modCount;
+         */
+
+        map.put("3", "c");// 改变结构
+
+        Object element = elements.nextElement();// 非快速失败
+        /**
+         * @see Hashtable.Enumerator#nextElement()
+         * 没有校验 modCount
+         */
+        System.out.println("element = " + element);
     }
 
     /**

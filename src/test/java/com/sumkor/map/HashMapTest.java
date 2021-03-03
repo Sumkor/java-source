@@ -58,6 +58,7 @@ public class HashMapTest {
         /**
          * @see HashMap.EntryIterator#next()
          * @see HashMap.HashIterator#nextNode()
+         * 判断 modCount != expectedModCount
          */
     }
 

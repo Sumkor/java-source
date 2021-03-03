@@ -46,11 +46,19 @@ public class ConcurrentHashMapTest {
         System.out.println("map = " + map);
 
         Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator();// 创建迭代器
+        /**
+         * @see ConcurrentHashMap.EntrySetView#iterator()
+         * 这里创建了对象 {@link ConcurrentHashMap.EntryIterator#EntryIterator(java.util.concurrent.ConcurrentHashMap.Node[], int, int, int, java.util.concurrent.ConcurrentHashMap)}
+         * 没有 modCount 这个变量了
+         */
 
         map.put("3", "c");// 改变结构
         System.out.println("map = " + map);
 
         iterator.next();// 失败安全，不抛异常
+        /**
+         * @see ConcurrentHashMap.EntryIterator#next()
+         */
     }
 
     /**
@@ -63,11 +71,15 @@ public class ConcurrentHashMapTest {
         map.put("2", "b");
         System.out.println("map = " + map);
 
-        Enumeration<Object> elements = map.elements();
-        while (elements.hasMoreElements()) {
-            Object element = elements.nextElement();
-            System.out.println("element = " + element);
-        }
+        Enumeration<Object> elements = map.elements(); // 创建迭代器
+
+        map.put("3", "c");
+
+        Object element = elements.nextElement(); // 失败安全，不抛异常
+        /**
+         * @see ConcurrentHashMap.ValueIterator#next()
+         */
+        System.out.println("element = " + element);
     }
 
     /**
