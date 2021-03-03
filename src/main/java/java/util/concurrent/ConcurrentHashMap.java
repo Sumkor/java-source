@@ -535,7 +535,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * simpler to use expressions such as {@code n - (n >>> 2)} for
      * the associated resizing threshold.
      */
-    private static final float LOAD_FACTOR = 0.75f;
+    private static final float LOAD_FACTOR = 0.75f; // 负载因子，为了兼容JDK1.8以前的版本而保留。JDK1.8中恒定为0.75
 
     /**
      * The bin count threshold for using a tree rather than list for a
@@ -545,14 +545,14 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * tree removal about conversion back to plain bins upon
      * shrinkage.
      */
-    static final int TREEIFY_THRESHOLD = 8;
+    static final int TREEIFY_THRESHOLD = 8; // 链接结点数大于8时，链表转换为树。
 
     /**
      * The bin count threshold for untreeifying a (split) bin during a
      * resize operation. Should be less than TREEIFY_THRESHOLD, and at
      * most 6 to mesh with shrinkage detection under removal.
      */
-    static final int UNTREEIFY_THRESHOLD = 6;
+    static final int UNTREEIFY_THRESHOLD = 6; // 树结点树小于6时，树转换为链表。
 
     /**
      * The smallest table capacity for which bins may be treeified.
@@ -560,7 +560,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * The value should be at least 4 * TREEIFY_THRESHOLD to avoid
      * conflicts between resizing and treeification thresholds.
      */
-    static final int MIN_TREEIFY_CAPACITY = 64;
+    static final int MIN_TREEIFY_CAPACITY = 64; // 在链表转变成树之前，判断数组容量小于该值，则放弃转为树，改为扩容。
 
     /**
      * Minimum number of rebinnings per transfer step. Ranges are
@@ -569,7 +569,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
      * excessive memory contention.  The value should be at least
      * DEFAULT_CAPACITY.
      */
-    private static final int MIN_TRANSFER_STRIDE = 16;
+    private static final int MIN_TRANSFER_STRIDE = 16; // 扩容时分配给线程的最小桶数
 
     /**
      * The number of bits used for generation stamp in sizeCtl.
@@ -2163,31 +2163,31 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
     static final class ForwardingNode<K,V> extends Node<K,V> {
         final Node<K,V>[] nextTable;
         ForwardingNode(Node<K,V>[] tab) {
-            super(MOVED, null, null, null);
+            super(MOVED, null, null, null); // hash固定-3
             this.nextTable = tab;
         }
 
         Node<K,V> find(int h, Object k) {
             // loop to avoid arbitrarily deep recursion on forwarding nodes
-            outer: for (Node<K,V>[] tab = nextTable;;) {
-                Node<K,V> e; int n;
+            outer: for (Node<K,V>[] tab = nextTable;;) { // 外层自旋
+                Node<K,V> e; int n; // e是游标节点
                 if (k == null || tab == null || (n = tab.length) == 0 ||
                     (e = tabAt(tab, (n - 1) & h)) == null)
                     return null;
-                for (;;) {
+                for (;;) { // 内层自旋
                     int eh; K ek;
                     if ((eh = e.hash) == h &&
                         ((ek = e.key) == k || (ek != null && k.equals(ek))))
-                        return e;
-                    if (eh < 0) {
+                        return e; // hash相等，key相等（==和equals），返回节点e
+                    if (eh < 0) { // e.hash值是负数，说明当前桶位是ForwardingNode或TreeBin
                         if (e instanceof ForwardingNode) {
-                            tab = ((ForwardingNode<K,V>)e).nextTable;
+                            tab = ((ForwardingNode<K,V>)e).nextTable; // 再一次赋值nextTable，防止nextTable再次触发了扩容(猜测是不会出现的，见扩容检查和transfer逻辑，保证只有一个线程会创建nextTable)
                             continue outer;
                         }
                         else
-                            return e.find(h, k);
+                            return e.find(h, k); // 调用TreeBin#find
                     }
-                    if ((e = e.next) == null)
+                    if ((e = e.next) == null) // 遍历当前桶位上的链表
                         return null;
                 }
             }
@@ -2278,7 +2278,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 if (sc < 0) { // sizeCtl<0表示已经有线程在进行扩容工作
                     if ((sc >>> RESIZE_STAMP_SHIFT) != rs || sc == rs + 1 ||
                         sc == rs + MAX_RESIZERS || (nt = nextTable) == null ||
-                        transferIndex <= 0) // 条件1校验容量n扩容标识，条件2和3校验sc的边界，条件4和5校验扩容逻辑是否完成
+                        transferIndex <= 0) // 条件1校验容量n扩容标识，条件2和3校验sc的边界(这里有bug)，条件4和5校验扩容逻辑是否完成
                         break; // 跳出循环，表示当前线程无需参与扩容
                     if (U.compareAndSwapInt(this, SIZECTL, sc, sc + 1)) // 当前线程参与扩容，sizeCtl加1
                         transfer(tab, nt);
@@ -2829,31 +2829,31 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
         }
 
         /**
-         * Returns matching node or null if none. Tries to search
-         * using tree comparisons from root, but continues linear
+         * Returns matching node or null if none. Tries to search // 从根结点开始遍历查找，找到相等的结点就返回它，没找到就返回null
+         * using tree comparisons from root, but continues linear // 当存在写锁时，以链表方式进行查找
          * search when lock not available.
          */
         final Node<K,V> find(int h, Object k) {
             if (k != null) {
                 for (Node<K,V> e = first; e != null; ) {
-                    int s; K ek;
-                    if (((s = lockState) & (WAITER|WRITER)) != 0) {
+                    int s; K ek; // s 保存的是lock临时状态
+                    if (((s = lockState) & (WAITER|WRITER)) != 0) { // 说明当前节点：有等待者线程 或者 目前有写操作线程正在加锁
                         if (e.hash == h &&
                             ((ek = e.key) == k || (ek != null && k.equals(ek))))
                             return e;
-                        e = e.next;
+                        e = e.next; // 链表形式查找
                     }
                     else if (U.compareAndSwapInt(this, LOCKSTATE, s,
-                                                 s + READER)) {
+                                                 s + READER)) { // 说明当前节点：没有等待者线程 或者 没有写线程，则尝试添加读锁
                         TreeNode<K,V> r, p;
                         try {
                             p = ((r = root) == null ? null :
-                                 r.findTreeNode(h, k, null));
+                                 r.findTreeNode(h, k, null)); // 树形式查找
                         } finally {
-                            Thread w;
-                            if (U.getAndAddInt(this, LOCKSTATE, -READER) ==
-                                (READER|WAITER) && (w = waiter) != null)
-                                LockSupport.unpark(w);
+                            Thread w; // w 表示等待者线程，(w = waiter) != null 说明有一个写线程在等待读操作全部结束。
+                            if (U.getAndAddInt(this, LOCKSTATE, -READER) == // U.getAndAddInt(this, LOCKSTATE, -READER) 表示当前线程查询红黑树结束，释放当前线程的读锁。
+                                (READER|WAITER) && (w = waiter) != null) // LOCKSTATE == (READER|WAITER) == 0110，表示当前线程是最后一个读线程，且“有一个线程在等待”
+                                LockSupport.unpark(w); // 通知写线程，可以尝试获取写锁了
                         }
                         return p;
                     }

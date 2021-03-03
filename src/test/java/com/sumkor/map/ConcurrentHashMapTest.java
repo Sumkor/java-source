@@ -140,7 +140,11 @@ public class ConcurrentHashMapTest {
     }
 
     /**
-     * 不用加锁，不用帮忙扩容
+     * 不用帮忙扩容
+     *
+     * 计算 hash 值，定位到该 table 索引位置，如果是首节点符合就返回。
+     * 如果遇到树结构 TreeBin 或扩容节点 ForwardingNode，会调用对应的 find 方法，查找该节点，匹配就返回
+     * 以上都不符合的话，说明是链表结构，往下遍历节点，匹配就返回，否则最后就返回 null
      */
     @Test
     public void get() {
@@ -148,6 +152,14 @@ public class ConcurrentHashMapTest {
         map.put("1", "a");
         Object object = map.get("1");
         System.out.println("object = " + object);
+        /**
+         * TreeBin的查找，读写锁。
+         * 由于红黑树的插入、删除会涉及整个结构的调整，所以通常存在读写并发操作的时候，是需要加锁的。
+         * @see ConcurrentHashMap.TreeBin#find(int, java.lang.Object)
+         *
+         * ForwardingNode的查找，在 nextTable 上查找
+         * @see ConcurrentHashMap.ForwardingNode#find(int, java.lang.Object)
+         */
     }
 
     //-------------------------------------------------------------
