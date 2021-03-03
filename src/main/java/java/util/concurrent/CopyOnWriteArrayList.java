@@ -96,7 +96,7 @@ public class CopyOnWriteArrayList<E>
     final transient ReentrantLock lock = new ReentrantLock();
 
     /** The array, accessed only via getArray/setArray. */
-    private transient volatile Object[] array;
+    private transient volatile Object[] array; // 底层数组
 
     /**
      * Gets the array.  Non-private so as to also be accessible
@@ -432,13 +432,13 @@ public class CopyOnWriteArrayList<E>
      */
     public boolean add(E e) {
         final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock.lock(); // 加锁
         try {
             Object[] elements = getArray();
             int len = elements.length;
-            Object[] newElements = Arrays.copyOf(elements, len + 1);
+            Object[] newElements = Arrays.copyOf(elements, len + 1); // 复制
             newElements[len] = e;
-            setArray(newElements);
+            setArray(newElements); // 指向新数组
             return true;
         } finally {
             lock.unlock();
@@ -492,14 +492,14 @@ public class CopyOnWriteArrayList<E>
             Object[] elements = getArray();
             int len = elements.length;
             E oldValue = get(elements, index);
-            int numMoved = len - index - 1;
-            if (numMoved == 0)
+            int numMoved = len - index - 1; // index位之后的长度（不包含index位）
+            if (numMoved == 0) // 说明index是最后一个元素
                 setArray(Arrays.copyOf(elements, len - 1));
             else {
                 Object[] newElements = new Object[len - 1];
-                System.arraycopy(elements, 0, newElements, 0, index);
+                System.arraycopy(elements, 0, newElements, 0, index); // 复制前半部分至newElements
                 System.arraycopy(elements, index + 1, newElements, index,
-                                 numMoved);
+                                 numMoved); // 复制后半部分至newElements
                 setArray(newElements);
             }
             return oldValue;
@@ -537,27 +537,27 @@ public class CopyOnWriteArrayList<E>
         try {
             Object[] current = getArray();
             int len = current.length;
-            if (snapshot != current) findIndex: {
+            if (snapshot != current) findIndex: { // 加锁前后，数组发生过变化，需要重新获取需要删除元素o的index
                 int prefix = Math.min(index, len);
                 for (int i = 0; i < prefix; i++) {
-                    if (current[i] != snapshot[i] && eq(o, current[i])) {
+                    if (current[i] != snapshot[i] && eq(o, current[i])) { // 0~prefix位置的元素重新遍历，获取index
                         index = i;
                         break findIndex;
                     }
                 }
-                if (index >= len)
+                if (index >= len) // 新数组长度小于等于index，说明元素o已经被删了，返回false
                     return false;
-                if (current[index] == o)
+                if (current[index] == o) // index位置元素不变，则index不变
                     break findIndex;
-                index = indexOf(o, current, index, len);
+                index = indexOf(o, current, index, len); // 重新全量获取index
                 if (index < 0)
                     return false;
             }
             Object[] newElements = new Object[len - 1];
-            System.arraycopy(current, 0, newElements, 0, index);
+            System.arraycopy(current, 0, newElements, 0, index); // 复制前半部分至newElements
             System.arraycopy(current, index + 1,
                              newElements, index,
-                             len - index - 1);
+                             len - index - 1); // 复制后半部分至newElements
             setArray(newElements);
             return true;
         } finally {

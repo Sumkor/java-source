@@ -127,51 +127,30 @@ public class ConcurrentHashMapTest {
      * 负数与0x7fffffff相与，得到正数
      */
     @Test
-    public void hash02() {
+    public void hashBits() {
         int h = -1231545;
         System.out.println("h = " + Integer.toBinaryString(h));
+        /**
+         * @see ConcurrentHashMap#HASH_BITS
+         */
         System.out.println(Integer.toBinaryString(0x7fffffff));// 0111 1111 1111 1111 1111 1111 1111 1111
         h = h & 0x7fffffff;
         System.out.println("h = " + Integer.toBinaryString(h));
         System.out.println(h);
     }
 
+    /**
+     * 不用加锁，不用帮忙扩容
+     */
     @Test
-    public void testCopy() {
-        int a = 1;
-        int b = a;
-
-        ++a;
-
-        System.out.println("a = " + a);// 2
-        System.out.println("b = " + b);// 1
-
-        Node aNode = new Node(1, 1, 1, null);
-        Node bNode = new Node(2, 2, 2, null);
-        Node cNode = new Node(3, 3, 3, null);
-
-        aNode = bNode;
-        bNode = cNode; // 这里并不会连带修改aNode
-        System.out.println("aNode = " + aNode);// bNode
-        System.out.println("bNode = " + bNode);// cNode
-        System.out.println("cNode = " + cNode);// cNode
-
-        /**
-         * 编译后的字节码文件 .class
-         *
-         *         int a = 1;
-         *         int b = a;
-         *         int a = a + 1;
-         *         System.out.println("a = " + a);
-         *         System.out.println("b = " + b);
-         *         new ConcurrentHashMapTest.Node(1, 1, 1, (ConcurrentHashMapTest.Node)null);
-         *         ConcurrentHashMapTest.Node bNode = new ConcurrentHashMapTest.Node(2, 2, 2, (ConcurrentHashMapTest.Node)null);
-         *         ConcurrentHashMapTest.Node cNode = new ConcurrentHashMapTest.Node(3, 3, 3, (ConcurrentHashMapTest.Node)null);
-         *         System.out.println("aNode = " + bNode);
-         *         System.out.println("bNode = " + cNode);
-         *         System.out.println("cNode = " + cNode);
-         */
+    public void get() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put("1", "a");
+        Object object = map.get("1");
+        System.out.println("object = " + object);
     }
+
+    //-------------------------------------------------------------
 
     /**
      * 扩容时 sizeCtl = -N
@@ -254,27 +233,7 @@ public class ConcurrentHashMapTest {
      */
     private static final int MAX_RESIZERS = (1 << (32 - RESIZE_STAMP_BITS)) - 1;
 
-    @Test
-    public void cas() {
-        /**
-         * Unsafe.compareAndSwapInt() 方法解读
-         *
-         * public final native boolean compareAndSwapInt(Object o, long offset, int expected, int x);
-         *
-         * 此方法是 Java 的 native 方法，并不由 Java 语言实现。
-         * 方法的作用是，读取传入对象 o 在内存中偏移量为 offset 位置的值与期望值 expected 作比较。
-         * 相等就把 x 值赋值给 offset 位置的值。方法返回 true。
-         * 不相等，就取消赋值，方法返回 false。
-         * 这也是 CAS 的思想，及比较并交换。用于保证并发时的无锁并发的安全性。
-         *
-         * 可使用 {@link AtomicInteger} {@link AtomicIntegerFieldUpdater}达到同样的效果
-         */
-        AtomicInteger atomicInteger = new AtomicInteger(55);
-        System.out.println(atomicInteger.getAndIncrement()); // 55
-        System.out.println(atomicInteger.get()); // 56
-        System.out.println(atomicInteger.incrementAndGet()); // 57
-        System.out.println(atomicInteger.get()); // 57
-    }
+    //-------------------------------------------------------------
 
     /**
      * 扩容时，链表迁移算法
@@ -420,5 +379,69 @@ public class ConcurrentHashMapTest {
             System.out.println();
         }
         System.out.println("--------------------------");
+    }
+
+    //-------------------------------------------------------------
+
+    /**
+     * node 指针赋值的调试，这里看到实际是被编译器优化过了
+     */
+    @Test
+    public void testCopy() {
+        int a = 1;
+        int b = a;
+
+        ++a;
+
+        System.out.println("a = " + a);// 2
+        System.out.println("b = " + b);// 1
+
+        Node aNode = new Node(1, 1, 1, null);
+        Node bNode = new Node(2, 2, 2, null);
+        Node cNode = new Node(3, 3, 3, null);
+
+        aNode = bNode;
+        bNode = cNode; // 这里并不会连带修改aNode
+        System.out.println("aNode = " + aNode);// bNode
+        System.out.println("bNode = " + bNode);// cNode
+        System.out.println("cNode = " + cNode);// cNode
+
+        /**
+         * 编译后的字节码文件 .class
+         *
+         *         int a = 1;
+         *         int b = a;
+         *         int a = a + 1;
+         *         System.out.println("a = " + a);
+         *         System.out.println("b = " + b);
+         *         new ConcurrentHashMapTest.Node(1, 1, 1, (ConcurrentHashMapTest.Node)null);
+         *         ConcurrentHashMapTest.Node bNode = new ConcurrentHashMapTest.Node(2, 2, 2, (ConcurrentHashMapTest.Node)null);
+         *         ConcurrentHashMapTest.Node cNode = new ConcurrentHashMapTest.Node(3, 3, 3, (ConcurrentHashMapTest.Node)null);
+         *         System.out.println("aNode = " + bNode);
+         *         System.out.println("bNode = " + cNode);
+         *         System.out.println("cNode = " + cNode);
+         */
+    }
+
+    @Test
+    public void cas() {
+        /**
+         * Unsafe.compareAndSwapInt() 方法解读
+         *
+         * public final native boolean compareAndSwapInt(Object o, long offset, int expected, int x);
+         *
+         * 此方法是 Java 的 native 方法，并不由 Java 语言实现。
+         * 方法的作用是，读取传入对象 o 在内存中偏移量为 offset 位置的值与期望值 expected 作比较。
+         * 相等就把 x 值赋值给 offset 位置的值。方法返回 true。
+         * 不相等，就取消赋值，方法返回 false。
+         * 这也是 CAS 的思想，及比较并交换。用于保证并发时的无锁并发的安全性。
+         *
+         * 可使用 {@link AtomicInteger} {@link AtomicIntegerFieldUpdater}达到同样的效果
+         */
+        AtomicInteger atomicInteger = new AtomicInteger(55);
+        System.out.println(atomicInteger.getAndIncrement()); // 55
+        System.out.println(atomicInteger.get()); // 56
+        System.out.println(atomicInteger.incrementAndGet()); // 57
+        System.out.println(atomicInteger.get()); // 57
     }
 }

@@ -2388,9 +2388,9 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             Node<K,V> f; int fh;
             while (advance) { // 此循环的作用是 1.确定当前线程要迁移的桶的范围；2.通过更新i的值确定当前范围内下一个要处理的节点
                 int nextIndex, nextBound;
-                if (--i >= bound || finishing) // 每次循环都检查结束条件：i自减没有超过下界，finishing标识为true时，跳出while循环
+                if (--i >= bound || finishing) // 每次循环都检查结束条件。i自减没有超过下界，finishing标识为true时，跳出while循环
                     advance = false;
-                else if ((nextIndex = transferIndex) <= 0) { // 迁移总进度<=0，表示所有桶都已迁移完成
+                else if ((nextIndex = transferIndex) <= 0) { // 迁移总进度<=0，表示所有桶都已迁移完成，跳出while循环
                     i = -1;
                     advance = false;
                 }
