@@ -218,15 +218,15 @@ public class LinkedHashMap<K,V>
 
     // internal utilities
 
-    // link at the end of list
+    // link at the end of list // 将节点p加入双向链表，设为尾节点
     private void linkNodeLast(LinkedHashMap.Entry<K,V> p) {
         LinkedHashMap.Entry<K,V> last = tail;
-        tail = p;
+        tail = p; // 尾节点指向当前节点p
         if (last == null)
-            head = p;
+            head = p; // 只有一个节点时，头节点也指向当前节点p
         else {
-            p.before = last;
-            last.after = p;
+            p.before = last; // p.before指向上一个尾节点
+            last.after = p; // 上一个尾节点的after指针指向当前节点p
         }
     }
 
@@ -302,18 +302,18 @@ public class LinkedHashMap<K,V>
         }
     }
 
-    void afterNodeAccess(Node<K,V> e) { // move node to last
+    void afterNodeAccess(Node<K,V> e) { // move node to last // 节点e移到最后
         LinkedHashMap.Entry<K,V> last;
-        if (accessOrder && (last = tail) != e) { // 当accessOrder为true，且当前节点e不是尾节点，则把尾节点指向新节点e
+        if (accessOrder && (last = tail) != e) { // 当accessOrder为true，且当前节点e不是尾节点时，把尾节点指向节点e
             LinkedHashMap.Entry<K,V> p =
                 (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
-            p.after = null;
+            p.after = null; // 首先需要断开当前节点p在原先的位置
             if (b == null)
                 head = a;
             else
-                b.after = a;
+                b.after = a; // p的上一个节点的after指针，改为指向p的下一个节点
             if (a != null)
-                a.before = b;
+                a.before = b; // p的下一个节点的before指针，改为指向p的上一个节点
             else
                 last = b;
             if (last == null)
@@ -322,7 +322,7 @@ public class LinkedHashMap<K,V>
                 p.before = last;
                 last.after = p;
             }
-            tail = p;
+            tail = p; // 把节点p移到末尾
             ++modCount;
         }
     }

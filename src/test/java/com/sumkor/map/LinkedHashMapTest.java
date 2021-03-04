@@ -143,8 +143,9 @@ public class LinkedHashMapTest {
          * @see HashMap#put(java.lang.Object, java.lang.Object)
          * @see HashMap#putVal(int, java.lang.Object, java.lang.Object, boolean, boolean)
          *
-         * 若旧节点存在，需要覆盖其 value，会执行
-         * @see LinkedHashMap#afterNodeAccess(java.util.HashMap.Node)
+         * LinkedHashMap 重写了 newNode()方法，通过此方法保证了插入的顺序性。
+         * @see LinkedHashMap#newNode(int, java.lang.Object, java.lang.Object, java.util.HashMap.Node)
+         * @see LinkedHashMap#linkNodeLast(java.util.LinkedHashMap.Entry)
          */
         linkedHashMap.put(3, "b");
         linkedHashMap.put(6, "c");
