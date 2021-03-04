@@ -201,12 +201,12 @@ public class LinkedHashMap<K,V>
     /**
      * The head (eldest) of the doubly linked list.
      */
-    transient LinkedHashMap.Entry<K,V> head;
+    transient LinkedHashMap.Entry<K,V> head; // 双向链表头节点（也是最旧的节点）
 
     /**
      * The tail (youngest) of the doubly linked list.
      */
-    transient LinkedHashMap.Entry<K,V> tail;
+    transient LinkedHashMap.Entry<K,V> tail; // 双向链表尾节点（也是最新的节点）
 
     /**
      * The iteration ordering method for this linked hash map: <tt>true</tt>
@@ -214,7 +214,7 @@ public class LinkedHashMap<K,V>
      *
      * @serial
      */
-    final boolean accessOrder;
+    final boolean accessOrder; // 是否按访问顺序排序。如果为false则按插入顺序存储元素，如果是true则按访问顺序存储元素。
 
     // internal utilities
 
@@ -280,7 +280,7 @@ public class LinkedHashMap<K,V>
         return t;
     }
 
-    void afterNodeRemoval(Node<K,V> e) { // unlink
+    void afterNodeRemoval(Node<K,V> e) { // unlink // 把节点从双向链表中删除
         LinkedHashMap.Entry<K,V> p =
             (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
         p.before = p.after = null;
@@ -294,7 +294,7 @@ public class LinkedHashMap<K,V>
             a.before = b;
     }
 
-    void afterNodeInsertion(boolean evict) { // possibly remove eldest
+    void afterNodeInsertion(boolean evict) { // possibly remove eldest // 是否删除最旧的节点，实际是空操作
         LinkedHashMap.Entry<K,V> first;
         if (evict && (first = head) != null && removeEldestEntry(first)) {
             K key = first.key;
@@ -304,7 +304,7 @@ public class LinkedHashMap<K,V>
 
     void afterNodeAccess(Node<K,V> e) { // move node to last
         LinkedHashMap.Entry<K,V> last;
-        if (accessOrder && (last = tail) != e) {
+        if (accessOrder && (last = tail) != e) { // 当accessOrder为true，且当前节点e不是尾节点，则把尾节点指向新节点e
             LinkedHashMap.Entry<K,V> p =
                 (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
             p.after = null;
@@ -712,7 +712,7 @@ public class LinkedHashMap<K,V>
             if (e == null)
                 throw new NoSuchElementException();
             current = e;
-            next = e.after;
+            next = e.after; // 根据after指针来遍历
             return e;
         }
 
