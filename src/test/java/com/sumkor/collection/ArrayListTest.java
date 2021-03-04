@@ -163,4 +163,64 @@ public class ArrayListTest {
          * https://www.cnblogs.com/turn2i/p/10576682.html
          */
     }
+
+    /**
+     * List 中的泛型
+     */
+    @Test
+    public void ClassCast() {
+        List list = new ArrayList();
+        list.add("abc");
+        list.add(new Integer(1)); //可以通过编译
+        for (Object object : list) {
+            System.out.println(object);// 正常
+            System.out.println((String)object);//抛出ClassCastException异常
+        }
+    }
+
+    /**
+     * List 转换 数组
+     */
+    @Test
+    public void toArray() {
+        List<String> list = new ArrayList<>();
+        list.add("a");
+        String[] arrays = new String[list.size()];
+        arrays = list.toArray(arrays);
+
+        for (String array : arrays) {
+            System.out.println("array = " + array);
+        }
+    }
+
+    /**
+     * 数组 转换 List
+     */
+    @Test
+    public void asList01() {
+        List<String> list = Arrays.asList("1", "2", "3");
+        /**
+         * 得到的是 {@link java.util.Arrays.ArrayList} 对象，允许修改，不支持增删（结构变动）
+         */
+        System.out.println("list = " + list);// [1, 2, 3]
+
+        list.set(0, "0");// 正常
+        System.out.println("list = " + list);// [0, 2, 3]
+
+        list.remove(0);// java.lang.UnsupportedOperationException
+        list.add("4");// java.lang.UnsupportedOperationException
+    }
+
+    /**
+     * 数组 转换 List
+     */
+    @Test
+    public void asList02() {
+        List<String> list = new ArrayList<>(Arrays.asList("1", "2", "3")); // 正常CRUD
+
+        Collections.addAll(list, new String[]{"4", "5", "6"});
+        Collections.addAll(list, "7", "8", "9");
+
+        System.out.println("list = " + list); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    }
 }

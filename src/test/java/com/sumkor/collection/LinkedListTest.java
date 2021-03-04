@@ -70,4 +70,10 @@ public class LinkedListTest {
          */
         System.out.println("node = " + node);
     }
+
+    /**
+     * TODO
+     * @see java.util.Deque
+     * @see java.util.Queue
+     */
 }
