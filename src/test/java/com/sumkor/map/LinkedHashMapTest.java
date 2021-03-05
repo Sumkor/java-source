@@ -194,10 +194,10 @@ public class LinkedHashMapTest {
         System.out.println(lru);
     }
 
-    class LRU<K, V> extends LinkedHashMap<K, V> {
+    static class LRU<K, V> extends LinkedHashMap<K, V> {
 
         // 保存缓存的容量
-        private int capacity;
+        private final int capacity;
 
         /**
          * 基于 LinkedHashMap 实现，accessOrder 设置为 true，按访问顺序。

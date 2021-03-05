@@ -5,6 +5,8 @@ import org.junit.Test;
 import java.util.*;
 
 /**
+ * 底层数据结构是双向链表，继承了 {@link Deque}
+ *
  * @author Sumkor
  * @since 2021/3/3
  */
@@ -71,9 +73,4 @@ public class LinkedListTest {
         System.out.println("node = " + node);
     }
 
-    /**
-     * TODO
-     * @see java.util.Deque
-     * @see java.util.Queue
-     */
 }

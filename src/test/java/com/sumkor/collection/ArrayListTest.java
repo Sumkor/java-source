@@ -223,4 +223,14 @@ public class ArrayListTest {
 
         System.out.println("list = " + list); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
     }
+
+    @Test
+    public void filter() {
+        List<String> list = Arrays.asList("a", "b", "c");
+        System.out.println("list = " + list);
+
+        List<String> list2 = list.stream().filter(t -> t.equals("b")).collect(Collectors.toList());// 并不会改变原有list
+        System.out.println("list = " + list);
+        System.out.println("list2 = " + list2);
+    }
 }
