@@ -79,9 +79,6 @@ public class LinkedHashMapTest {
         /**
          * 是否按访问顺序排序。true-访问顺序，false-插入顺序，不设置默认是 false。
          * @see LinkedHashMap#accessOrder
-         *
-         * LRU 是基于 LinkedHashMap 实现的，accessOrder 设置为 true，按访问顺序。
-         * 即调用 get(key) 之后，将此 Entry 插入到链表尾部。
          */
         linkedHashMap.put(8, "a");
         linkedHashMap.put(3, "b");
@@ -164,5 +161,60 @@ public class LinkedHashMapTest {
 
         next = iterator.next();
         System.out.println("next = " + next);
+    }
+
+    /**
+     * LRU 全称是 Least Recently Used，即最近最久未使用的意思。
+     * LRU 算法的设计原则是：如果一个数据在最近一段时间没有被访问到，那么在将来它被访问的可能性也很小。也就是说，当限定的空间已存满数据时，应当把最久没有被访问到的数据淘汰。
+     * 当存在热点数据时，LRU 的效率很好，但偶发性的、周期性的批量操作会导致 LRU 命中率急剧下降，缓存污染情况比较严重。
+     */
+    @Test
+    public void lruTest() {
+        /**
+         * 只需要重写 {@link LinkedHashMap#removeEldestEntry} 方法即可。
+         * 激活 {@link LinkedHashMap#afterNodeInsertion(boolean)} 中插入完成后的删除逻辑。
+         */
+        // 创建一个只有5个元素的缓存
+        LRU<Integer, Integer> lru = new LRU<>(5, 0.75f);
+        lru.put(1, 1);
+        lru.put(2, 2);
+        lru.put(3, 3);
+        lru.put(4, 4);
+        lru.put(5, 5);
+        lru.put(6, 6);
+        lru.put(7, 7);
+
+        System.out.println(lru.get(4));
+
+        lru.put(6, 666);
+
+        // 输出: {3=3, 5=5, 7=7, 4=4, 6=666}
+        // 可以看到最旧的元素被删除了
+        // 且最近访问的4被移到了后面
+        System.out.println(lru);
+    }
+
+    class LRU<K, V> extends LinkedHashMap<K, V> {
+
+        // 保存缓存的容量
+        private int capacity;
+
+        /**
+         * 基于 LinkedHashMap 实现，accessOrder 设置为 true，按访问顺序。
+         * 即调用 get(key) 之后，将此 Entry 插入到链表尾部。
+         */
+        public LRU(int capacity, float loadFactor) {
+            super(capacity, loadFactor, true);
+            this.capacity = capacity;
+        }
+
+        /**
+         * 重写 removeEldestEntry 方法设置何时移除旧元素
+         */
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+            // 当元素个数大于了缓存的容量, 就移除元素
+            return size() > this.capacity;
+        }
     }
 }
