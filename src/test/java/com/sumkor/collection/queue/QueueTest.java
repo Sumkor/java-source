@@ -220,14 +220,20 @@ public class QueueTest {
     /**
      * JDK 提供了 7 个阻塞队列。分别是：
      *
-     *     ArrayBlockingQueue ：一个由数组结构组成的有界阻塞队列。
-     *     LinkedBlockingQueue ：一个由链表结构组成的可选有界阻塞队列。如果未指定容量，那么容量将等于 Integer.MAX_VALUE。
-     *     PriorityBlockingQueue ：一个支持优先级排序的无界阻塞队列。
-     *     DelayQueue：一个使用优先级队列实现的无界阻塞队列,，只有在延迟期满时才能从中提取元素。
-     *     SynchronousQueue：一个不存储元素、没有内部容量的阻塞队列。
-     *     LinkedTransferQueue：一个由链表结构组成的无界阻塞 TransferQueue 队列。
-     *     LinkedBlockingDeque：一个由链表结构组成的可选范围双向阻塞队列。如果未指定容量，那么容量将等于 Integer.MAX_VALUE。
+     * @see java.util.concurrent.ArrayBlockingQueue 一个由数组结构组成的有界（定长，不会扩容）阻塞队列。
+     * @see java.util.concurrent.LinkedBlockingQueue 一个由链表结构组成的有界（定长，不会扩容，默认 Integer.MAX_VALUE）阻塞队列。
+     * @see java.util.concurrent.LinkedBlockingDeque 一个由链表结构组成的有界（定长，不会扩容，默认 Integer.MAX_VALUE）双向阻塞队列。
+     * @see java.util.concurrent.LinkedTransferQueue 一个由链表结构组成的无界阻塞 TransferQueue 队列。
+     * @see java.util.concurrent.PriorityBlockingQueue 一个支持优先级排序的无界阻塞队列。
+     * @see java.util.concurrent.DelayQueue 一个使用优先级队列 PriorityQueue 实现的无界阻塞队列，只有在延迟期满时才能从中提取元素。
+     * @see java.util.concurrent.SynchronousQueue 一个不存储元素、没有内部容量的阻塞队列。
      *
-     * TODO 非阻塞队列
+     * 非阻塞队列：
+     *
+     * @see java.util.ArrayDeque
+     * @see java.util.LinkedList
+     * @see java.util.PriorityQueue
+     * @see java.util.concurrent.ConcurrentLinkedQueue
+     * @see java.util.concurrent.ConcurrentLinkedDeque
      */
 }

@@ -191,18 +191,18 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
     }
 
     /**
-     * Links node at end of queue.
+     * Links node at end of queue. // 从队列尾部插入元素
      *
      * @param node the node
      */
     private void enqueue(Node<E> node) {
         // assert putLock.isHeldByCurrentThread();
         // assert last.next == null;
-        last = last.next = node;
+        last = last.next = node; // last.next = node; last = last.next;
     }
 
     /**
-     * Removes a node from head of queue.
+     * Removes a node from head of queue. // 从队列头部移除元素（head节点本身是不存储任何元素的）
      *
      * @return the node
      */
@@ -210,9 +210,9 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
         // assert takeLock.isHeldByCurrentThread();
         // assert head.item == null;
         Node<E> h = head;
-        Node<E> first = h.next;
-        h.next = h; // help GC
-        head = first;
+        Node<E> first = h.next; // 实际存储数据的第一个节点，需要置空
+        h.next = h; // help GC // 原先的head节点的next指向自身，意味着从链表中断开该节点，不可达
+        head = first; // 将first节点作为新的head节点
         E x = first.item;
         first.item = null;
         return x;
@@ -340,24 +340,24 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
         try {
             /*
              * Note that count is used in wait guard even though it is
-             * not protected by lock. This works because count can
+             * not protected by lock. This works because count can // 这里只需要对 count 自增加锁 putLock，从而使得此时 count 只能够自减（使用getLock）
              * only decrease at this point (all other puts are shut
              * out by lock), and we (or some other waiting put) are
              * signalled if it ever changes from capacity. Similarly
              * for all other uses of count in other wait guards.
              */
-            while (count.get() == capacity) {
-                notFull.await();
+            while (count.get() == capacity) { // 等待直到非满
+                notFull.await(); // 等待的时候会释放锁 putLock？
             }
             enqueue(node);
-            c = count.getAndIncrement();
-            if (c + 1 < capacity)
-                notFull.signal();
+            c = count.getAndIncrement(); // 先获取再自增，得到的是自增之前的值
+            if (c + 1 < capacity) // 所以这里需要 c + 1 得到自增之后的值。如果自增之后还没达到容量，则通知未满。
+                notFull.signal(); // 为什么需要在这里通知未满呢？已知移除的时候获取 getLock 唤醒 notFull，这里保证在获取 putLock 锁的情况下也能唤醒 notFull。说白了，这是锁分离带来的代价。
         } finally {
             putLock.unlock();
         }
         if (c == 0)
-            signalNotEmpty();
+            signalNotEmpty(); // 使用 takeLock，通知非空。为什么要使用 takeLock 呢？
     }
 
     /**
