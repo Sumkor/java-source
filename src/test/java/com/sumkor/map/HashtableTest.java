@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.util.*;
 
 /**
+ * @see java.util.Hashtable
  * @author Sumkor
  * @since 2021/2/11
  */

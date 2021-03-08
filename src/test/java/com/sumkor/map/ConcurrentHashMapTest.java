@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
+ * @see java.util.concurrent.ConcurrentHashMap
  * @author Sumkor
  * @since 2021/2/11
  */

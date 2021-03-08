@@ -64,7 +64,7 @@ public class ReferenceQueue<T> {
             }
             assert queue == this;
             r.queue = ENQUEUED;
-            r.next = (head == null) ? r : head;
+            r.next = (head == null) ? r : head; // 头插法
             head = r;
             queueLength++;
             if (r instanceof FinalReference) {

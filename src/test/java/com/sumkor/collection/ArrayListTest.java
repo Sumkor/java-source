@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
  * ​ 查询多：ArrayList
  * ​ 增删多：LinkedList
  *
+ * @see java.util.ArrayList
  * @author Sumkor
  * @since 2021/2/23
  */

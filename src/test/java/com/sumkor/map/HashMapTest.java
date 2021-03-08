@@ -25,6 +25,7 @@ import java.util.*;
  * <p>
  * 从结构实现来讲，HashMap是数组+链表+红黑树（JDK1.8增加了红黑树部分）实现的。
  *
+ * @see java.util.HashMap
  * @author Sumkor
  * @since 2020/10/21
  */

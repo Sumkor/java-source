@@ -14,6 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * 只能保证数据的最终一致性，不能保证数据的实时一致性：
  * 读操作读到的数据只是一份快照。所以如果希望写入的数据可以立刻被读到，并不适合。
  *
+ * @see java.util.concurrent.CopyOnWriteArrayList
  * @author Sumkor
  * @since 2021/3/3
  */

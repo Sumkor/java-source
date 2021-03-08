@@ -7,6 +7,7 @@ import java.util.*;
 /**
  * 底层数据结构是双向链表，继承了 {@link Deque}
  *
+ * @see java.util.LinkedList
  * @author Sumkor
  * @since 2021/3/3
  */

@@ -217,7 +217,7 @@ public class WeakHashMap<K,V>
         int capacity = 1;
         while (capacity < initialCapacity)
             capacity <<= 1;
-        table = newTable(capacity);
+        table = newTable(capacity); // 实例化数组，非懒加载
         this.loadFactor = loadFactor;
         threshold = (int)(capacity * loadFactor);
     }
@@ -312,16 +312,16 @@ public class WeakHashMap<K,V>
     }
 
     /**
-     * Expunges stale entries from the table.
+     * Expunges stale entries from the table. // 清除废弃的元素
      */
     private void expungeStaleEntries() {
-        for (Object x; (x = queue.poll()) != null; ) {
+        for (Object x; (x = queue.poll()) != null; ) { // 被回收的对象，会由GC存入引用队列中
             synchronized (queue) {
                 @SuppressWarnings("unchecked")
                     Entry<K,V> e = (Entry<K,V>) x;
                 int i = indexFor(e.hash, table.length);
 
-                Entry<K,V> prev = table[i];
+                Entry<K,V> prev = table[i]; // 被回收的节点所在桶的头节点
                 Entry<K,V> p = prev;
                 while (p != null) {
                     Entry<K,V> next = p.next;
@@ -329,11 +329,11 @@ public class WeakHashMap<K,V>
                         if (prev == e)
                             table[i] = next;
                         else
-                            prev.next = next;
+                            prev.next = next; // 节点e的前一个节点，指向节点e的下一个节点，即在链表上解开节点e
                         // Must not null out e.next;
                         // stale entries may be in use by a HashIterator
                         e.value = null; // Help GC
-                        size--;
+                        size--; // 容量减少
                         break;
                     }
                     prev = p;
@@ -392,7 +392,7 @@ public class WeakHashMap<K,V>
      * @see #put(Object, Object)
      */
     public V get(Object key) {
-        Object k = maskNull(key);
+        Object k = maskNull(key); // key 为 null，转换为 new Object()
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
         int index = indexFor(h, tab.length);
@@ -447,23 +447,23 @@ public class WeakHashMap<K,V>
     public V put(K key, V value) {
         Object k = maskNull(key);
         int h = hash(k);
-        Entry<K,V>[] tab = getTable();
+        Entry<K,V>[] tab = getTable(); // 获取当前table数组（获取之前会清除废弃的元素）
         int i = indexFor(h, tab.length);
 
-        for (Entry<K,V> e = tab[i]; e != null; e = e.next) {
+        for (Entry<K,V> e = tab[i]; e != null; e = e.next) { // 遍历链表
             if (h == e.hash && eq(k, e.get())) {
                 V oldValue = e.value;
                 if (value != oldValue)
-                    e.value = value;
+                    e.value = value; // 替换旧值
                 return oldValue;
             }
         }
 
         modCount++;
         Entry<K,V> e = tab[i];
-        tab[i] = new Entry<>(k, value, queue, h, e);
+        tab[i] = new Entry<>(k, value, queue, h, e); // 头插法
         if (++size >= threshold)
-            resize(tab.length * 2);
+            resize(tab.length * 2); // 扩容
         return null;
     }
 
@@ -482,7 +482,7 @@ public class WeakHashMap<K,V>
      *        is irrelevant).
      */
     void resize(int newCapacity) {
-        Entry<K,V>[] oldTable = getTable();
+        Entry<K,V>[] oldTable = getTable(); // 扩容之前获取旧数组，该操作会触发清除废弃元素，导致 size 变小而达不到扩容阈值
         int oldCapacity = oldTable.length;
         if (oldCapacity == MAXIMUM_CAPACITY) {
             threshold = Integer.MAX_VALUE;
@@ -490,7 +490,7 @@ public class WeakHashMap<K,V>
         }
 
         Entry<K,V>[] newTable = newTable(newCapacity);
-        transfer(oldTable, newTable);
+        transfer(oldTable, newTable); // 迁移元素至新数组
         table = newTable;
 
         /*
@@ -498,17 +498,17 @@ public class WeakHashMap<K,V>
          * shrinkage, then restore old table.  This should be rare, but avoids
          * unbounded expansion of garbage-filled tables.
          */
-        if (size >= threshold / 2) {
+        if (size >= threshold / 2) { // 这里放宽了扩容阈值，为原来的一半，目的是避免反复迁移数组
             threshold = (int)(newCapacity * loadFactor);
-        } else {
-            expungeStaleEntries();
-            transfer(newTable, oldTable);
+        } else { // 放弃扩容
+            expungeStaleEntries(); // 清除废弃的元素
+            transfer(newTable, oldTable); // 迁移元素至旧数组
             table = oldTable;
         }
     }
 
     /** Transfers all entries from src to dest tables */
-    private void transfer(Entry<K,V>[] src, Entry<K,V>[] dest) {
+    private void transfer(Entry<K,V>[] src, Entry<K,V>[] dest) { // 将所有元素从旧数组迁移至新数组
         for (int j = 0; j < src.length; ++j) {
             Entry<K,V> e = src[j];
             src[j] = null;
@@ -522,7 +522,7 @@ public class WeakHashMap<K,V>
                 } else {
                     int i = indexFor(e.hash, dest.length);
                     e.next = dest[i];
-                    dest[i] = e;
+                    dest[i] = e; // 头插法
                 }
                 e = next;
             }

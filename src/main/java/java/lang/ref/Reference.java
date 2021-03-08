@@ -177,7 +177,7 @@ public abstract class Reference<T> {
         try {
             synchronized (lock) {
                 if (pending != null) {
-                    r = pending;
+                    r = pending; // GC 回收的时候，会把对象赋值给 pending，这里取的该对象
                     // 'instanceof' might throw OutOfMemoryError sometimes
                     // so do this before un-linking 'r' from the 'pending' chain...
                     c = r instanceof Cleaner ? (Cleaner) r : null;
@@ -214,7 +214,7 @@ public abstract class Reference<T> {
         }
 
         ReferenceQueue<? super Object> q = r.queue;
-        if (q != ReferenceQueue.NULL) q.enqueue(r);
+        if (q != ReferenceQueue.NULL) q.enqueue(r); // 若引用队列不为空，将回收的对象放入队列中
         return true;
     }
 

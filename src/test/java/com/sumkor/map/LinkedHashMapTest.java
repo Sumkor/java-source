@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.util.*;
 
 /**
+ * @see java.util.LinkedHashMap
  * @author Sumkor
  * @since 2021/3/4
  */
