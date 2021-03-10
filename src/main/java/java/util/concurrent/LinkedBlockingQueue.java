@@ -347,17 +347,17 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
              * for all other uses of count in other wait guards.
              */
             while (count.get() == capacity) { // 等待直到非满
-                notFull.await(); // 等待的时候会释放锁 putLock？
+                notFull.await(); // 等待的时候会释放锁 putLock，唤醒的时候尝试获得锁 putLock
             }
-            enqueue(node);
+            enqueue(node); // 从队列尾部插入元素
             c = count.getAndIncrement(); // 先获取再自增，得到的是自增之前的值
-            if (c + 1 < capacity) // 所以这里需要 c + 1 得到自增之后的值。如果自增之后还没达到容量，则通知未满。
-                notFull.signal(); // 为什么需要在这里通知未满呢？已知移除的时候获取 getLock 唤醒 notFull，这里保证在获取 putLock 锁的情况下也能唤醒 notFull。说白了，这是锁分离带来的代价。
+            if (c + 1 < capacity) // 所以这里需要 c + 1 得到自增之后的值。如果自增之后还没达到容量，则通知未满。对比 ArrayBlockingQueue#put，为什么这里需要通知未满呢？
+                notFull.signal(); // 因为 take 操作先要获取 takeLock 判断 notEmpty，再获取 putLock 通知 notFull。这里在已经拥有 putLock 的情况下通知 notFull，能够减少对 putLock 的竞争。说白了，这也是锁分离带来的代价
         } finally {
             putLock.unlock();
         }
         if (c == 0)
-            signalNotEmpty(); // 使用 takeLock，通知非空。为什么要使用 takeLock 呢？
+            signalNotEmpty(); // 使用 takeLock，通知非空 notEmpty。为什么要使用 takeLock 呢？因为 Condition notEmpty = takeLock.newCondition();
     }
 
     /**
@@ -438,18 +438,18 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
         final ReentrantLock takeLock = this.takeLock;
         takeLock.lockInterruptibly();
         try {
-            while (count.get() == 0) {
+            while (count.get() == 0) { // 等待直到非空
                 notEmpty.await();
             }
-            x = dequeue();
+            x = dequeue(); // 从队列头部移除元素
             c = count.getAndDecrement();
-            if (c > 1)
-                notEmpty.signal();
+            if (c > 1) // 如果移除元素之前，数量大于1（不等于1），说明移除之后队列中还有元素，则通知非空。
+                notEmpty.signal(); // 同样的，这里是为了减少对 takeLock 的竞争
         } finally {
             takeLock.unlock();
         }
         if (c == capacity)
-            signalNotFull();
+            signalNotFull(); // 如果移除元素之前，队列是满的，此时需要通知非满。
         return x;
     }
 

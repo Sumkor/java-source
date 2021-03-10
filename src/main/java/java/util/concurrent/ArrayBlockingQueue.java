@@ -154,7 +154,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * Inserts element at current put position, advances, and signals.
      * Call only when holding lock.
      */
-    private void enqueue(E x) {
+    private void enqueue(E x) { // 插入元素
         // assert lock.getHoldCount() == 1;
         // assert items[putIndex] == null;
         final Object[] items = this.items;
@@ -169,7 +169,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
      * Extracts element at current take position, advances, and signals.
      * Call only when holding lock.
      */
-    private E dequeue() {
+    private E dequeue() { // 删除元素
         // assert lock.getHoldCount() == 1;
         // assert items[takeIndex] != null;
         final Object[] items = this.items;
@@ -350,7 +350,7 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
         lock.lockInterruptibly();
         try {
             while (count == items.length) // 如果数组满了则等待，直到数组非满。注意这里使用while而不是if，是因为有可能多个线程阻塞在lock上，即使唤醒了可能其它线程先一步修改了队列又变成满的了，这时候需要再次等待
-                notFull.await();
+                notFull.await(); // 进入等待会释放锁，被唤醒后尝试重新获得锁
             enqueue(e); // 写入元素
         } finally {
             lock.unlock();

@@ -335,13 +335,13 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             throw new NullPointerException();
         modCount++;
         int i = size;
-        if (i >= queue.length)
+        if (i >= queue.length) // 元素个数达到最大容量了，扩容
             grow(i + 1);
         size = i + 1;
         if (i == 0)
-            queue[0] = e;
+            queue[0] = e; // 插入元素到数组的头部
         else
-            siftUp(i, e);
+            siftUp(i, e); // 插入元素到数组的尾部（i位置），再做自下而上的堆化
         return true;
     }
 
@@ -588,12 +588,12 @@ public class PriorityQueue<E> extends AbstractQueue<E>
             return null;
         int s = --size;
         modCount++;
-        E result = (E) queue[0];
-        E x = (E) queue[s];
+        E result = (E) queue[0]; // 队列首元素
+        E x = (E) queue[s]; // 队列末元素
         queue[s] = null;
         if (s != 0)
-            siftDown(0, x);
-        return result;
+            siftDown(0, x); // 将队列末元素移到队列首，再做自上而下的堆化
+        return result; // 返回弹出的元素（原队列首元素）
     }
 
     /**
@@ -652,8 +652,8 @@ public class PriorityQueue<E> extends AbstractQueue<E>
         Comparable<? super E> key = (Comparable<? super E>) x;
         while (k > 0) {
             int parent = (k - 1) >>> 1;
-            Object e = queue[parent];
-            if (key.compareTo((E) e) >= 0)
+            Object e = queue[parent]; // 找到父节点
+                if (key.compareTo((E) e) >= 0) // 如果比父节点大，则跳出循环，否则交换位置。由此可见，PriorityQueue是一个小顶堆。
                 break;
             queue[k] = e;
             k = parent;
@@ -692,20 +692,20 @@ public class PriorityQueue<E> extends AbstractQueue<E>
     @SuppressWarnings("unchecked")
     private void siftDownComparable(int k, E x) {
         Comparable<? super E> key = (Comparable<? super E>)x;
-        int half = size >>> 1;        // loop while a non-leaf
+        int half = size >>> 1;        // loop while a non-leaf // 只需要比较一半就行了，因为叶子节点占了一半的元素
         while (k < half) {
             int child = (k << 1) + 1; // assume left child is least
             Object c = queue[child];
             int right = child + 1;
             if (right < size &&
                 ((Comparable<? super E>) c).compareTo((E) queue[right]) > 0)
-                c = queue[child = right];
+                c = queue[child = right]; // 左右节点取其小者
             if (key.compareTo((E) c) <= 0)
                 break;
             queue[k] = c;
             k = child;
         }
-        queue[k] = key;
+        queue[k] = key; // 找到正确的位置，放入元素
     }
 
     @SuppressWarnings("unchecked")

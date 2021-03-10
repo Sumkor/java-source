@@ -862,7 +862,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      *        access; otherwise the order is unspecified.
      */
     public SynchronousQueue(boolean fair) {
-        transferer = fair ? new TransferQueue<E>() : new TransferStack<E>();
+        transferer = fair ? new TransferQueue<E>() : new TransferStack<E>(); // 如果是公平模式就使用队列，如果是非公平模式就使用栈
     }
 
     /**
