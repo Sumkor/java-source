@@ -1,4 +1,4 @@
-package com.sumkor.collection.queue;
+package com.sumkor.collection.queue.impl;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 

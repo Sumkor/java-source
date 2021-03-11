@@ -169,13 +169,13 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
         /**
          * Performs a put or take.
          *
-         * @param e if non-null, the item to be handed to a consumer;
+         * @param e if non-null, the item to be handed to a consumer; // 传输的元素，非空表示需要传递给消费者，为空表示请求生产者的数据
          *          if null, requests that transfer return an item
          *          offered by producer.
-         * @param timed if this operation should timeout
+         * @param timed if this operation should timeout // 该操作是否会超时
          * @param nanos the timeout, in nanoseconds
-         * @return if non-null, the item provided or received; if null,
-         *         the operation failed due to timeout or interrupt --
+         * @return if non-null, the item provided or received; if null, // 非空表示元素传递或接受成功，为空表示失败
+         *         the operation failed due to timeout or interrupt --  // 失败的原因有两种：1.超时；2.中断，通过 Thread.interrupted 来检测中断
          *         the caller can distinguish which of these occurred
          *         by checking Thread.interrupted.
          */
@@ -192,14 +192,14 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * seems not to vary with number of CPUs (beyond 2) so is just
      * a constant.
      */
-    static final int maxTimedSpins = (NCPUS < 2) ? 0 : 32;
+    static final int maxTimedSpins = (NCPUS < 2) ? 0 : 32; // 表示指定超时时间的话，当前线程最大自旋次数。 // CPU小于2，不需要自旋，否则自旋32次。
 
     /**
      * The number of times to spin before blocking in untimed waits.
      * This is greater than timed value because untimed waits spin
      * faster since they don't need to check times on each spin.
      */
-    static final int maxUntimedSpins = maxTimedSpins * 16;
+    static final int maxUntimedSpins = maxTimedSpins * 16; // 表示未指定超时时间的话，当前线程最大自旋次数。// 16倍
 
     /**
      * The number of nanoseconds for which it is faster to spin
@@ -208,7 +208,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
     static final long spinForTimeoutThreshold = 1000L;
 
     /** Dual stack */
-    static final class TransferStack<E> extends Transferer<E> {
+    static final class TransferStack<E> extends Transferer<E> { // 栈实现
         /*
          * This extends Scherer-Scott dual stack algorithm, differing,
          * among other ways, by using "covering" nodes rather than
@@ -219,22 +219,22 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
 
         /* Modes for SNodes, ORed together in node fields */
         /** Node represents an unfulfilled consumer */
-        static final int REQUEST    = 0;
+        static final int REQUEST    = 0; // 请求模式，消费者请求数据
         /** Node represents an unfulfilled producer */
-        static final int DATA       = 1;
+        static final int DATA       = 1; // 数据模式，生产者提供数据
         /** Node is fulfilling another unfulfilled DATA or REQUEST */
-        static final int FULFILLING = 2;
+        static final int FULFILLING = 2; // 匹配模式，表示数据从正一个节点传递给另外的节点
 
         /** Returns true if m has fulfilling bit set. */
         static boolean isFulfilling(int m) { return (m & FULFILLING) != 0; }
 
         /** Node class for TransferStacks. */
         static final class SNode {
-            volatile SNode next;        // next node in stack
-            volatile SNode match;       // the node matched to this
-            volatile Thread waiter;     // to control park/unpark
-            Object item;                // data; or null for REQUESTs
-            int mode;
+            volatile SNode next;        // next node in stack // 栈中下一个节点
+            volatile SNode match;       // the node matched to this // 当前节点所匹配的节点
+            volatile Thread waiter;     // to control park/unpark // 等待着的线程
+            Object item;                // data; or null for REQUESTs // 数据元素
+            int mode; // 节点的模式：REQUEST、DATA、FULFILLING
             // Note: item and mode fields don't need to be volatile
             // since they are always written before, and read after,
             // other volatile/atomic operations.
@@ -243,7 +243,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                 this.item = item;
             }
 
-            boolean casNext(SNode cmp, SNode val) {
+            boolean casNext(SNode cmp, SNode val) { // 若下一个节点为cmp，将其替换为节点val
                 return cmp == next &&
                     UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
             }
@@ -329,9 +329,9 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             /*
              * Basic algorithm is to loop trying one of three actions:
              *
-             * 1. If apparently empty or already containing nodes of same
+             * 1. If apparently empty or already containing nodes of same // 当前栈内为空，或者栈顶节点模式与当前请求模式一致，尝试着把当前节点入栈并且等待一个匹配，最后会返回对应的数据
              *    mode, try to push node on stack and wait for a match,
-             *    returning it, or null if cancelled.
+             *    returning it, or null if cancelled. // 若匹配成功，返回该节点的数据。若取消，则返回空。
              *
              * 2. If apparently containing node of complementary mode,
              *    try to push a fulfilling node on to stack, match
@@ -348,46 +348,46 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
              */
 
             SNode s = null; // constructed/reused as needed
-            int mode = (e == null) ? REQUEST : DATA;
+            int mode = (e == null) ? REQUEST : DATA; // 元素为空，表示消费者模式，否则为生产者模式
 
-            for (;;) {
+            for (;;) { // 自旋CAS
                 SNode h = head;
-                if (h == null || h.mode == mode) {  // empty or same-mode
+                if (h == null || h.mode == mode) {  // empty or same-mode // 栈顶没有元素，或者栈顶元素跟当前元素是一个模式的
                     if (timed && nanos <= 0) {      // can't wait
                         if (h != null && h.isCancelled())
-                            casHead(h, h.next);     // pop cancelled node
+                            casHead(h, h.next);     // pop cancelled node // 把h.next作为新的头节点 // 把已经取消的头节点弹出，并进入下一次循环
                         else
                             return null;
-                    } else if (casHead(h, s = snode(s, e, h, mode))) {
-                        SNode m = awaitFulfill(s, timed, nanos);
-                        if (m == s) {               // wait was cancelled
-                            clean(s);
+                    } else if (casHead(h, s = snode(s, e, h, mode))) { // 把节点s入栈，作为新的头节点，s.next指向h（因为是模式相同的，所以只能入栈）
+                        SNode m = awaitFulfill(s, timed, nanos); // 等待匹配，自旋阻塞当前线程
+                        if (m == s) {               // wait was cancelled // 等待被取消了，需要清除节点s
+                            clean(s); // 出栈
                             return null;
                         }
-                        if ((h = head) != null && h.next == s)
-                            casHead(h, s.next);     // help s's fulfiller
-                        return (E) ((mode == REQUEST) ? m.item : s.item);
+                        if ((h = head) != null && h.next == s) // 执行到这里，说明匹配成功。若栈顶有数据，头节点为h，下一个节点为s （匹配成功，是把匹配到的节点入栈？）
+                            casHead(h, s.next);     // help s's fulfiller // 将节点h和s出栈，把s.next作为新的头节点
+                        return (E) ((mode == REQUEST) ? m.item : s.item); // 若当前为请求模式，返回匹配到的节点m的数据；否则返回节点s的数据
                     }
-                } else if (!isFulfilling(h.mode)) { // try to fulfill
+                } else if (!isFulfilling(h.mode)) { // try to fulfill // 执行到这里，说明栈顶元素跟当前元素的模式不同。这里判断栈顶模式不是FULFILLING（匹配中）
                     if (h.isCancelled())            // already cancelled
-                        casHead(h, h.next);         // pop and retry
-                    else if (casHead(h, s=snode(s, e, h, FULFILLING|mode))) {
+                        casHead(h, h.next);         // pop and retry // 弹出栈顶元素，并重试
+                    else if (casHead(h, s=snode(s, e, h, FULFILLING|mode))) { // 头节点不是匹配中，且非取消，则把节点s入栈。已知满足 (mode & FULFILLING) != 0 则为 FULFILLING 模式，可知 FULFILLING|mode 得到的是 FULFILLING 模式
                         for (;;) { // loop until matched or waiters disappear
                             SNode m = s.next;       // m is s's match
-                            if (m == null) {        // all waiters are gone
+                            if (m == null) {        // all waiters are gone // 如果m为null，说明除了s节点外的节点都被其它线程先一步匹配掉了，就清空栈并跳出内部循环，到外部循环再重新入栈判断
                                 casHead(s, null);   // pop fulfill node
                                 s = null;           // use new node next time
                                 break;              // restart main loop
                             }
                             SNode mn = m.next;
-                            if (m.tryMatch(s)) {
+                            if (m.tryMatch(s)) {    // 如果m和s尝试匹配成功，就弹出栈顶的两个元素s和m
                                 casHead(s, mn);     // pop both s and m
                                 return (E) ((mode == REQUEST) ? m.item : s.item);
                             } else                  // lost match
-                                s.casNext(m, mn);   // help unlink
+                                s.casNext(m, mn);   // help unlink // 若s的下一个节点为m，则将m换成mn。（说明m已经先一步被其它线程匹配了，需要清除）
                         }
                     }
-                } else {                            // help a fulfiller
+                } else {                            // help a fulfiller // 执行到这里，说明栈顶元素跟当前元素的模式不同，且栈顶是匹配模式
                     SNode m = h.next;               // m is h's match
                     if (m == null)                  // waiter is gone
                         casHead(h, null);           // pop fulfilling node
@@ -523,7 +523,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
     }
 
     /** Dual Queue */
-    static final class TransferQueue<E> extends Transferer<E> {
+    static final class TransferQueue<E> extends Transferer<E> { // 队列实现
         /*
          * This extends Scherer-Scott dual queue algorithm, differing,
          * among other ways, by using modes within nodes rather than
@@ -535,10 +535,10 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
 
         /** Node class for TransferQueue. */
         static final class QNode {
-            volatile QNode next;          // next node in queue
-            volatile Object item;         // CAS'ed to or from null
-            volatile Thread waiter;       // to control park/unpark
-            final boolean isData;
+            volatile QNode next;          // next node in queue // 队列的下一个节点
+            volatile Object item;         // CAS'ed to or from null // 数据元素
+            volatile Thread waiter;       // to control park/unpark // 等待着的线程
+            final boolean isData; // 是否是数据节点
 
             QNode(Object item, boolean isData) {
                 this.item = item;
@@ -595,9 +595,9 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
         }
 
         /** Head of queue */
-        transient volatile QNode head;
+        transient volatile QNode head; // 头节点
         /** Tail of queue */
-        transient volatile QNode tail;
+        transient volatile QNode tail; // 尾节点
         /**
          * Reference to a cancelled node that might not yet have been
          * unlinked from queue because it was the last inserted node
@@ -846,7 +846,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * isn't a noticeable performance penalty for using volatile
      * instead of final here.
      */
-    private transient volatile Transferer<E> transferer;
+    private transient volatile Transferer<E> transferer; // 传输器，即两个线程交换元素使用的东西。提供两种实现方式：队列、栈
 
     /**
      * Creates a {@code SynchronousQueue} with nonfair access policy.
@@ -874,8 +874,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      */
     public void put(E e) throws InterruptedException {
         if (e == null) throw new NullPointerException();
-        if (transferer.transfer(e, false, 0) == null) {
-            Thread.interrupted();
+        if (transferer.transfer(e, false, 0) == null) { // 将元素传递给消费者，不超时。若传递失败返回空。
+            Thread.interrupted(); // 检测当前线程是否已经中断，如果当前线程已经中断，则返回 true；否则返回 false。线程的中断状态由该方法清除。
             throw new InterruptedException();
         }
     }
@@ -921,7 +921,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @throws InterruptedException {@inheritDoc}
      */
     public E take() throws InterruptedException {
-        E e = transferer.transfer(null, false, 0);
+        E e = transferer.transfer(null, false, 0); // 向生产者请求数据元素，不超时
         if (e != null)
             return e;
         Thread.interrupted();
