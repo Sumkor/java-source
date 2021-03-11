@@ -48,6 +48,13 @@ public class SynchronousQueueTest {
         System.out.println(isFulfilling(FULFILLING|REQUEST));   // true
         System.out.println(isFulfilling(FULFILLING|DATA));      // true
         System.out.println(isFulfilling(FULFILLING|FULFILLING));// true
+
+        int i = 5;
+        if (i > 0) {
+            System.out.println("11111111111");
+        } else if (i > 1) {
+            System.out.println("22222222222");
+        }
     }
 
     boolean isFulfilling(int m) {
