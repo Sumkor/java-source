@@ -1,8 +1,11 @@
 package com.sumkor.collection.queue.impl;
 
 import org.junit.Test;
+import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TransferQueue;
 
 /**
  * @author Sumkor
@@ -60,4 +63,106 @@ public class SynchronousQueueTest {
     boolean isFulfilling(int m) {
         return (m & FULFILLING) != 0;
     }
+
+    /**
+     * 研究 TransferQueue#advanceHead
+     */
+    @Test
+    public void advanceHead() {
+        TransferQueue queue = new TransferQueue();
+        System.out.println("queue.head = " + queue.head);
+        // 头节点
+        TransferQueue.QNode head = queue.getHead();
+        System.out.println("head = " + head);
+        // 新节点
+        TransferQueue.QNode newNode = new TransferQueue.QNode(null, false);
+        System.out.println("newNode = " + newNode);
+        System.out.println();
+        // 测试
+        queue.advanceHead(head, newNode);
+        System.out.println("queue.head = " + queue.head);
+        System.out.println("head = " + head);
+        System.out.println("newNode = " + newNode);
+        /**
+         * 执行结果：
+         *
+         * queue.head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
+         * head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
+         * newNode = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
+         *
+         * queue.head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
+         * head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
+         * newNode = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
+         *
+         * 可知，UNSAFE.compareAndSwapObject(this, headOffset, h, nh) 操作只是 CAS 改变 TransferQueue#head 属性的值
+         */
+    }
+
+    static final class TransferQueue {
+
+        static final class QNode {
+            volatile QNode next;          // next node in queue // 队列的下一个节点
+            volatile Object item;         // CAS'ed to or from null // 数据元素
+            volatile Thread waiter;       // to control park/unpark // 等待着的线程
+            final boolean isData; // true表示为DATA类型，false表示为REQUEST类型
+
+            QNode(Object item, boolean isData) {
+                this.item = item;
+                this.isData = isData;
+            }
+        }
+
+        /** Head of queue */
+        transient volatile QNode head; // 头节点
+        /** Tail of queue */
+        transient volatile QNode tail; // 尾节点
+        /**
+         * Reference to a cancelled node that might not yet have been
+         * unlinked from queue because it was the last inserted node
+         * when it was cancelled.
+         */
+        transient volatile QNode cleanMe;
+
+        void advanceHead(QNode h, QNode nh) {
+            if (h == head &&
+                    UNSAFE.compareAndSwapObject(this, headOffset, h, nh))
+                h.next = h; // forget old next
+        }
+
+        public QNode getHead() {
+            return head;
+        }
+
+        TransferQueue() {
+            QNode h = new QNode(null, false); // initialize to dummy node.
+            head = h;
+            tail = h;
+        }
+
+        private static final sun.misc.Unsafe UNSAFE;
+        private static final long headOffset;
+        private static final long tailOffset;
+        private static final long cleanMeOffset;
+        static {
+            try {
+                // UNSAFE = sun.misc.Unsafe.getUnsafe();
+                // 获取 Unsafe 内部的私有的实例化单例对象
+                Field field = Unsafe.class.getDeclaredField("theUnsafe");
+                // 无视权限
+                field.setAccessible(true);
+                UNSAFE = (Unsafe) field.get(null);
+
+                Class<?> k = SynchronousQueueTest.TransferQueue.class;
+                headOffset = UNSAFE.objectFieldOffset
+                        (k.getDeclaredField("head"));
+                tailOffset = UNSAFE.objectFieldOffset
+                        (k.getDeclaredField("tail"));
+                cleanMeOffset = UNSAFE.objectFieldOffset
+                        (k.getDeclaredField("cleanMe"));
+            } catch (Exception e) {
+                throw new Error(e);
+            }
+        }
+    }
+
 }

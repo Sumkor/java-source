@@ -440,7 +440,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             for (;;) {
                 if (w.isInterrupted()) // 当前线程中断了，尝试清除节点s
                     s.tryCancel();
-                SNode m = s.match; // 检查节点s是否匹配到了m（有可能是其它线程的m匹配到当前线程的s）
+                SNode m = s.match; // 检查节点s是否匹配到了节点m（有可能是其它线程的m匹配到当前线程的s）
                 if (m != null)
                     return m; // 如果匹配到了，直接返回m
                 if (timed) {
@@ -567,7 +567,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             }
 
             /**
-             * Returns true if this node is known to be off the queue
+             * Returns true if this node is known to be off the queue // 如果节点已经出队了，则返回 true，因为经过 advanceHead 操作之后，该节点的 next 指针已经从队列中解开了，指向自身
              * because its next pointer has been forgotten due to
              * an advanceHead operation.
              */
@@ -606,7 +606,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
         transient volatile QNode cleanMe;
 
         TransferQueue() {
-            QNode h = new QNode(null, false); // initialize to dummy node.
+            QNode h = new QNode(null, false); // initialize to dummy node. // 队列的头节点，是一个空节点
             head = h;
             tail = h;
         }
@@ -615,7 +615,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
          * Tries to cas nh as new head; if successful, unlink
          * old head's next node to avoid garbage retention.
          */
-        void advanceHead(QNode h, QNode nh) { // 若头节点为h，则把nh设为新的头节点，再把节点h从链表上解开
+        void advanceHead(QNode h, QNode nh) { // CAS将 TransferQueue#head 属性的值从节点h改为节点nh，再将节点h的next指针设为自身，表示出队
             if (h == head &&
                 UNSAFE.compareAndSwapObject(this, headOffset, h, nh))
                 h.next = h; // forget old next
@@ -698,24 +698,24 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                         return null;
                     }
 
-                    if (!s.isOffList()) {           // not already unlinked // 执行到这里，说明节点s匹配成功。如果尚未出队，需要出队
-                        advanceHead(t, s);          // unlink if head // 若头节点为t，则把s作为头节点，并解开t？？？
+                    if (!s.isOffList()) {           // not already unlinked // 执行到这里，说明节点s匹配成功。如果s尚未出队，则进入以下逻辑
+                        advanceHead(t, s);          // unlink if head // 已知t是s的上一个节点，这里判断如果t是头节点，则把t出队，把节点s作为新的头节点（后续操作进一步把s设为空节点，即dummy node）
                         if (x != null)              // and forget fields
-                            s.item = s;             // 因为节点s已经出队了，所以需要把它的item域给设置为它自己，表示出队状态。
+                            s.item = s;             // 把节点s的数据域设为自身
                         s.waiter = null;
                     }
                     return (x != null) ? (E)x : e;  // REQUEST类型，返回匹配到的数据x，否则返回e
 
-                } else {                            // complementary-mode
-                    QNode m = h.next;               // node to fulfill
+                } else {                            // complementary-mode // 互补
+                    QNode m = h.next;               // node to fulfill // 首个非空节点，将它与请求节点匹配
                     if (t != tail || m == null || h != head)
                         continue;                   // inconsistent read
 
                     Object x = m.item;
-                    if (isData == (x != null) ||    // m already fulfilled
+                    if (isData == (x != null) ||    // m already fulfilled // 并不是互补的
                         x == m ||                   // m cancelled
-                        !m.casItem(x, e)) {         // lost CAS
-                        advanceHead(h, m);          // dequeue and retry
+                        !m.casItem(x, e)) {         // lost CAS // 节点m的数据元素为x，则将其替换为e。若CAS失败说明其数据元素不为x，即节点m已经被匹配了。若CAS成功则说明匹配成功。
+                        advanceHead(h, m);          // dequeue and retry // 把头节点出队，把节点m作为新的头节点（dummy node），继续重试
                         continue;
                     }
 
@@ -735,7 +735,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
          * @param nanos timeout value
          * @return matched item, or s if cancelled
          */
-        Object awaitFulfill(QNode s, E e, boolean timed, long nanos) {
+        Object awaitFulfill(QNode s, E e, boolean timed, long nanos) { // 节点s等待匹配，其数据元素为e
             /* Same idea as TransferStack.awaitFulfill */
             final long deadline = timed ? System.nanoTime() + nanos : 0L;
             Thread w = Thread.currentThread();
@@ -744,7 +744,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             for (;;) {
                 if (w.isInterrupted())
                     s.tryCancel(e);
-                Object x = s.item;
+                Object x = s.item; // 检查节点s是否匹配到了数据x，注意这里是跟栈结构不一样的地方！
                 if (x != e)
                     return x;
                 if (timed) {
@@ -778,7 +778,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
              * first. At least one of node s or the node previously
              * saved can always be deleted, so this always terminates.
              */
-            while (pred.next == s) { // Return early if already unlinked
+            while (pred.next == s) { // Return early if already unlinked // 节点pred的下一个节点是s
                 QNode h = head;
                 QNode hn = h.next;   // Absorb cancelled first node as head
                 if (hn != null && hn.isCancelled()) {
@@ -795,7 +795,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                     advanceTail(t, tn);
                     continue;
                 }
-                if (s != t) {        // If not tail, try to unsplice
+                if (s != t) {        // If not tail, try to unsplice // 如果节点s不是尾节点，把s出队
                     QNode sn = s.next;
                     if (sn == s || pred.casNext(s, sn))
                         return;
@@ -811,10 +811,10 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                          (dn = d.next) != null &&  //   has successor
                          dn != d &&                //   that is on list
                          dp.casNext(d, dn)))       // d unspliced
-                        casCleanMe(dp, null);
+                        casCleanMe(dp, null);  // 节点cleanMe为dp，尝试把它设为null
                     if (dp == pred)
                         return;      // s is already saved node
-                } else if (casCleanMe(null, pred))
+                } else if (casCleanMe(null, pred)) // 节点cleanMe为空，尝试把节点pred设为cleanMe
                     return;          // Postpone cleaning s
             }
         }
