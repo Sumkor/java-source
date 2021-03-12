@@ -87,12 +87,12 @@ public class SynchronousQueueTest {
          * 执行结果：
          *
          * queue.head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
-         * head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
-         * newNode = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
+         *       head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
+         *    newNode = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
          *
          * queue.head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
-         * head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
-         * newNode = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
+         *       head = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@593634ad
+         *    newNode = com.sumkor.collection.queue.impl.SynchronousQueueTest$TransferQueue$QNode@20fa23c1
          *
          * 可知，UNSAFE.compareAndSwapObject(this, headOffset, h, nh) 操作只是 CAS 改变 TransferQueue#head 属性的值
          */

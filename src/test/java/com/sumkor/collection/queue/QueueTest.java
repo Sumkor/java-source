@@ -224,16 +224,18 @@ public class QueueTest {
      * @see java.util.concurrent.LinkedBlockingQueue 一个由链表结构组成的有界（定长，不会扩容，默认 Integer.MAX_VALUE）阻塞队列。
      * @see java.util.concurrent.LinkedBlockingDeque 一个由链表结构组成的有界（定长，不会扩容，默认 Integer.MAX_VALUE）双向阻塞队列。
      * @see java.util.concurrent.LinkedTransferQueue 一个由链表结构组成的无界阻塞 TransferQueue 队列。
-     * @see java.util.concurrent.PriorityBlockingQueue 一个支持优先级排序的无界阻塞队列。
+     * @see java.util.concurrent.PriorityBlockingQueue 一个有数组结构组成的无界（默认11，会扩容）阻塞队列，以堆排序将最小值（优先级最高）存放在数组首位（小顶堆）。
      * @see java.util.concurrent.DelayQueue 一个使用优先级队列 PriorityQueue 实现的无界阻塞队列，只有在延迟期满时才能从中提取元素。
-     * @see java.util.concurrent.SynchronousQueue 一个不存储元素、没有内部容量的阻塞队列。
+     * @see java.util.concurrent.SynchronousQueue 一个由链表或栈结构组成的阻塞队列，采用无锁算法，每个线程的存入或取出操作没有被匹配时，将会阻塞在队列中等待匹配。
      *
      * 非阻塞队列：
      *
-     * @see java.util.ArrayDeque
-     * @see java.util.LinkedList
-     * @see java.util.PriorityQueue
-     * @see java.util.concurrent.ConcurrentLinkedQueue
-     * @see java.util.concurrent.ConcurrentLinkedDeque
+     * @see java.util.ArrayDeque 一个由数组结构组成的无界（默认16，会扩容）双向队列。
+     * @see java.util.LinkedList 一个由链表结构组成的无界（无默认，不会扩容，容量最大为 Integer.MAX_VALUE）双向队列。
+     * @see java.util.PriorityQueue 一个有数组结构组成的无界（默认11，会扩容）队列，以堆排序将最小值（优先级最高）存放在数组首位（小顶堆）。
+     * @see java.util.concurrent.ConcurrentLinkedQueue 一个由链表结构组成的无界（无默认，不会扩容，容量最大为 Integer.MAX_VALUE）队列，采用无锁算法，并发安全。
+     * @see java.util.concurrent.ConcurrentLinkedDeque 一个由链表结构组成的无界（无默认，不会扩容，容量最大为 Integer.MAX_VALUE）双向队列，采用无锁算法，并发安全。
+     *
+     * 注意，这里的扩容，指的是指定初始容量之后，队列元素数量达到一定的阈值，将初始容量翻倍的操作。
      */
 }

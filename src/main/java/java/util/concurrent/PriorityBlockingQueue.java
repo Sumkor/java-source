@@ -129,7 +129,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
     /**
      * Default array capacity.
      */
-    private static final int DEFAULT_INITIAL_CAPACITY = 11;
+    private static final int DEFAULT_INITIAL_CAPACITY = 11; // 默认容量
 
     /**
      * The maximum size of array to allocate.
@@ -137,7 +137,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * Attempts to allocate larger arrays may result in
      * OutOfMemoryError: Requested array size exceeds VM limit
      */
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8; // 最大容量
 
     /**
      * Priority queue represented as a balanced binary heap: the two
@@ -147,7 +147,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * heap and each descendant d of n, n <= d.  The element with the
      * lowest value is in queue[0], assuming the queue is nonempty.
      */
-    private transient Object[] queue;
+    private transient Object[] queue; // 存储结构：数组
 
     /**
      * The number of elements in the priority queue.
@@ -173,14 +173,14 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
     /**
      * Spinlock for allocation, acquired via CAS.
      */
-    private transient volatile int allocationSpinLock;
+    private transient volatile int allocationSpinLock; // 扩容的时候使用的控制变量，CAS更新这个值，谁更新成功了谁扩容，其它线程让出CPU
 
     /**
      * A plain PriorityQueue used only for serialization,
      * to maintain compatibility with previous versions
      * of this class. Non-null only during serialization/deserialization.
      */
-    private PriorityQueue<E> q;
+    private PriorityQueue<E> q; // 不阻塞的优先级队列，非存储元素的地方，仅用于序列化/反序列化时
 
     /**
      * Creates a {@code PriorityBlockingQueue} with the default
@@ -286,33 +286,33 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
      * @param oldCap the length of the array
      */
     private void tryGrow(Object[] array, int oldCap) {
-        lock.unlock(); // must release and then re-acquire main lock
+        lock.unlock(); // must release and then re-acquire main lock // 这里先释放在offer方法中加的锁，防止阻塞的线程过多，再请求allocationSpinLock锁
         Object[] newArray = null;
         if (allocationSpinLock == 0 &&
             UNSAFE.compareAndSwapInt(this, allocationSpinLockOffset,
-                                     0, 1)) {
+                                     0, 1)) { // CAS更新allocationSpinLock值由0变为1的线程获得扩容资格
             try {
-                int newCap = oldCap + ((oldCap < 64) ?
+                int newCap = oldCap + ((oldCap < 64) ? // 旧容量小于64则增加一倍，旧容量大于64则增加一半
                                        (oldCap + 2) : // grow faster if small
                                        (oldCap >> 1));
-                if (newCap - MAX_ARRAY_SIZE > 0) {    // possible overflow
+                if (newCap - MAX_ARRAY_SIZE > 0) {    // possible overflow // 判断新容量是否溢出
                     int minCap = oldCap + 1;
                     if (minCap < 0 || minCap > MAX_ARRAY_SIZE)
                         throw new OutOfMemoryError();
                     newCap = MAX_ARRAY_SIZE;
                 }
-                if (newCap > oldCap && queue == array)
+                if (newCap > oldCap && queue == array) // 创建新数组
                     newArray = new Object[newCap];
             } finally {
-                allocationSpinLock = 0;
+                allocationSpinLock = 0; // 相当于解锁
             }
         }
-        if (newArray == null) // back off if another thread is allocating
-            Thread.yield();
+        if (newArray == null) // back off if another thread is allocating // 如果其他线程正在扩容，则当前线程让出时间片
+            Thread.yield(); // 当前线程把CPU时间让掉，让其他或者自己的线程执行（也就是谁先抢到谁执行）
         lock.lock();
-        if (newArray != null && queue == array) {
-            queue = newArray;
-            System.arraycopy(array, 0, newArray, 0, oldCap);
+        if (newArray != null && queue == array) { // 判断新数组创建成功，并且旧数组没有被替换过
+            queue = newArray; // 队列赋值为新数组
+            System.arraycopy(array, 0, newArray, 0, oldCap); // 数据拷贝
         }
     }
 
@@ -325,16 +325,16 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
             return null;
         else {
             Object[] array = queue;
-            E result = (E) array[0];
-            E x = (E) array[n];
+            E result = (E) array[0]; // 队列首元素
+            E x = (E) array[n]; // 队列末元素
             array[n] = null;
             Comparator<? super E> cmp = comparator;
             if (cmp == null)
-                siftDownComparable(0, x, array, n);
+                siftDownComparable(0, x, array, n); // 将队列末元素移到队列首（在第0位插入元素x），再做自上而下的堆化
             else
                 siftDownUsingComparator(0, x, array, n, cmp);
             size = n;
-            return result;
+            return result; // 返回弹出的元素（原队列首元素）
         }
     }
 
@@ -356,11 +356,11 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
     private static <T> void siftUpComparable(int k, T x, Object[] array) {
         Comparable<? super T> key = (Comparable<? super T>) x;
         while (k > 0) {
-            int parent = (k - 1) >>> 1;
+            int parent = (k - 1) >>> 1; // 取父节点
             Object e = array[parent];
-            if (key.compareTo((T) e) >= 0)
+            if (key.compareTo((T) e) >= 0) // 如果key大于父节点，堆化结束
                 break;
-            array[k] = e;
+            array[k] = e; // 否则，交换二者的位置，继续下一轮比较
             k = parent;
         }
         array[k] = key;
@@ -400,13 +400,13 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
                 int right = child + 1;
                 if (right < n &&
                     ((Comparable<? super T>) c).compareTo((T) array[right]) > 0)
-                    c = array[child = right];
-                if (key.compareTo((T) c) <= 0)
+                    c = array[child = right]; // 取左右子节点中最小的值
+                if (key.compareTo((T) c) <= 0) // key如果比左右子节点都小，则堆化结束
                     break;
-                array[k] = c;
+                array[k] = c; // 否则，交换key与左右子节点中最小的节点的位置
                 k = child;
             }
-            array[k] = key;
+            array[k] = key; // 找到了放元素的位置，放置元素
         }
     }
 
@@ -481,7 +481,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
         lock.lock();
         int n, cap;
         Object[] array;
-        while ((n = size) >= (cap = (array = queue).length))
+        while ((n = size) >= (cap = (array = queue).length)) // 判断是否需要扩容，即元素个数达到了数组容量
             tryGrow(array, cap);
         try {
             Comparator<? super E> cmp = comparator;
@@ -545,7 +545,7 @@ public class PriorityBlockingQueue<E> extends AbstractQueue<E>
         lock.lockInterruptibly();
         E result;
         try {
-            while ( (result = dequeue()) == null)
+            while ( (result = dequeue()) == null) // 队列没有元素，就阻塞在notEmpty条件上，阻塞直到队列非空取得元素
                 notEmpty.await();
         } finally {
             lock.unlock();
