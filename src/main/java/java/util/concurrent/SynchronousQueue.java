@@ -972,7 +972,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
      * @return zero
      */
     public int size() {
-        return 0;
+        return 0; // 注意！！
     }
 
     /**

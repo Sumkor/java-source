@@ -253,7 +253,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      * Creates a {@code ConcurrentLinkedQueue} that is initially empty.
      */
     public ConcurrentLinkedQueue() {
-        head = tail = new Node<E>(null);
+        head = tail = new Node<E>(null); // 头节点是个空节点
     }
 
     /**
@@ -302,8 +302,8 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      * as sentinel for succ(), below.
      */
     final void updateHead(Node<E> h, Node<E> p) {
-        if (h != p && casHead(h, p))
-            h.lazySetNext(h);
+        if (h != p && casHead(h, p)) // 节点h和p不等，且当前头节点为h，则把头节点设为p
+            h.lazySetNext(h); // 原头节点h的next指向自身，表示h出队
     }
 
     /**
@@ -313,7 +313,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      */
     final Node<E> succ(Node<E> p) {
         Node<E> next = p.next;
-        return (p == next) ? head : next;
+        return (p == next) ? head : next; // 如果p已经出队了，则重新从头节点开始，否则继续遍历下一个节点
     }
 
     /**
@@ -327,53 +327,53 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
         checkNotNull(e);
         final Node<E> newNode = new Node<E>(e);
 
-        for (Node<E> t = tail, p = t;;) {
+        for (Node<E> t = tail, p = t;;) { // 初始时t和p都指向tail节点，注意tail不一定是尾节点（后有解释），但是也不妨从tail节点开始遍历链表
             Node<E> q = p.next;
-            if (q == null) {
-                // p is last node
-                if (p.casNext(null, newNode)) {
+            if (q == null) { // 使用p.next是否为空来判断p是否是尾节点，比较准确
+                // p is last node // 进入这里说明此时p是尾节点
+                if (p.casNext(null, newNode)) { // 若节点p的下一个节点为null，则设置为newNode
                     // Successful CAS is the linearization point
                     // for e to become an element of this queue,
                     // and for newNode to become "live".
-                    if (p != t) // hop two nodes at a time
-                        casTail(t, newNode);  // Failure is OK.
+                    if (p != t) // hop two nodes at a time // 不管p与t是否相同，都应该casTail。这里只在p与t不同时才casTail，导致tail节点不总是尾节点，猜测这么做只是为了减少对tail的CAS
+                        casTail(t, newNode);  // Failure is OK. // 将尾节点tail由t改为newNode，更新失败了也没关系，因为tail是不是尾节点不重要:)
                     return true;
                 }
                 // Lost CAS race to another thread; re-read next
             }
-            else if (p == q)
+            else if (p == q) // 如果p的next等于p，说明p已经出队了，需要重新设置p、t的值
                 // We have fallen off list.  If tail is unchanged, it
                 // will also be off-list, in which case we need to
                 // jump to head, from which all live nodes are always
-                // reachable.  Else the new tail is a better bet.
-                p = (t != (t = tail)) ? t : head;
+                // reachable.  Else the new tail is a better bet. // ① 若节点t不再是tail，说明其他线程加入过元素(修改过tail)，则取最新tail作为t和p
+                p = (t != (t = tail)) ? t : head;                 // ② 若节点t依旧是tail，说明从tail节点开始遍历链表已经不管用了，则把head作为p，从head节点从头遍历链表（注意这一步造成后续遍历中p!=t成立）
             else
-                // Check for tail updates after two hops.
-                p = (p != t && t != (t = tail)) ? t : q;
+                // Check for tail updates after two hops. // 进入这里，说明p.next不为null，且p未出队，需要判断：// ① 若p与t相等，则t留在原位，p=p.next一直往下遍历（注意这一步造成后续遍历中p!=t成立）
+                p = (p != t && t != (t = tail)) ? t : q;  // ② 若p与t不等，需进一步判断t与tail是否相等。若t不为tail，则取最新tail作为t和p；若t为tail，则p=p.next一直往下遍历
         }
     }
 
     public E poll() {
         restartFromHead:
         for (;;) {
-            for (Node<E> h = head, p = h, q;;) {
+            for (Node<E> h = head, p = h, q;;) { // 初始时h和p都指向head节点，从head节点开始遍历链表
                 E item = p.item;
 
-                if (item != null && p.casItem(item, null)) {
+                if (item != null && p.casItem(item, null)) { // 把p节点的数据域设为空，返回p节点的数据
                     // Successful CAS is the linearization point
                     // for item to be removed from this queue.
                     if (p != h) // hop two nodes at a time
-                        updateHead(h, ((q = p.next) != null) ? q : p);
+                        updateHead(h, ((q = p.next) != null) ? q : p); // 若p.next不为空，则把p.next设为头节点，把h和p出队；若p.next为空，则把p设为头节点，把h出队
                     return item;
                 }
-                else if ((q = p.next) == null) {
-                    updateHead(h, p);
+                else if ((q = p.next) == null) { // 进入这里，说明p.item必然为空。若p.next也为空，说明队列中没有数据了，需要返回null
+                    updateHead(h, p); // 把头节点设为p，把h出队
                     return null;
                 }
-                else if (p == q)
+                else if (p == q) // 如果p的next等于p，说明p已经出队了，重新从头节点开始遍历
                     continue restartFromHead;
                 else
-                    p = q;
+                    p = q; // p = p.next 继续遍历链表
             }
         }
     }
@@ -403,7 +403,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      * and the need to add a retry loop to deal with the possibility
      * of losing a race to a concurrent poll().
      */
-    Node<E> first() {
+    Node<E> first() { // 获取第一个具有非空元素的节点
         restartFromHead:
         for (;;) {
             for (Node<E> h = head, p = h, q;;) {
@@ -447,10 +447,10 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
      */
     public int size() {
         int count = 0;
-        for (Node<E> p = first(); p != null; p = succ(p))
+        for (Node<E> p = first(); p != null; p = succ(p)) // 从第一个有数据的节点开始，一直遍历链表
             if (p.item != null)
                 // Collection.size() spec says to max out
-                if (++count == Integer.MAX_VALUE)
+                if (++count == Integer.MAX_VALUE) // 自增直到最大值
                     break;
         return count;
     }
