@@ -491,9 +491,9 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
             E item = p.item;
             if (item != null &&
                 o.equals(item) &&
-                p.casItem(item, null)) {
+                p.casItem(item, null)) { // 找到匹配的节点，将其数据域设为空
                 Node<E> next = succ(p);
-                if (pred != null && next != null)
+                if (pred != null && next != null) // 将节点p从链表中解开
                     pred.casNext(p, next);
                 return true;
             }
