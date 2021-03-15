@@ -59,12 +59,12 @@ public class ReferenceQueue<T> {
             // Check that since getting the lock this reference hasn't already been
             // enqueued (and even then removed)
             ReferenceQueue<?> queue = r.queue;
-            if ((queue == NULL) || (queue == ENQUEUED)) {
+            if ((queue == NULL) || (queue == ENQUEUED)) { // 校验元素r是否已经存入ReferenceQueue之中，或者已经从ReferenceQueue中移除
                 return false;
             }
             assert queue == this;
-            r.queue = ENQUEUED;
-            r.next = (head == null) ? r : head; // 头插法
+            r.queue = ENQUEUED; // 表示入参reference已经存入ReferenceQueue之中
+            r.next = (head == null) ? r : head; // 头插法。r.next = 队列的下一个节点
             head = r;
             queueLength++;
             if (r instanceof FinalReference) {
@@ -82,7 +82,7 @@ public class ReferenceQueue<T> {
             head = (r.next == r) ?
                 null :
                 r.next; // Unchecked due to the next field having a raw type in Reference
-            r.queue = NULL;
+            r.queue = NULL; // 表示元素r已经从ReferenceQueue中移除
             r.next = r;
             queueLength--;
             if (r instanceof FinalReference) {
@@ -110,10 +110,10 @@ public class ReferenceQueue<T> {
     }
 
     /**
-     * Removes the next reference object in this queue, blocking until either
+     * Removes the next reference object in this queue, blocking until either // 删除队列中的下一个引用对象，阻塞直到有一个可用元素或者超过给定的时间。
      * one becomes available or the given timeout period expires.
      *
-     * <p> This method does not offer real-time guarantees: It schedules the
+     * <p> This method does not offer real-time guarantees: It schedules the // 此方法不提供精确的时间保证，因为它是通过调用Object#wait(long)方法来调度超时的。
      * timeout as if by invoking the {@link Object#wait(long)} method.
      *
      * @param  timeout  If positive, block for up to <code>timeout</code>
@@ -154,7 +154,7 @@ public class ReferenceQueue<T> {
     }
 
     /**
-     * Removes the next reference object in this queue, blocking until one
+     * Removes the next reference object in this queue, blocking until one // 删除此队列中的下一个引用对象，阻塞直到其中一个可用为止
      * becomes available.
      *
      * @return A reference object, blocking until one becomes available

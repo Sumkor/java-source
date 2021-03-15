@@ -43,7 +43,7 @@ public abstract class Reference<T> {
 
     /* A Reference instance is in one of four possible internal states:
      *
-     *     Active: Subject to special treatment by the garbage collector.  Some
+     *     Active: Subject to special treatment by the garbage collector.  Some // 新创建的对象实例状态即为Active状态。这个实例如果注册为队列，则进入Pending状态，否则进入Inactive状态。
      *     time after the collector detects that the reachability of the
      *     referent has changed to the appropriate state, it changes the
      *     instance's state to either Pending or Inactive, depending upon
@@ -51,16 +51,16 @@ public abstract class Reference<T> {
      *     created.  In the former case it also adds the instance to the
      *     pending-Reference list.  Newly-created instances are Active.
      *
-     *     Pending: An element of the pending-Reference list, waiting to be
+     *     Pending: An element of the pending-Reference list, waiting to be // 在pending-Reference列表中的元素，等待Reference-handler线程enqueue操作存入ReferenceQueue队列。未注册的实例不会到达这个状态。
      *     enqueued by the Reference-handler thread.  Unregistered instances
      *     are never in this state.
      *
-     *     Enqueued: An element of the queue with which the instance was
+     *     Enqueued: An element of the queue with which the instance was // 在ReferenceQueue队列中的元素。当实例从ReferenceQueue队列中删除时，进入Inactive状态。未注册的实例不会到达这个状态。
      *     registered when it was created.  When an instance is removed from
      *     its ReferenceQueue, it is made Inactive.  Unregistered instances are
      *     never in this state.
      *
-     *     Inactive: Nothing more to do.  Once an instance becomes Inactive its
+     *     Inactive: Nothing more to do.  Once an instance becomes Inactive its // 一旦实例变为Inactive(非活动)状态，它的状态将不再更改。
      *     state will never change again.
      *
      * The state is encoded in the queue and next fields as follows:
@@ -91,7 +91,7 @@ public abstract class Reference<T> {
 
     private T referent;         /* Treated specially by GC */
 
-    volatile ReferenceQueue<? super T> queue;
+    volatile ReferenceQueue<? super T> queue; // Reference实例被回收后，会被添加到这个队列中
 
     /* When active:   NULL
      *     pending:   this
@@ -99,32 +99,32 @@ public abstract class Reference<T> {
      *    Inactive:   this
      */
     @SuppressWarnings("rawtypes")
-    Reference next;
+    Reference next; // ReferenceQueue队列的下一个引用
 
-    /* When active:   next element in a discovered reference list maintained by GC (or this if last)
-     *     pending:   next element in the pending list (or null if last)
+    /* When active:   next element in a discovered reference list maintained by GC (or this if last) // 由垃圾回收器管理的已发现的引用列表
+     *     pending:   next element in the pending list (or null if last) // pending-Reference列表中的下一个元素，如果没有为null
      *   otherwise:   NULL
      */
-    transient private Reference<T> discovered;  /* used by VM */
+    transient private Reference<T> discovered;  /* used by VM */ // pending-Reference列表的指针
 
 
-    /* Object used to synchronize with the garbage collector.  The collector
+    /* Object used to synchronize with the garbage collector.  The collector // 用于控制垃圾回收器操作的锁，垃圾回收器开始一轮垃圾回收前要获取此锁
      * must acquire this lock at the beginning of each collection cycle.  It is
-     * therefore critical that any code holding this lock complete as quickly
+     * therefore critical that any code holding this lock complete as quickly // 所有占用这个锁的代码必须尽快完成，不能生成新对象，也不能调用用户代码
      * as possible, allocate no new objects, and avoid calling user code.
      */
     static private class Lock { }
     private static Lock lock = new Lock();
 
 
-    /* List of References waiting to be enqueued.  The collector adds
-     * References to this list, while the Reference-handler thread removes
+    /* List of References waiting to be enqueued.  The collector adds // pending-Reference是等待存入ReferenceQueue队列的元素列表
+     * References to this list, while the Reference-handler thread removes // 一个Referenece实例化后的状态为Active，当其引用的对象被回收之后，垃圾回收器将其加入到pending-Reference中，等待加入ReferenceQueue
      * them.  This list is protected by the above lock object. The
      * list uses the discovered field to link its elements.
      */
-    private static Reference<Object> pending = null;
+    private static Reference<Object> pending = null; // pending-Reference列表的头结点
 
-    /* High-priority thread to enqueue pending References
+    /* High-priority thread to enqueue pending References // 最高级别的线程，将pending状态的引用存入队列
      */
     private static class ReferenceHandler extends Thread {
 
@@ -181,7 +181,7 @@ public abstract class Reference<T> {
                     // 'instanceof' might throw OutOfMemoryError sometimes
                     // so do this before un-linking 'r' from the 'pending' chain...
                     c = r instanceof Cleaner ? (Cleaner) r : null;
-                    // unlink 'r' from 'pending' chain
+                    // unlink 'r' from 'pending' chain // 从pending链中删除r
                     pending = r.discovered;
                     r.discovered = null;
                 } else {
@@ -199,7 +199,7 @@ public abstract class Reference<T> {
             // and GC reclaims some space.
             // Also prevent CPU intensive spinning in case 'r instanceof Cleaner' above
             // persistently throws OOME for some time...
-            Thread.yield();
+            Thread.yield(); // 让出线程的CPU时间，这样希望能删除一些活动引用，使用GC回收一些空间
             // retry
             return true;
         } catch (InterruptedException x) {
@@ -214,7 +214,7 @@ public abstract class Reference<T> {
         }
 
         ReferenceQueue<? super Object> q = r.queue;
-        if (q != ReferenceQueue.NULL) q.enqueue(r); // 若引用队列不为空，将回收的对象放入队列中
+        if (q != ReferenceQueue.NULL) q.enqueue(r); // 若引用队列不为空，将回收的对象放入ReferenceQueue队列中
         return true;
     }
 
@@ -229,9 +229,9 @@ public abstract class Reference<T> {
          */
         handler.setPriority(Thread.MAX_PRIORITY);
         handler.setDaemon(true);
-        handler.start();
+        handler.start(); // 启动ReferenceHandler守护线程，优先级最高
 
-        // provide access in SharedSecrets
+        // provide access in SharedSecrets // 在SharedSecrets中提供访问权限
         SharedSecrets.setJavaLangRefAccess(new JavaLangRefAccess() {
             @Override
             public boolean tryHandlePendingReference() {
@@ -250,7 +250,7 @@ public abstract class Reference<T> {
      * @return   The object to which this reference refers, or
      *           <code>null</code> if this reference object has been cleared
      */
-    public T get() {
+    public T get() { // 返回引用管理的对象，如果这个对象已经被回收，则返回null.
         return this.referent;
     }
 
