@@ -54,7 +54,7 @@ import java.util.function.Consumer;
  * producer.  The <em>tail</em> of the queue is that element that has
  * been on the queue the shortest time for some producer.
  *
- * <p>Beware that, unlike in most collections, the {@code size} method
+ * <p>Beware that, unlike in most collections, the {@code size} method // size 方法并不是一个恒定时长的操作
  * is <em>NOT</em> a constant-time operation. Because of the
  * asynchronous nature of these queues, determining the current number
  * of elements requires a traversal of the elements, and so may report
@@ -62,7 +62,7 @@ import java.util.function.Consumer;
  * Additionally, the bulk operations {@code addAll},
  * {@code removeAll}, {@code retainAll}, {@code containsAll},
  * {@code equals}, and {@code toArray} are <em>not</em> guaranteed
- * to be performed atomically. For example, an iterator operating
+ * to be performed atomically. For example, an iterator operating // 批量操作无法保证是原子性的
  * concurrently with an {@code addAll} operation might view only some
  * of the added elements.
  *
@@ -73,7 +73,7 @@ import java.util.function.Consumer;
  * <p>Memory consistency effects: As with other concurrent
  * collections, actions in a thread prior to placing an object into a
  * {@code LinkedTransferQueue}
- * <a href="package-summary.html#MemoryVisibility"><i>happen-before</i></a>
+ * <a href="package-summary.html#MemoryVisibility"><i>happen-before</i></a> // 先行发生原则，【存入】先行发生于【取出】
  * actions subsequent to the access or removal of that element from
  * the {@code LinkedTransferQueue} in another thread.
  *
@@ -94,20 +94,20 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * Dual Queues, introduced by Scherer and Scott
      * (http://www.cs.rice.edu/~wns1/papers/2004-DISC-DDS.pdf) are
-     * (linked) queues in which nodes may represent either data or
+     * (linked) queues in which nodes may represent either data or // Dual Queues 指的是链表中的节点存在两种模式：数据节点（提供数据）、非数据节点（请求数据）
      * requests.  When a thread tries to enqueue a data node, but
      * encounters a request node, it instead "matches" and removes it;
-     * and vice versa for enqueuing requests. Blocking Dual Queues
+     * and vice versa for enqueuing requests. Blocking Dual Queues // Blocking Dual Queues 提供了一种模式：线程入队非数据节点时，如果没有匹配到数据节点则阻塞，直到其他线程提供数据节点与之匹配
      * arrange that threads enqueuing unmatched requests block until
      * other threads provide the match. Dual Synchronous Queues (see
      * Scherer, Lea, & Scott
      * http://www.cs.rochester.edu/u/scott/papers/2009_Scherer_CACM_SSQ.pdf)
-     * additionally arrange that threads enqueuing unmatched data also
-     * block.  Dual Transfer Queues support all of these modes, as
+     * additionally arrange that threads enqueuing unmatched data also // Dual Synchronous Queues 提供了另一种模式：线程入队数据节点时，如果没有匹配到非数据节点则阻塞，直到其他线程提供非数据节点与之匹配
+     * block.  Dual Transfer Queues support all of these modes, as     // Dual Transfer Queues 支持以上两种模式
      * dictated by callers.
      *
      * A FIFO dual queue may be implemented using a variation of the
-     * Michael & Scott (M&S) lock-free queue algorithm
+     * Michael & Scott (M&S) lock-free queue algorithm // 无锁队列算法，定义了头节点、尾节点
      * (http://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf).
      * It maintains two pointer fields, "head", pointing to a
      * (matched) node that in turn points to the first actual
@@ -133,9 +133,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * In a dual queue, each node must atomically maintain its match
      * status. While there are other possible variants, we implement
-     * this here as: for a data-mode node, matching entails CASing an
+     * this here as: for a data-mode node, matching entails CASing an // 对于数据节点，在匹配的时候，把该节点的item域从非空数据CAS设置为空。
      * "item" field from a non-null data value to null upon match, and
-     * vice-versa for request nodes, CASing from null to a data
+     * vice-versa for request nodes, CASing from null to a data       // 对于非数据节点，反之亦然。
      * value. (Note that the linearization properties of this style of
      * queue are easy to verify -- elements are made available by
      * linking, and unavailable by matching.) Compared to plain M&S
@@ -146,7 +146,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * support deletion of interior elements, such as
      * j.u.c.ConcurrentLinkedQueue.)
      *
-     * Once a node is matched, its match status can never again
+     * Once a node is matched, its match status can never again // 一旦节点被匹配了，其匹配状态不会再改变。
      * change.  We may thus arrange that the linked list of them
      * contain a prefix of zero or more matched nodes, followed by a
      * suffix of zero or more unmatched nodes. (Note that we allow
@@ -172,7 +172,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *  head           tail
      *    |              |
      *    v              v
-     *    M -> M -> U -> U -> U -> U
+     *    M -> M -> U -> U -> U -> U // tail指针不严格指向尾节点
      *
      * The best value for this "slack" (the targeted maximum distance
      * between the value of "head" and the first unmatched node, and
@@ -449,7 +449,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * ordered wrt other accesses or CASes use simple relaxed forms.
      */
     static final class Node {
-        final boolean isData;   // false if this is a request node
+        final boolean isData;   // false if this is a request node // 是否是数据节点
         volatile Object item;   // initially non-null if isData; CASed to match
         volatile Node next;
         volatile Thread waiter; // null until waiting
@@ -583,10 +583,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /*
      * Possible values for "how" argument in xfer method.
      */
-    private static final int NOW   = 0; // for untimed poll, tryTransfer
-    private static final int ASYNC = 1; // for offer, put, add
-    private static final int SYNC  = 2; // for transfer, take
-    private static final int TIMED = 3; // for timed poll, tryTransfer
+    private static final int NOW   = 0; // for untimed poll, tryTransfer // 立即返回
+    private static final int ASYNC = 1; // for offer, put, add           // 异步，不会阻塞
+    private static final int SYNC  = 2; // for transfer, take            // 同步，阻塞直到匹配
+    private static final int TIMED = 3; // for timed poll, tryTransfer   // 超时，阻塞直到超时
 
     @SuppressWarnings("unchecked")
     static <E> E cast(Object item) {
@@ -597,10 +597,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * Implements all queuing methods. See above for explanation.
      *
-     * @param e the item or null for take
-     * @param haveData true if this is a put, else a take
-     * @param how NOW, ASYNC, SYNC, or TIMED
-     * @param nanos timeout in nanosecs, used only if mode is TIMED
+     * @param e the item or null for take                           // 存入、取出、移交的数据元素
+     * @param haveData true if this is a put, else a take           // 数据元素是否为空
+     * @param how NOW, ASYNC, SYNC, or TIMED                        // 4 种模式
+     * @param nanos timeout in nanosecs, used only if mode is TIMED // 超时时间
      * @return an item if matched, else e
      * @throws NullPointerException if haveData mode but e is null
      */
@@ -612,7 +612,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         retry:
         for (;;) {                            // restart on append race
 
-            for (Node h = head, p = h; p != null;) { // find & match first node
+            for (Node h = head, p = h; p != null;) { // find & match first node // 从头节点开始遍历，初始时h和p都指向头节点
                 boolean isData = p.isData;
                 Object item = p.item;
                 if (item != p && (item != null) == isData) { // unmatched
