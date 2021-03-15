@@ -94,7 +94,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * Dual Queues, introduced by Scherer and Scott
      * (http://www.cs.rice.edu/~wns1/papers/2004-DISC-DDS.pdf) are
-     * (linked) queues in which nodes may represent either data or // Dual Queues 指的是链表中的节点存在两种模式：数据节点（提供数据）、非数据节点（请求数据）
+     * (linked) queues in which nodes may represent either data or // Dual Queues 指的是链表中的节点存在两种模式：数据节点（提供数据）、请求节点（请求数据）
      * requests.  When a thread tries to enqueue a data node, but
      * encounters a request node, it instead "matches" and removes it;
      * and vice versa for enqueuing requests. Blocking Dual Queues // Blocking Dual Queues 提供了一种模式：线程入队非数据节点时，如果没有匹配到数据节点则阻塞，直到其他线程提供数据节点与之匹配
@@ -146,19 +146,19 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * support deletion of interior elements, such as
      * j.u.c.ConcurrentLinkedQueue.)
      *
-     * Once a node is matched, its match status can never again // 一旦节点被匹配了，其匹配状态不会再改变。
-     * change.  We may thus arrange that the linked list of them
-     * contain a prefix of zero or more matched nodes, followed by a
+     * Once a node is matched, its match status can never again      // 一旦节点被匹配了，其匹配状态不会再改变。
+     * change.  We may thus arrange that the linked list of them     // 因此，可以在链表头部存放零个或多个已经被匹配的前置节点
+     * contain a prefix of zero or more matched nodes, followed by a // 可以在链表尾部存放零个或多个尚未匹配的后置节点
      * suffix of zero or more unmatched nodes. (Note that we allow
      * both the prefix and suffix to be zero length, which in turn
      * means that we do not use a dummy header.)  If we were not
-     * concerned with either time or space efficiency, we could
+     * concerned with either time or space efficiency, we could      // 如果不关心时间或空间的效率，可以通过从指针遍历到初始节点来正确执行入队和出列操作
      * correctly perform enqueue and dequeue operations by traversing
      * from a pointer to the initial node; CASing the item of the
      * first unmatched node on match and CASing the next field of the
      * trailing node on appends. (Plus some special-casing when
      * initially empty).  While this would be a terrible idea in
-     * itself, it does have the benefit of not requiring ANY atomic
+     * itself, it does have the benefit of not requiring ANY atomic  // 好处是不需要对head/tail字段进行任何原子更新
      * updates on head/tail fields.
      *
      * We introduce here an approach that lies between the extremes of
@@ -490,7 +490,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
          * follows either CAS or return from park (if ever parked;
          * else we don't care).
          */
-        final void forgetContents() {
+        final void forgetContents() { // 匹配或者节点被取消的时候会调用，设置item自连接，waiter为null
             UNSAFE.putObject(this, itemOffset, this);
             UNSAFE.putObject(this, waiterOffset, null);
         }
@@ -507,7 +507,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         /**
          * Returns true if this is an unmatched request node.
          */
-        final boolean isUnmatchedRequest() {
+        final boolean isUnmatchedRequest() { // 是否是一个未匹配的请求节点（如果取消了，item就不再为null，而是指向自己）
             return !isData && item == null;
         }
 
@@ -516,10 +516,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
          * appended to this node because this node is unmatched and
          * has opposite data mode.
          */
-        final boolean cannotPrecede(boolean haveData) {
+        final boolean cannotPrecede(boolean haveData) { // 如果给定节点不能连接在当前节点后则返回true
             boolean d = isData;
             Object x;
-            return d != haveData && (x = item) != this && (x != null) == d;
+            return d != haveData && (x = item) != this && (x != null) == d; // 当前节点未匹配，且数据模式与给定节点相反，则返回true
         }
 
         /**
@@ -615,43 +615,43 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
             for (Node h = head, p = h; p != null;) { // find & match first node // 从头节点开始遍历，初始时h和p都指向头节点
                 boolean isData = p.isData;
                 Object item = p.item;
-                if (item != p && (item != null) == isData) { // unmatched
-                    if (isData == haveData)   // can't match
+                if (item != p && (item != null) == isData) { // unmatched // 节点p尚未匹配过：item不是p，item是否有值与isData相符
+                    if (isData == haveData)   // can't match // 节点p无法匹配：节点p与入参节点类型相同。此时需跳出中层循环，尝试入队
                         break;
-                    if (p.casItem(item, e)) { // match
-                        for (Node q = p; q != h;) {
+                    if (p.casItem(item, e)) { // match // 节点p匹配成功：item域的值从item变更为e
+                        for (Node q = p; q != h;) { // 进入这里，说明头节点不匹配，目前正在遍历的是头节点之后的节点q（遍历的目的是设置新的头节点，把旧的头节点出队）
                             Node n = q.next;  // update by 2 unless singleton
-                            if (head == h && casHead(h, n == null ? q : n)) {
-                                h.forgetNext();
+                            if (head == h && casHead(h, n == null ? q : n)) { // 如果节点h是头节点，① 若q.next为空，则将q设为新的头节点；② 若q.next不为空，则将q.next设为新的头节点（注意此时q还在队列中）
+                                h.forgetNext(); // 旧的头节点h出队（若h之前还有节点，则h自连接代表着以h为尾节点的旧链表将被回收）
                                 break;
                             }                 // advance and retry
-                            if ((h = head)   == null ||
-                                (q = h.next) == null || !q.isMatched())
+                            if ((h = head)   == null ||                 // 进入这里，说明h不是头节点，则将其赋值为头节点，作进一步判断
+                                (q = h.next) == null || !q.isMatched()) // 如果head为空，或者head.next为空，或者head.next未匹配，则跳出不再遍历head.next了
                                 break;        // unless slack < 2
                         }
-                        LockSupport.unpark(p.waiter);
+                        LockSupport.unpark(p.waiter); // 唤醒p中等待的线程
                         return LinkedTransferQueue.<E>cast(item);
                     }
                 }
-                Node n = p.next;
-                p = (p != n) ? n : (h = head); // Use head if p offlist
+                Node n = p.next; // 来到这里，说明节点p已经被匹配过了，继续遍历p的下一个节点
+                p = (p != n) ? n : (h = head); // Use head if p offlist // p != n 则继续遍历下一个节点；p == n 说明p已经出队，需要从头开始遍历
             }
 
-            if (how != NOW) {                 // No matches available
+            if (how != NOW) {                 // No matches available // 来到这里，说明没有匹配成功，则按照4种模式的规则入队。
                 if (s == null)
                     s = new Node(e, haveData);
-                Node pred = tryAppend(s, haveData);
+                Node pred = tryAppend(s, haveData); // 尝试入队
                 if (pred == null)
-                    continue retry;           // lost race vs opposite mode
+                    continue retry;           // lost race vs opposite mode // 入队失败，重试
                 if (how != ASYNC)
-                    return awaitMatch(s, pred, e, (how == TIMED), nanos);
+                    return awaitMatch(s, pred, e, (how == TIMED), nanos); // 阻塞等待，直到匹配或超时
             }
             return e; // not waiting
         }
     }
 
     /**
-     * Tries to append node s as tail.
+     * Tries to append node s as tail. // 将节点s作为尾节点入队
      *
      * @param s the node to append
      * @param haveData true if appending in data mode
@@ -663,18 +663,18 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         for (Node t = tail, p = t;;) {        // move p to last node and append
             Node n, u;                        // temps for reads of next & tail
             if (p == null && (p = head) == null) {
-                if (casHead(null, s))
+                if (casHead(null, s))    // 队列为空，将s作为头节点。注意，这里插入第一个元素的时候tail指针并没有指向s
                     return s;                 // initialize
             }
             else if (p.cannotPrecede(haveData))
-                return null;                  // lost race vs opposite mode
-            else if ((n = p.next) != null)    // not last; keep traversing
-                p = p != t && t != (u = tail) ? (t = u) : // stale tail
-                    (p != n) ? n : null;      // restart if off list
-            else if (!p.casNext(null, s))
+                return null;                  // lost race vs opposite mode // 节点p之后无法连接节点，返回null
+            else if ((n = p.next) != null)    // not last; keep traversing  // 节点p不是尾节点（因为tail并不严格指向尾节点），需继续遍历
+                p = p != t && t != (u = tail) ? (t = u) : // stale tail // 如果节点p与t不等，且t不是tail节点，则将tail赋值给p和t，重新从tail节点开始遍历
+                    (p != n) ? n : null;      // restart if off list    // 否则，① 如果p与p.next不等，从p.next继续遍历；② 如果p与p.next相等，则设p为空，此时队列为空，需将s作为头节点
+            else if (!p.casNext(null, s))// 进入这里，说明p是尾节点。若CAS失败，说明其他线程在p后加了节点，需继续遍历p.next
                 p = p.next;                   // re-read on CAS failure
-            else {
-                if (p != t) {                 // update if slack now >= 2
+            else {                            // 进入这里，说明p是尾节点，且CAS将s设为新的尾节点成功。
+                if (p != t) {                 // update if slack now >= 2 // p != t 说明松弛度大于等于2，需要重新设置tail节点
                     while ((tail != t || !casTail(t, s)) &&
                            (t = tail)   != null &&
                            (s = t.next) != null && // advance and retry

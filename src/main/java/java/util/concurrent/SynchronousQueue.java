@@ -42,9 +42,9 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 
 /**
- * A {@linkplain BlockingQueue blocking queue} in which each insert
+ * A {@linkplain BlockingQueue blocking queue} in which each insert // 每个插入操作必须等待其他线程发起移除操作，反之亦然。
  * operation must wait for a corresponding remove operation by another
- * thread, and vice versa.  A synchronous queue does not have any
+ * thread, and vice versa.  A synchronous queue does not have any // 并没有内部容量，所以无法遍历该队列
  * internal capacity, not even a capacity of one.  You cannot
  * {@code peek} at a synchronous queue because an element is only
  * present when you try to remove it; you cannot insert an element
