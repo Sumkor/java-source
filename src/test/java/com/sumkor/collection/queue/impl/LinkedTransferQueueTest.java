@@ -3,6 +3,7 @@ package com.sumkor.collection.queue.impl;
 import org.junit.Test;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedTransferQueue;
 
 /**
@@ -15,14 +16,14 @@ public class LinkedTransferQueueTest {
      * -verbose:gc -Xms40M -Xmx40M -Xmn10M -XX:SurvivorRatio=8
      * 堆大小为40m，其中新生代大小为10m，按照1:8比例分配，Eden区大小设置为8m
      * 此时存入8m大小的变量，直接存入老年代（tenured generation）
-     *
+     * <p>
      * 验证：
      * 对于链表
      * nodeA ← nodeB ← nodeC
-     *
+     * <p>
      * 如果把 nodeB 的 item 域自引用，把 nodeC 指向 nodeA，就算没有断开 nodeB 到 nodeA 的引用，nodeB 也会被垃圾回收调。
      * nodeB
-     *   ↓
+     * ↓
      * nodeA ← nodeC
      */
     @Test
@@ -86,14 +87,18 @@ public class LinkedTransferQueueTest {
      * http://ifeve.com/buglinkedtransferqueue-bug/
      * https://bugs.java.com/bugdatabase/view_bug.do?bug_id=8043743
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         final BlockingQueue<Long> queue = new LinkedTransferQueue<Long>();
+
+        CountDownLatch countDownLatch01 = new CountDownLatch(1);
+        CountDownLatch countDownLatch02 = new CountDownLatch(1);
 
         Runnable takeTask = new Runnable() {
             public void run() {
+                countDownLatch01.countDown();
+                System.out.println("takeTask--------------------" + Thread.currentThread().getId());
                 try {
-                    System.out.println(Thread.currentThread().getId() + " "
-                            + queue.take());
+                    System.out.println("takeTask--------------------" + Thread.currentThread().getId() + " " + queue.take());
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -101,29 +106,42 @@ public class LinkedTransferQueueTest {
         };
         Runnable takeTaskInterrupted = new Runnable() {
             public void run() {
-                Thread.currentThread().interrupt();
                 try {
-                    System.out.println(Thread.currentThread().getId() + " "
-                            + queue.take());
+                    countDownLatch01.await();
+                    countDownLatch02.countDown();
+                    System.out.println("takeTaskInterrupted---------" + Thread.currentThread().getId());
+                    Thread.currentThread().interrupt();
+                    System.out.println("takeTaskInterrupted---------" + Thread.currentThread().getId() + " " + queue.take());
                 } catch (InterruptedException e) {
-                    System.out.println(Thread.currentThread().getId() + " " + e);
+                    System.out.println("takeTaskInterrupted---------" + Thread.currentThread().getId() + " " + e);
                 }
             }
         };
         Runnable offerTask = new Runnable() {
             public void run() {
-                queue.offer(8L);
-                System.out.println(Thread.currentThread().getId() + " offerTask thread has come out!");
+                try {
+                    countDownLatch02.await();
+                    System.out.println("offerTask-------------------" + Thread.currentThread().getId());
+                    queue.offer(8L);
+                    System.out.println("offerTask-------------------" + Thread.currentThread().getId() + " offerTask thread has come out!");
+                } catch (InterruptedException e) {
+                    System.out.println("offerTask-------------------" + Thread.currentThread().getId() + " " + e);
+                }
             }
         };
-        new Thread(takeTask).start();// first untimed call to take
-        new Thread(takeTaskInterrupted).start();// second untimed call to take with interrupted status
-        new Thread(offerTask).start();//  a call to offer
 
-        new Thread(takeTask).start();
-        new Thread(takeTask).start();
-        new Thread(takeTask).start();
-        new Thread(takeTask).start();
+        Thread takeThread = new Thread(takeTask); // untimed call to take
+        takeThread.start();
+
+        Thread takeInterruptedThead = new Thread(takeTaskInterrupted); // untimed call to take with interrupted status
+        takeInterruptedThead.start();
+
+        Thread offerThread = new Thread(offerTask);
+        offerThread.start();
+
+//        new Thread(takeTask).start();// first untimed call to take
+//        new Thread(takeTaskInterrupted).start();// second untimed call to take with interrupted status
+//        new Thread(offerTask).start();//  a call to offer
 
     }
 }
