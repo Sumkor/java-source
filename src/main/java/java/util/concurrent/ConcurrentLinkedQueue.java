@@ -345,11 +345,11 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
                 // We have fallen off list.  If tail is unchanged, it
                 // will also be off-list, in which case we need to
                 // jump to head, from which all live nodes are always
-                // reachable.  Else the new tail is a better bet. // ① 若节点t不再是tail，说明其他线程加入过元素(修改过tail)，则取最新tail作为t和p
-                p = (t != (t = tail)) ? t : head;                 // ② 若节点t依旧是tail，说明从tail节点开始遍历链表已经不管用了，则把head作为p，从head节点从头遍历链表（注意这一步造成后续遍历中p!=t成立）
+                // reachable.  Else the new tail is a better bet. // 1. 若节点t不再是tail，说明其他线程加入过元素(修改过tail)，则取最新tail作为t和p
+                p = (t != (t = tail)) ? t : head;                 // 2. 若节点t依旧是tail，说明从tail节点开始遍历链表已经不管用了，则把head作为p，从head节点从头遍历链表（注意这一步造成后续遍历中p!=t成立）
             else
-                // Check for tail updates after two hops. // 进入这里，说明p.next不为null，且p未出队，需要判断：// ① 若p与t相等，则t留在原位，p=p.next一直往下遍历（注意这一步造成后续遍历中p!=t成立）
-                p = (p != t && t != (t = tail)) ? t : q;  // ② 若p与t不等，需进一步判断t与tail是否相等。若t不为tail，则取最新tail作为t和p；若t为tail，则p=p.next一直往下遍历
+                // Check for tail updates after two hops. // 进入这里，说明p.next不为null，且p未出队，需要判断：// 1. 若p与t相等，则t留在原位，p=p.next一直往下遍历（注意这一步造成后续遍历中p!=t成立）
+                p = (p != t && t != (t = tail)) ? t : q;  // 2. 若p与t不等，需进一步判断t与tail是否相等。若t不为tail，则取最新tail作为t和p；若t为tail，则p=p.next一直往下遍历
         }
     }
 
