@@ -59,11 +59,11 @@ public class ReferenceQueue<T> {
             // Check that since getting the lock this reference hasn't already been
             // enqueued (and even then removed)
             ReferenceQueue<?> queue = r.queue;
-            if ((queue == NULL) || (queue == ENQUEUED)) { // 校验元素r是否已经存入ReferenceQueue之中，或者已经从ReferenceQueue中移除
+            if ((queue == NULL) || (queue == ENQUEUED)) { // 校验引用r是否已经存入ReferenceQueue之中，或者已经从ReferenceQueue中移除
                 return false;
             }
             assert queue == this;
-            r.queue = ENQUEUED; // 表示入参reference已经存入ReferenceQueue之中
+            r.queue = ENQUEUED; // 表示引用r已经存入ReferenceQueue之中
             r.next = (head == null) ? r : head; // 头插法。r.next = 队列的下一个节点
             head = r;
             queueLength++;
@@ -81,9 +81,9 @@ public class ReferenceQueue<T> {
         if (r != null) {
             head = (r.next == r) ?
                 null :
-                r.next; // Unchecked due to the next field having a raw type in Reference
-            r.queue = NULL; // 表示元素r已经从ReferenceQueue中移除
-            r.next = r;
+                r.next; // Unchecked due to the next field having a raw type in Reference // 头节点出队
+            r.queue = NULL; // 表示引用r已经从ReferenceQueue中移除
+            r.next = r;     // 自连接，方便回收
             queueLength--;
             if (r instanceof FinalReference) {
                 sun.misc.VM.addFinalRefCount(-1);
@@ -140,7 +140,7 @@ public class ReferenceQueue<T> {
             if (r != null) return r;
             long start = (timeout == 0) ? 0 : System.nanoTime();
             for (;;) {
-                lock.wait(timeout);
+                lock.wait(timeout); // 等待一段时间后再出队
                 r = reallyPoll();
                 if (r != null) return r;
                 if (timeout != 0) {

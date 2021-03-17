@@ -89,9 +89,9 @@ public abstract class Reference<T> {
      * field is also used for linking Reference objects in the pending list.
      */
 
-    private T referent;         /* Treated specially by GC */
+    private T referent;         /* Treated specially by GC */ // Reference实例管理的对象，会被GC特殊对待
 
-    volatile ReferenceQueue<? super T> queue; // Reference实例被回收后，会被添加到这个队列中
+    volatile ReferenceQueue<? super T> queue; // Reference实例管理的对象被回收后，Reference实例会被添加到这个队列中
 
     /* When active:   NULL
      *     pending:   this
@@ -102,7 +102,7 @@ public abstract class Reference<T> {
     Reference next; // ReferenceQueue队列的下一个引用
 
     /* When active:   next element in a discovered reference list maintained by GC (or this if last) // 由垃圾回收器管理的已发现的引用列表
-     *     pending:   next element in the pending list (or null if last) // pending-Reference列表中的下一个元素，如果没有为null
+     *     pending:   next element in the pending list (or null if last) // pending-Reference列表中的下一个元素（如果是最后一个，则为null）
      *   otherwise:   NULL
      */
     transient private Reference<T> discovered;  /* used by VM */ // pending-Reference列表的指针
@@ -117,10 +117,10 @@ public abstract class Reference<T> {
     private static Lock lock = new Lock();
 
 
-    /* List of References waiting to be enqueued.  The collector adds // pending-Reference是等待存入ReferenceQueue队列的元素列表
-     * References to this list, while the Reference-handler thread removes // 一个Referenece实例化后的状态为Active，当其引用的对象被回收之后，垃圾回收器将其加入到pending-Reference中，等待加入ReferenceQueue
-     * them.  This list is protected by the above lock object. The
-     * list uses the discovered field to link its elements.
+    /* List of References waiting to be enqueued.  The collector adds      // pending-Reference列表，存储等待进入ReferenceQueue队列的引用。
+     * References to this list, while the Reference-handler thread removes // 垃圾回收器向该列表添加元素，而Reference-handler线程向该列表移除元素。
+     * them.  This list is protected by the above lock object. The         // 操作pending-Reference列表需要使用lock对象
+     * list uses the discovered field to link its elements.                // pending-Reference列表使用discovered指针来访问元素
      */
     private static Reference<Object> pending = null; // pending-Reference列表的头结点
 
