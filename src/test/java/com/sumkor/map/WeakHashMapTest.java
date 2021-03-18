@@ -5,7 +5,9 @@ import org.junit.Test;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.WeakHashMap;
 
 /**
@@ -43,24 +45,82 @@ public class WeakHashMapTest {
     }
 
     /**
+     * -verbose:gc -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8
+     *
+     * 两个要点：
+     * 1. for 循环中的 bytes，虽然是个强引用，但是下一次循环后就变为不可达！
+     * 2. for 循环中的 weakReference，没有暴露给 for 循环外，referenceQueue.remove 无法得到数据！ 猜测是这种情况下 GC 没有把回收的 weakReference 存入 pending-Reference 列表。
+     */
+    @Test
+    public void weakReferenceInLoop01() throws InterruptedException {
+        ReferenceQueue referenceQueue = new ReferenceQueue();
+        for (int i = 0; i < 5; i++) {
+            byte[] bytes = new byte[1024 * 1024 * 8]; // 虽然是个强引用，但是下一次循环后就变为不可达！
+            WeakReference<byte[]> weakReference = new WeakReference<byte[]>(bytes, referenceQueue);
+        }
+        Reference remove = referenceQueue.remove(1000); // 这里没有得到通知！
+        System.out.println("remove = " + remove);
+        /**
+         * [GC (Allocation Failure)  15196K->9607K(19456K), 0.0018108 secs]
+         * [GC (Allocation Failure)  9607K->9607K(19456K), 0.0011471 secs]
+         * [Full GC (Allocation Failure)  9607K->1328K(19456K), 0.0072711 secs]
+         * [GC (Allocation Failure)  9520K->9520K(19456K), 0.0002953 secs]
+         * [Full GC (Ergonomics)  9520K->1328K(19456K), 0.0037598 secs]
+         * [GC (Allocation Failure)  9684K->9520K(19456K), 0.0002413 secs]
+         * [Full GC (Ergonomics)  9520K->963K(19456K), 0.0070743 secs]
+         * [GC (Allocation Failure)  9155K->9155K(19456K), 0.0008728 secs]
+         * [Full GC (Ergonomics)  9155K->1024K(19456K), 0.0027749 secs]
+         * remove = null
+         */
+    }
+
+    /**
+     * -verbose:gc -Xms20M -Xmx20M -Xmn10M -XX:SurvivorRatio=8
+     *
+     * for 循环中的 weakReference，暴露给 for 循环外的 WeakReference 数组了，ReferenceQueue 能够正常得到通知！
+     */
+    @Test
+    public void weakReferenceInLoop02() throws InterruptedException {
+        ReferenceQueue referenceQueue = new ReferenceQueue();
+        WeakReference[] weakReferences = new WeakReference[10];
+        for (int i = 0; i < 5; i++) {
+            byte[] bytes = new byte[1024 * 1024 * 8];
+            WeakReference<byte[]> weakReference = new WeakReference<byte[]>(bytes, referenceQueue);
+            weakReferences[i] = weakReference;
+        }
+        Reference remove = referenceQueue.remove(1000); // 这里得到通知了！
+        System.out.println("remove = " + remove);
+        /**
+         * [GC (Allocation Failure)  15969K->9884K(19456K), 0.0016777 secs]
+         * [Full GC (Ergonomics)  9884K->1617K(19456K), 0.0056901 secs]
+         * [GC (Allocation Failure)  9809K->9841K(19456K), 0.0008728 secs]
+         * [Full GC (Ergonomics)  9841K->1616K(19456K), 0.0089358 secs]
+         * [GC (Allocation Failure)  9972K->9841K(19456K), 0.0005285 secs]
+         * [Full GC (Ergonomics)  9841K->1252K(19456K), 0.0090569 secs]
+         * [GC (Allocation Failure)  9444K->9476K(19456K), 0.0008352 secs]
+         * [Full GC (Ergonomics)  9476K->1536K(19456K), 0.0027644 secs]
+         * remove = java.lang.ref.WeakReference@deb6432
+         */
+    }
+
+    /**
      * @see java.lang.ref.Reference
      * <p>
      * Reference 类把内存分为 4 种状态：
-     * Active：初始化，内存刚被分配。
-     * Pending：对象被回收，放入引用队列之前。
-     * Enqueued：对象被回收，放入引用队列之后。
-     * Inactive：对象被回收，引用队列中已移除。不能再变为其它状态。
+     * Active：新创建的 Reference 实例为 Active 状态。当垃圾回收器检测到 Reference 中管理的对象为不可达时，如果该 Reference 实例注册了队列，则进入 Pending 状态，否则进入 Inactive 状态。
+     * Pending：在 pending-Reference 列表中的元素，等待 Reference-handler 线程将其存入 ReferenceQueue 队列。未注册的实例不会到达这个状态。
+     * Enqueued：在 ReferenceQueue 队列中的元素。当实例从 ReferenceQueue 队列中删除时，进入 Inactive 状态。未注册的实例不会到达这个状态。
+     * Inactive：一旦实例变为 Inactive (非活动)状态，它的状态将不再更改。
      * <p>
-     * Reference 类是通过其中的 queue 属性和 next 属性来记录该状态。
+     * Reference 类是通过 queue 属性和 next 属性来记录该状态。
      * Active：queue = ReferenceQueue实例 或 ReferenceQueue.NULL; next = null
      * Pending：queue = ReferenceQueue实例; next = this
-     * Enqueued：queue = ReferenceQueue.ENQUEUED; next = 队列的下一个节点
+     * Enqueued：queue = ReferenceQueue.ENQUEUED; next = 队列的下一个节点或 this
      * Inactive：queue = ReferenceQueue.NULL; next = this.
      * <p>
      * @see java.lang.ref.ReferenceQueue
      * 引用队列，当检测到对象的可到达性更改时，垃圾回收器将已注册的引用对象添加到队列中，
      * ReferenceQueue 实现了入队（enqueue）和出队（poll），还有 remove 操作，内部元素 head 就是泛型的 Reference。
-     * <p>
      * https://blog.csdn.net/gdutxiaoxu/article/details/80738581
      */
     @Test
@@ -69,20 +129,20 @@ public class WeakHashMapTest {
         ReferenceQueue referenceQueue = new ReferenceQueue();
 
         /**
-         * 创建弱引用，此时 Reference 状态为 Active，
-         * 其中
-         * {@link Reference#pending} 属性为空，
-         * {@link Reference#queue} 属性为自定义的引用队列，并且 next 为 null
+         * 创建弱引用，Reference#queue 为自定义的引用队列，Reference#pending 为空，Reference#next 为空。
+         * 此时 Reference 状态为 Active。
          */
         WeakReference weakReference = new WeakReference(new Object(), referenceQueue);
         System.out.println(weakReference);// java.lang.ref.WeakReference@f2a0b8e
+        System.out.println(weakReference.get());// java.lang.Object@593634ad
 
         /**
-         * 当 GC 执行后，由于是弱引用，回收该 object 对象，并且置于 Reference#pending 属性上，同时 Reference#referent 属性置为 null（即 weakReference#get 将得到 null）。
+         * 当 GC 执行后，由于是弱引用，回收该 object 对象，将 Reference 实例置于 Reference#pending 属性上，同时 Reference#referent 属性置为 null（即 Reference#get 将得到 null）。
          * 此时 Reference 的状态为 Pending。
-         * ReferenceHandler 定时（守护线程，while true循环）从 Reference#pending 属性中取下该元素，并且将该元素放入到队列中（头插法），
-         * 此时 Reference 状态为 Enqueued，
-         * Reference#queue 为 {@link ReferenceQueue#ENQUEUED}，即解开 Reference 对象与 ReferenceQueue 队列之间的关联。
+         *
+         * ReferenceHandler 定时（守护线程，while true循环）从 Reference#pending 属性中取下该引用，并且将该引用放入到队列中（头插法），
+         * 再将 Reference#queue 置为空队列 {@link ReferenceQueue#ENQUEUED}，解开 Reference 对象与 ReferenceQueue 队列之间的关联。
+         * 此时 Reference 状态为 Enqueued。
          *
          * @see Reference#tryHandlePending(boolean)
          * @see ReferenceQueue#enqueue(java.lang.ref.Reference)
@@ -90,14 +150,15 @@ public class WeakHashMapTest {
         System.gc();
 
         /**
-         * 当从队列里面取出该元素，Reference 状态为 Inactive，
-         * Reference.queue = Reference.NULL
+         * 从队列里面取出该元素，Reference#queue 为 {@link ReferenceQueue#NULL}。
+         * 此时 Reference 状态为 Inactive。
          *
          * @see ReferenceQueue#remove(long)
          * @see ReferenceQueue#reallyPoll()
          */
         Reference reference = referenceQueue.remove();
         System.out.println(reference);// java.lang.ref.WeakReference@f2a0b8e
+        System.out.println(reference.get());// null
 
         reference = referenceQueue.poll();
         System.out.println(reference);// null

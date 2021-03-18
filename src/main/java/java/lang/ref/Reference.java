@@ -43,7 +43,7 @@ public abstract class Reference<T> {
 
     /* A Reference instance is in one of four possible internal states:
      *
-     *     Active: Subject to special treatment by the garbage collector.  Some // 新创建的对象实例状态即为Active状态。这个实例如果注册为队列，则进入Pending状态，否则进入Inactive状态。
+     *     Active: Subject to special treatment by the garbage collector.  Some // 新创建的Reference实例为Active状态。当垃圾回收器检测到Reference中管理的对象为不可达时，如果该Reference实例注册了队列，则进入Pending状态，否则进入Inactive状态。
      *     time after the collector detects that the reachability of the
      *     referent has changed to the appropriate state, it changes the
      *     instance's state to either Pending or Inactive, depending upon

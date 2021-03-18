@@ -319,11 +319,11 @@ public class WeakHashMap<K,V>
             synchronized (queue) {
                 @SuppressWarnings("unchecked")
                     Entry<K,V> e = (Entry<K,V>) x;
-                int i = indexFor(e.hash, table.length);
+                int i = indexFor(e.hash, table.length); // 被回收的节点所在桶的位置
 
                 Entry<K,V> prev = table[i]; // 被回收的节点所在桶的头节点
                 Entry<K,V> p = prev;
-                while (p != null) {
+                while (p != null) { // 遍历链表，删除节点e
                     Entry<K,V> next = p.next;
                     if (p == e) {
                         if (prev == e)
@@ -398,7 +398,7 @@ public class WeakHashMap<K,V>
         int index = indexFor(h, tab.length);
         Entry<K,V> e = tab[index];
         while (e != null) {
-            if (e.hash == h && eq(k, e.get()))
+            if (e.hash == h && eq(k, e.get())) // e.get()得到Entry的Key
                 return e.value;
             e = e.next;
         }
@@ -489,7 +489,7 @@ public class WeakHashMap<K,V>
             return;
         }
 
-        Entry<K,V>[] newTable = newTable(newCapacity);
+        Entry<K,V>[] newTable = newTable(newCapacity); // 扩容
         transfer(oldTable, newTable); // 迁移元素至新数组
         table = newTable;
 
@@ -499,7 +499,7 @@ public class WeakHashMap<K,V>
          * unbounded expansion of garbage-filled tables.
          */
         if (size >= threshold / 2) { // 这里放宽了扩容阈值，为原来的一半，目的是避免反复迁移数组
-            threshold = (int)(newCapacity * loadFactor);
+            threshold = (int)(newCapacity * loadFactor); // 扩容完成，更新阈值
         } else { // 放弃扩容
             expungeStaleEntries(); // 清除废弃的元素
             transfer(newTable, oldTable); // 迁移元素至旧数组
@@ -591,11 +591,11 @@ public class WeakHashMap<K,V>
         int h = hash(k);
         Entry<K,V>[] tab = getTable();
         int i = indexFor(h, tab.length);
-        Entry<K,V> prev = tab[i];
+        Entry<K,V> prev = tab[i]; // 找到key所在桶位置
         Entry<K,V> e = prev;
 
         while (e != null) {
-            Entry<K,V> next = e.next;
+            Entry<K,V> next = e.next; // 遍历链表
             if (h == e.hash && eq(k, e.get())) {
                 modCount++;
                 size--;
