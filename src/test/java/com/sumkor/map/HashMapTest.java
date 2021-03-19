@@ -334,16 +334,23 @@ public class HashMapTest {
      * 旧链表数据迁移至新链表
      * 由于每次扩容是2次幂的扩展(指数组长度/桶数量扩为原来2倍)，所以，元素的位置要么是在原位置，要么是在原位置再移动2次幂的位置。
      * 本例中，桶的数量由1扩容为2.
-     * <p>
-     * HashMap扩容时的rehash方法中(e.hash & oldCap) == 0算法推导
-     * https://blog.csdn.net/u010425839/article/details/106620440/
-     * <p>
-     * 打印结果：
+     *
+     * 执行结果：
+     *
      * 1=A -> 2=B -> 3=C ->
      * --------------------------
      * 2=B ->
      * 1=A -> 3=C ->
      * --------------------------
+     *
+     * 执行结果：
+     *
+     * 1=A -> 2=B -> 3=C -> 4=D -> 5=E -> 6=F -> 8=H -> 10=J ->
+     * --------------------------
+     * 2=B -> 4=D -> 6=F -> 8=H -> 10=J ->
+     * 1=A -> 3=C -> 5=E ->
+     * --------------------------
+     *
      */
     @Test
     public void resizeLink02() {
@@ -353,7 +360,15 @@ public class HashMapTest {
         Node[] newTable = new Node[newCap];
 
         // A -> B -> C
-        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", null);
+//        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", null);
+//        Node firstLinkNode02 = new Node(new Integer(2).hashCode(), 2, "B", firstLinkNode03);
+//        Node firstLinkNode01 = new Node(new Integer(1).hashCode(), 1, "A", firstLinkNode02);
+        Node firstLinkNode10 = new Node(new Integer(10).hashCode(), 10, "J", null);
+        Node firstLinkNode08 = new Node(new Integer(8).hashCode(), 8, "H", firstLinkNode10);
+        Node firstLinkNode06 = new Node(new Integer(6).hashCode(), 6, "F", firstLinkNode08);
+        Node firstLinkNode05 = new Node(new Integer(5).hashCode(), 5, "E", firstLinkNode06);
+        Node firstLinkNode04 = new Node(new Integer(4).hashCode(), 4, "D", firstLinkNode05);
+        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", firstLinkNode04);
         Node firstLinkNode02 = new Node(new Integer(2).hashCode(), 2, "B", firstLinkNode03);
         Node firstLinkNode01 = new Node(new Integer(1).hashCode(), 1, "A", firstLinkNode02);
         oldTable[0] = firstLinkNode01;

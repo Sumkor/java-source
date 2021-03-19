@@ -255,8 +255,18 @@ public class ConcurrentHashMapTest {
      *
      * 1=A -> 2=B -> 3=C ->
      * --------------------------
+     * lastRun = C
      * 2=B ->
      * 1=A -> 3=C ->
+     * --------------------------
+     *
+     * 执行结果：
+     *
+     * 1=A -> 2=B -> 3=C -> 4=D -> 5=E -> 6=F -> 8=H -> 10=J ->
+     * --------------------------
+     * lastRun = F
+     * 4=D -> 2=B -> 6=F -> 8=H -> 10=J ->
+     * 5=E -> 3=C -> 1=A ->
      * --------------------------
      */
     @Test
@@ -266,8 +276,15 @@ public class ConcurrentHashMapTest {
         Node[] oldTable = new Node[oldCap];
         Node[] newTable = new Node[newCap];
         // A -> B -> C
-//        Node firstLinkNode03 = new Node(new Integer(4).hashCode(), 4, "D", null);
-        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", null);
+//        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", null);
+//        Node firstLinkNode02 = new Node(new Integer(2).hashCode(), 2, "B", firstLinkNode03);
+//        Node firstLinkNode01 = new Node(new Integer(1).hashCode(), 1, "A", firstLinkNode02);
+        Node firstLinkNode10 = new Node(new Integer(10).hashCode(), 10, "J", null);
+        Node firstLinkNode08 = new Node(new Integer(8).hashCode(), 8, "H", firstLinkNode10);
+        Node firstLinkNode06 = new Node(new Integer(6).hashCode(), 6, "F", firstLinkNode08);
+        Node firstLinkNode05 = new Node(new Integer(5).hashCode(), 5, "E", firstLinkNode06);
+        Node firstLinkNode04 = new Node(new Integer(4).hashCode(), 4, "D", firstLinkNode05);
+        Node firstLinkNode03 = new Node(new Integer(3).hashCode(), 3, "C", firstLinkNode04);
         Node firstLinkNode02 = new Node(new Integer(2).hashCode(), 2, "B", firstLinkNode03);
         Node firstLinkNode01 = new Node(new Integer(1).hashCode(), 1, "A", firstLinkNode02);
         oldTable[0] = firstLinkNode01;
@@ -301,6 +318,7 @@ public class ConcurrentHashMapTest {
                 hn = lastRun;
                 ln = null;
             }
+            System.out.println("lastRun = " + lastRun.getValue());
             for (Node p = f; p != lastRun; p = p.next) {
                 int ph = p.hash;
                 Object pk = p.key;
