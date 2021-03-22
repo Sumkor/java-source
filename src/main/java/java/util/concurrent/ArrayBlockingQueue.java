@@ -500,11 +500,11 @@ public class ArrayBlockingQueue<E> extends AbstractQueue<E>
                 final int putIndex = this.putIndex;
                 int i = takeIndex;
                 do {
-                    if (o.equals(items[i])) {
+                    if (o.equals(items[i])) { // i位置元素相等则移除
                         removeAt(i);
                         return true;
                     }
-                    if (++i == items.length)
+                    if (++i == items.length) // 从takeIndex到putIndex范围遍历数组，到达数组尾部则从头开始。
                         i = 0;
                 } while (i != putIndex);
             }

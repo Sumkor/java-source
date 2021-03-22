@@ -340,13 +340,13 @@ public class LinkedBlockingQueue<E> extends AbstractQueue<E>
         try {
             /*
              * Note that count is used in wait guard even though it is
-             * not protected by lock. This works because count can // 这里只需要对 count 自增加锁 putLock，从而使得此时 count 只能够自减（使用getLock）
+             * not protected by lock. This works because count can // 这里只需要对 count 自增加锁 putLock，因为此时其他线程只能通过获取 getLock 去操作 count 自减
              * only decrease at this point (all other puts are shut
              * out by lock), and we (or some other waiting put) are
              * signalled if it ever changes from capacity. Similarly
              * for all other uses of count in other wait guards.
              */
-            while (count.get() == capacity) { // 等待直到非满
+            while (count.get() == capacity) { // 如果当前队列已满，则等待直到非满
                 notFull.await(); // 等待的时候会释放锁 putLock，唤醒的时候尝试获得锁 putLock
             }
             enqueue(node); // 从队列尾部插入元素

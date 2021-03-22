@@ -149,6 +149,9 @@ public class WeakHashMapTest {
          */
         System.gc();
 
+        System.out.println(weakReference);// java.lang.ref.WeakReference@f2a0b8e
+        System.out.println(weakReference.get());// null
+
         /**
          * 从队列里面取出该元素，Reference#queue 为 {@link ReferenceQueue#NULL}。
          * 此时 Reference 状态为 Inactive。
@@ -194,6 +197,7 @@ public class WeakHashMapTest {
                 WeakReference<byte[]> k;
                 while ((k = (WeakReference) referenceQueue.remove(1000)) != null) {
                     System.out.println((cnt++) + "回收了:" + k);
+                    // map.remove(k); // 从HashMap中移除Entry，达到与WeakHashMap一样的效果
                 }
             } catch (InterruptedException e) {
                 //结束循环
