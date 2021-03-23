@@ -169,12 +169,12 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
         /**
          * Performs a put or take.
          *
-         * @param e if non-null, the item to be handed to a consumer;   // 传输的元素，非空表示需要传递给消费者，为空表示请求生产者的数据
+         * @param e if non-null, the item to be handed to a consumer;   // 传输的数据元素。非空表示需要向消费者传递数据，为空表示需要向生产者请求数据
          *          if null, requests that transfer return an item
          *          offered by producer.
          * @param timed if this operation should timeout                // 该操作是否会超时
          * @param nanos the timeout, in nanoseconds
-         * @return if non-null, the item provided or received; if null, // 非空表示元素传递或接受成功，为空表示失败
+         * @return if non-null, the item provided or received; if null, // 非空表示数据元素传递或接收成功，为空表示失败
          *         the operation failed due to timeout or interrupt --  // 失败的原因有两种：1.超时；2.中断，通过 Thread.interrupted 来检测中断
          *         the caller can distinguish which of these occurred
          *         by checking Thread.interrupted.
@@ -436,7 +436,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             final long deadline = timed ? System.nanoTime() + nanos : 0L; // 到期时间
             Thread w = Thread.currentThread(); // 当前线程
             int spins = (shouldSpin(s) ?
-                         (timed ? maxTimedSpins : maxUntimedSpins) : 0); // 自旋次数（注意并不是由它控制下面for循环的次数！）
+                         (timed ? maxTimedSpins : maxUntimedSpins) : 0); // 自旋次数（自旋结束后再判断是否需要阻塞！）
             for (;;) {
                 if (w.isInterrupted()) // 当前线程中断了，尝试取消节点s
                     s.tryCancel();
@@ -492,12 +492,12 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             if (past != null && past.isCancelled())
                 past = past.next;
 
-            // Absorb cancelled nodes at head
+            // Absorb cancelled nodes at head // 找到有效head
             SNode p;
             while ((p = head) != null && p != past && p.isCancelled())
                 casHead(p, p.next);
 
-            // Unsplice embedded nodes
+            // Unsplice embedded nodes // 移除head到past之间已取消的节点
             while (p != null && p != past) {
                 SNode n = p.next;
                 if (n != null && n.isCancelled())
@@ -719,8 +719,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                         continue;
                     }
 
-                    advanceHead(h, m);              // successfully fulfilled
-                    LockSupport.unpark(m.waiter);
+                    advanceHead(h, m);              // successfully fulfilled // 匹配成功，把节点m作为新的头节点（dummy node）
+                    LockSupport.unpark(m.waiter);   // 唤醒m上的线程
                     return (x != null) ? (E)x : e;
                 }
             }
@@ -735,21 +735,21 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
          * @param nanos timeout value
          * @return matched item, or s if cancelled
          */
-        Object awaitFulfill(QNode s, E e, boolean timed, long nanos) { // 节点s等待匹配，其数据元素为e
+        Object awaitFulfill(QNode s, E e, boolean timed, long nanos) {    // 节点s等待匹配，其数据元素为e
             /* Same idea as TransferStack.awaitFulfill */
-            final long deadline = timed ? System.nanoTime() + nanos : 0L;
+            final long deadline = timed ? System.nanoTime() + nanos : 0L; // 到期时间
             Thread w = Thread.currentThread();
             int spins = ((head.next == s) ?
-                         (timed ? maxTimedSpins : maxUntimedSpins) : 0);
+                         (timed ? maxTimedSpins : maxUntimedSpins) : 0); // 自旋次数（自旋结束后再判断是否需要阻塞）
             for (;;) {
-                if (w.isInterrupted())
-                    s.tryCancel(e);
+                if (w.isInterrupted()) // 当前线程中断了，尝试取消节点s
+                    s.tryCancel(e); // 取消操作，设置 s.item = s
                 Object x = s.item; // 检查节点s是否匹配到了数据x，注意这里是跟栈结构不一样的地方！
                 if (x != e)
                     return x;
                 if (timed) {
                     nanos = deadline - System.nanoTime();
-                    if (nanos <= 0L) {
+                    if (nanos <= 0L) { // 已超时，尝试取消节点s
                         s.tryCancel(e);
                         continue;
                     }
