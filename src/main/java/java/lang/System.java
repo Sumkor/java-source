@@ -477,9 +477,9 @@ public final class System {
      * paragraph effectively applies only to the situation where both
      * arrays have component types that are reference types.)
      *
-     * @param      src      the source array. 源数组
-     * @param      srcPos   starting position in the source array. 源数组的起始位置
-     * @param      dest     the destination array. 目标数组
+     * @param      src      the source array.                          源数组
+     * @param      srcPos   starting position in the source array.     源数组的起始位置
+     * @param      dest     the destination array.                     目标数组
      * @param      destPos  starting position in the destination data. 目标数组的起始位置
      * @param      length   the number of array elements to be copied. 复制的长度
      * @exception  IndexOutOfBoundsException  if copying would cause

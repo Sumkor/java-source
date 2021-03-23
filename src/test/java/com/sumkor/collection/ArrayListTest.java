@@ -223,15 +223,25 @@ public class ArrayListTest {
         Collections.addAll(list, "7", "8", "9");
 
         System.out.println("list = " + list); // [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+        int[] array01 = {1, 2, 3, 4, 5};
+        List<Integer> list01 = Arrays.stream(array01).boxed().collect(Collectors.toList()); // 正常CRUD
+        System.out.println("list01 = " + list01); // [1, 2, 3, 4, 5]
     }
 
     @Test
     public void filter() {
         List<String> list = Arrays.asList("a", "b", "c");
-        System.out.println("list = " + list);
+        System.out.println("list = " + list); // [a, b, c]
 
-        List<String> list2 = list.stream().filter(t -> t.equals("b")).collect(Collectors.toList());// 并不会改变原有list
-        System.out.println("list = " + list);
-        System.out.println("list2 = " + list2);
+        List<String> list2 = list.stream().filter(t -> t.equals("b")).collect(Collectors.toList());
+        // 对原list进行filter得到新的list，是深拷贝。
+
+        System.out.println("list = " + list); // [a, b, c]
+        System.out.println("list2 = " + list2); // [b]
+
+        list2.add("d");
+        System.out.println("list = " + list); // [a, b, c]
+        System.out.println("list2 = " + list2); // [b, d]
     }
 }

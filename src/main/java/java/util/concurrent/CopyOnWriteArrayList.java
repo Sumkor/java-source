@@ -180,15 +180,15 @@ public class CopyOnWriteArrayList<E>
     /**
      * static version of indexOf, to allow repeated calls without
      * needing to re-acquire array each time.
-     * @param o element to search for
-     * @param elements the array
-     * @param index first index to search
-     * @param fence one past last index to search
+     * @param o element to search for              查找的元素
+     * @param elements the array                   元素所在数组
+     * @param index first index to search          查找的第一个下标
+     * @param fence one past last index to search  查找的最后一个下标
      * @return index of element, or -1 if absent
      */
     private static int indexOf(Object o, Object[] elements,
                                int index, int fence) {
-        if (o == null) {
+        if (o == null) { // 允许存储null元素，需要区分当前查找元素是否为null
             for (int i = index; i < fence; i++)
                 if (elements[i] == null)
                     return i;

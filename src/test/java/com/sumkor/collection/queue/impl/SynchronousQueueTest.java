@@ -4,6 +4,7 @@ import org.junit.Test;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TransferQueue;
 
@@ -24,7 +25,7 @@ public class SynchronousQueueTest {
      * SynchronousQueue 是一个不存储元素的阻塞队列。每一个 put 操作必须等待一个 take 操作，否则不能继续添加元素。
      * SynchronousQueue可以看成是一个传球手，负责把生产者线程处理的数据直接传递给消费者线程。队列本身并不存储任何元素，非常适合传递性场景。
      *
-     * ynchronousQueue 支持公平性和非公平性 2 种策略来访问队列。默认是采用非公平性策略访问队列。
+     * SynchronousQueue 支持公平性和非公平性 2 种策略来访问队列。默认是采用非公平性策略访问队列。
      * 公平性策略底层使用了类似队列的数据结构，而非公平策略底层使用了类似栈的数据结构。
      * @see SynchronousQueue#SynchronousQueue()
      *
@@ -165,4 +166,11 @@ public class SynchronousQueueTest {
         }
     }
 
+    // --------------------------------
+
+    @Test
+    public void test() throws InterruptedException {
+        SynchronousQueue queue = new SynchronousQueue();
+        queue.remove();
+    }
 }
