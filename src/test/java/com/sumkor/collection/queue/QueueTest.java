@@ -226,7 +226,7 @@ public class QueueTest {
      * @see java.util.concurrent.LinkedTransferQueue 一个由链表结构组成的无界阻塞 TransferQueue 队列。
      * @see java.util.concurrent.PriorityBlockingQueue 一个有数组结构组成的无界（默认11，会扩容）阻塞队列，以堆排序将最小值（优先级最高）存放在数组首位（小顶堆）。
      * @see java.util.concurrent.DelayQueue 一个使用优先级队列 PriorityQueue 实现的无界阻塞队列，只有在延迟期满时才能从中提取元素。
-     * @see java.util.concurrent.SynchronousQueue 一个由链表或栈结构组成的阻塞队列，采用无锁算法，每个线程的存入或取出操作没有被匹配时，将会阻塞在队列中等待匹配。
+     * @see java.util.concurrent.SynchronousQueue 一个由链表或栈结构组成的阻塞队列（容量总为 0），采用无锁算法，每个线程的存入或取出操作没有被匹配时，将会阻塞在队列中等待匹配。
      *
      * 非阻塞队列：
      *

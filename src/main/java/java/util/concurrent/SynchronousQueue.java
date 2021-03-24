@@ -709,7 +709,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                 } else {                            // complementary-mode // 互补
                     QNode m = h.next;               // node to fulfill // 首个非空节点，将它与请求节点匹配
                     if (t != tail || m == null || h != head)
-                        continue;                   // inconsistent read
+                        continue;                   // inconsistent read // 每次自旋都严格保证获取最新的head/tail节点
 
                     Object x = m.item;
                     if (isData == (x != null) ||    // m already fulfilled // 并不是互补的

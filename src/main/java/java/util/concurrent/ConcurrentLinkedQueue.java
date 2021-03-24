@@ -194,7 +194,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
         }
 
         void lazySetNext(Node<E> val) {
-            UNSAFE.putOrderedObject(this, nextOffset, val);
+            UNSAFE.putOrderedObject(this, nextOffset, val); // 相比 putObjectVolatile()，putOrderedObject() 不保证内存可见性，但是性能较高
         }
 
         boolean casNext(Node<E> cmp, Node<E> val) {
@@ -327,7 +327,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
         checkNotNull(e);
         final Node<E> newNode = new Node<E>(e);
 
-        for (Node<E> t = tail, p = t;;) { // 初始时t和p都指向tail节点，注意tail不一定是尾节点（后有解释），但是也不妨从tail节点开始遍历链表
+        for (Node<E> t = tail, p = t;;) { // 初始时t和p都指向tail节点，注意tail不一定是尾节点（甚至tail有可能存在于废弃的链上，后有解释），但是也不妨从tail节点开始遍历链表
             Node<E> q = p.next;
             if (q == null) { // 使用p.next是否为空来判断p是否是尾节点，比较准确
                 // p is last node // 进入这里说明此时p是尾节点
@@ -339,17 +339,17 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
                         casTail(t, newNode);  // Failure is OK. // 将尾节点tail由t改为newNode，更新失败了也没关系，因为tail是不是尾节点不重要:)
                     return true;
                 }
-                // Lost CAS race to another thread; re-read next
+                // Lost CAS race to another thread; re-read next // CAS失败，说明其他线程先一步操作使得p的下一个节点不为null，需重新获取尾节点
             }
             else if (p == q) // 如果p的next等于p，说明p已经出队了，需要重新设置p、t的值
                 // We have fallen off list.  If tail is unchanged, it
                 // will also be off-list, in which case we need to
                 // jump to head, from which all live nodes are always
-                // reachable.  Else the new tail is a better bet. // 1. 若节点t不再是tail，说明其他线程加入过元素(修改过tail)，则取最新tail作为t和p
-                p = (t != (t = tail)) ? t : head;                 // 2. 若节点t依旧是tail，说明从tail节点开始遍历链表已经不管用了，则把head作为p，从head节点从头遍历链表（注意这一步造成后续遍历中p!=t成立）
+                // reachable.  Else the new tail is a better bet. // 1. 若节点t不再是tail，说明其他线程加入过元素(修改过tail)，则取最新tail作为t和p，从新的tail节点继续遍历链表
+                p = (t != (t = tail)) ? t : head;                 // 2. 若节点t依旧是tail，说明从tail节点开始遍历链表已经不管用了，则把head作为p，从head节点从头遍历链表（注意这一步造成后续遍历中p!=t成立）（这里没有更新tail，仍留在废链上）
             else
                 // Check for tail updates after two hops. // 进入这里，说明p.next不为null，且p未出队，需要判断：// 1. 若p与t相等，则t留在原位，p=p.next一直往下遍历（注意这一步造成后续遍历中p!=t成立）
-                p = (p != t && t != (t = tail)) ? t : q;  // 2. 若p与t不等，需进一步判断t与tail是否相等。若t不为tail，则取最新tail作为t和p；若t为tail，则p=p.next一直往下遍历
+                p = (p != t && t != (t = tail)) ? t : q;  // 2. 若p与t不等，需进一步判断t与tail是否相等。若t不为tail，则取最新tail作为t和p；若t为tail，则p=p.next一直往下遍历（就是说从tail节点往后遍历链表的过程，需时刻关注tail是否发生变化）
         }
     }
 
@@ -359,7 +359,7 @@ public class ConcurrentLinkedQueue<E> extends AbstractQueue<E>
             for (Node<E> h = head, p = h, q;;) { // 初始时h和p都指向head节点，从head节点开始遍历链表
                 E item = p.item;
 
-                if (item != null && p.casItem(item, null)) { // 把p节点的数据域设为空，返回p节点的数据
+                if (item != null && p.casItem(item, null)) { // p.item不为空，把p节点的数据域设为空，返回p节点的数据
                     // Successful CAS is the linearization point
                     // for item to be removed from this queue.
                     if (p != h) // hop two nodes at a time
