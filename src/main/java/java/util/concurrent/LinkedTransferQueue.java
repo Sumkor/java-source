@@ -273,18 +273,18 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * of re-nulling these fields when empty (which is complicated to
      * arrange, for little benefit.)
      *
-     * All enqueue/dequeue operations are handled by the single method
+     * All enqueue/dequeue operations are handled by the single method // 所有的入队/出队操作都通过调用 xfer 来实现
      * "xfer" with parameters indicating whether to act as some form
-     * of offer, put, poll, take, or transfer (each possibly with
+     * of offer, put, poll, take, or transfer (each possibly with      // xfer 方法通过入参来区分执行什么方法：offer, put, poll, take, or transfer
      * timeout). The relative complexity of using one monolithic
      * method outweighs the code bulk and maintenance problems of
      * using separate methods for each case.
      *
-     * Operation consists of up to three phases. The first is
+     * Operation consists of up to three phases. The first is          // 操作包含三个阶段：1.xfer 2.tryAppend 3.awaitMatch
      * implemented within method xfer, the second in tryAppend, and
      * the third in method awaitMatch.
      *
-     * 1. Try to match an existing node
+     * 1. Try to match an existing node                                // 1. 尝试匹配已存在的节点
      *
      *    Starting at head, skip already-matched nodes until finding
      *    an unmatched node of opposite mode, if one exists, in which
@@ -301,7 +301,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *    If no candidates are found and the call was untimed
      *    poll/offer, (argument "how" is NOW) return.
      *
-     * 2. Try to append a new node (method tryAppend)
+     * 2. Try to append a new node (method tryAppend)                 // 2. 尝试加入新节点
      *
      *    Starting at current tail pointer, find the actual last node
      *    and try to append a new node (or if head was null, establish
@@ -317,7 +317,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      *    On successful append, if the call was ASYNC, return.
      *
-     * 3. Await match or cancellation (method awaitMatch)
+     * 3. Await match or cancellation (method awaitMatch)             // 3. 等待匹配或取消
      *
      *    Wait for another thread to match node; instead cancelling if
      *    the current thread was interrupted or the wait timed out. On
@@ -450,7 +450,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      */
     static final class Node {
         final boolean isData;   // false if this is a request node // 是否是数据节点
-        volatile Object item;   // initially non-null if isData; CASed to match
+        volatile Object item;   // initially non-null if isData; CASed to match // 使用Object而不是泛型E，允许将item指向自身
         volatile Node next;
         volatile Thread waiter; // null until waiting
 
