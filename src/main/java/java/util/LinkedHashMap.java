@@ -280,17 +280,17 @@ public class LinkedHashMap<K,V>
         return t;
     }
 
-    void afterNodeRemoval(Node<K,V> e) { // unlink // 把节点从双向链表中删除
+    void afterNodeRemoval(Node<K,V> e) { // unlink // 把节点e从双向链表中删除
         LinkedHashMap.Entry<K,V> p =
             (LinkedHashMap.Entry<K,V>)e, b = p.before, a = p.after;
         p.before = p.after = null;
-        if (b == null)
+        if (b == null) // e的上一个节点为空，则把e的下一个节点作头节点
             head = a;
-        else
+        else           // e的上一个节点不为空，则把e的上一个节点的after指针 指向e的下一个节点
             b.after = a;
-        if (a == null)
+        if (a == null) // e的下一个节点为空，则把e的上一个节点作为尾节点
             tail = b;
-        else
+        else           // e的下一个节点不为空，则把e的下一个节点的before指针 指向e的上一个节点
             a.before = b;
     }
 

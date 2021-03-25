@@ -107,11 +107,11 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * dictated by callers.
      *
      * A FIFO dual queue may be implemented using a variation of the
-     * Michael & Scott (M&S) lock-free queue algorithm // 无锁队列算法，定义了头节点、尾节点
+     * Michael & Scott (M&S) lock-free queue algorithm                 // 无锁队列算法，定义了头节点、尾节点
      * (http://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf).
-     * It maintains two pointer fields, "head", pointing to a
+     * It maintains two pointer fields, "head", pointing to a          // head 节点指向一个已匹配（matched）节点，该节点又指向队列中第一个未匹配（unmatched）节点。
      * (matched) node that in turn points to the first actual
-     * (unmatched) queue node (or null if empty); and "tail" that
+     * (unmatched) queue node (or null if empty); and "tail" that      // tail 节点指向队列中最后一个节点。
      * points to the last node on the queue (or again null if
      * empty). For example, here is a possible queue with four data
      * elements:
@@ -131,7 +131,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * However, the nature of dual queues enables a simpler tactic for
      * improving M&S-style implementations when dual-ness is needed.
      *
-     * In a dual queue, each node must atomically maintain its match
+     * In a dual queue, each node must atomically maintain its match  // 队列中的每一个节点都需要维护其匹配状态（match status）
      * status. While there are other possible variants, we implement
      * this here as: for a data-mode node, matching entails CASing an // 对于数据节点，在匹配的时候，把该节点的item域从非空数据CAS设置为空。
      * "item" field from a non-null data value to null upon match, and
@@ -172,7 +172,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *  head           tail
      *    |              |
      *    v              v
-     *    M -> M -> U -> U -> U -> U // tail指针不严格指向尾节点
+     *    M -> M -> U -> U -> U -> U                                // head不严格指向最后一个已匹配的节点，tail不严格指向最后一个未匹配的节点。
      *
      * The best value for this "slack" (the targeted maximum distance
      * between the value of "head" and the first unmatched node, and
@@ -422,7 +422,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * derived -- it works pretty well across a variety of processors,
      * numbers of CPUs, and OSes.
      */
-    private static final int FRONT_SPINS   = 1 << 7;
+    private static final int FRONT_SPINS   = 1 << 7; // 当一个节点是队列中的第一个waiter时，在多处理器上进行自旋的次数(随机穿插调用thread.yield)
 
     /**
      * The number of times to spin before blocking when a node is
@@ -431,7 +431,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * base average frequency for yielding during spins. Must be a
      * power of two.
      */
-    private static final int CHAINED_SPINS = FRONT_SPINS >>> 1;
+    private static final int CHAINED_SPINS = FRONT_SPINS >>> 1; // 当前继节点正在处理，当前节点在阻塞之前的自旋次数。
 
     /**
      * The maximum number of estimated removal failures (sweepVotes)
@@ -440,7 +440,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * removal. See above for explanation. The value must be at least
      * two to avoid useless sweeps when removing trailing nodes.
      */
-    static final int SWEEP_THRESHOLD = 32;
+    static final int SWEEP_THRESHOLD = 32; // sweepVotes的阀值，达到该阈值才清理无效节点
 
     /**
      * Queue nodes. Uses Object, not E, for items to allow forgetting
@@ -559,13 +559,13 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     }
 
     /** head of the queue; null until first enqueue */
-    transient volatile Node head;
+    transient volatile Node head; // 队列头节点，第一次添加节点之前为空
 
     /** tail of the queue; null until first append */
-    private transient volatile Node tail;
+    private transient volatile Node tail; // 队列尾节点，第一次添加节点之前为空
 
     /** The number of apparent failures to unsplice removed nodes */
-    private transient volatile int sweepVotes;
+    private transient volatile int sweepVotes; // 累计到一定次数再清除无效节点
 
     // CAS methods for fields
     private boolean casTail(Node cmp, Node val) {

@@ -816,7 +816,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             (p = tab[index = (n - 1) & hash]) != null) { // hash取模得到索引，找到数组上的节点
             Node<K,V> node = null, e; K k; V v;
             if (p.hash == hash &&
-                ((k = p.key) == key || (key != null && key.equals(k))))
+                ((k = p.key) == key || (key != null && key.equals(k)))) // 对比数组上的节点
                 node = p;
             else if ((e = p.next) != null) {
                 if (p instanceof TreeNode)
@@ -835,7 +835,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             }
             if (node != null && (!matchValue || (v = node.value) == value ||
                                  (value != null && value.equals(v)))) { // 找到了需要移除的node节点之后，执行移除操作
-                if (node instanceof TreeNode)
+                if (node instanceof TreeNode) // 如果node是树节点
                     ((TreeNode<K,V>)node).removeTreeNode(this, tab, movable);
                 else if (node == p) // 如果node是链表头节点
                     tab[index] = node.next;
