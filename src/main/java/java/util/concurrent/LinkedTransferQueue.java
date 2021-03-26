@@ -633,8 +633,8 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                         return LinkedTransferQueue.<E>cast(item);
                     }
                 }
-                Node n = p.next; // 来到这里，说明节点p已经被匹配过了，继续遍历p的下一个节点
-                p = (p != n) ? n : (h = head); // Use head if p offlist // p != n 则继续遍历下一个节点；p == n 说明p已经出队，需要从头开始遍历
+                Node n = p.next; // 来到这里，说明节点p是已匹配节点，无法与入参节点匹配，需要继续遍历p的下一个节点
+                p = (p != n) ? n : (h = head); // Use head if p offlist // p != n 则继续遍历下一个节点；p == n 说明p已经出队，这种情况是其他线程修改了head导致的，需要取新的head重新开始遍历
             }
 
             if (how != NOW) {                 // No matches available // 来到这里，说明没有匹配成功，则按照4种模式的规则入队。
@@ -688,7 +688,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     /**
      * Spins/yields/blocks until node s is matched or caller gives up.
      *
-     * @param s the waiting node                                       // 当前节点，处于等待汇总
+     * @param s the waiting node                                       // 当前节点，处于等待之中
      * @param pred the predecessor of s, or s itself if it has no      // 当前节点的上一个节点，若为 s 说明没有上一个节点，若为 null 则是未知的（作为预留）
      * predecessor, or null if unknown (the null case does not occur
      * in any current calls but may in possible future extensions)
