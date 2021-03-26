@@ -772,20 +772,20 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             s.waiter = null; // forget thread
             /*
              * At any given time, exactly one node on list cannot be
-             * deleted -- the last inserted node. To accommodate this,
-             * if we cannot delete s, we save its predecessor as
+             * deleted -- the last inserted node. To accommodate this,   // 无论什么情况下，只有一个节点无法删除 -- 最后入队的节点
+             * if we cannot delete s, we save its predecessor as         // 为了应对这种情况，如果无法删除节点s，则把它的上一个节点设为cleanMe
              * "cleanMe", deleting the previously saved version
              * first. At least one of node s or the node previously
              * saved can always be deleted, so this always terminates.
              */
             while (pred.next == s) { // Return early if already unlinked // 节点pred的下一个节点是s
                 QNode h = head;
-                QNode hn = h.next;   // Absorb cancelled first node as head
+                QNode hn = h.next;   // Absorb cancelled first node as head // 如果head.next不是有效节点，则进行清理（无需清理head节点，因为head是dummy node，无需清理）
                 if (hn != null && hn.isCancelled()) {
                     advanceHead(h, hn);
                     continue;
                 }
-                QNode t = tail;      // Ensure consistent read for tail
+                QNode t = tail;      // Ensure consistent read for tail // 确保获取到最新的tail
                 if (t == h)
                     return;
                 QNode tn = t.next;
@@ -800,8 +800,8 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                     if (sn == s || pred.casNext(s, sn))
                         return;
                 }
-                QNode dp = cleanMe;
-                if (dp != null) {    // Try unlinking previous cancelled node
+                QNode dp = cleanMe;  // 进入这里，说明节点s是尾节点，出队失败。需要获取cleanMe节点
+                if (dp != null) {    // Try unlinking previous cancelled node // cleanMe节点不为空，需要把cleanMe节点的下一个节点清理掉
                     QNode d = dp.next;
                     QNode dn;
                     if (d == null ||               // d is gone or

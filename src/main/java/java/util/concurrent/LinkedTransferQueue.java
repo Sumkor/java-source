@@ -348,24 +348,24 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      *
      * ** Unlinking removed interior nodes **
      *
-     * In addition to minimizing garbage retention via self-linking
+     * In addition to minimizing garbage retention via self-linking    // 除了通过节点自连接（self-linking）来方便垃圾回收以外，还需要在链表上解开对无效节点的连接。
      * described above, we also unlink removed interior nodes. These
      * may arise due to timed out or interrupted waits, or calls to
-     * remove(x) or Iterator.remove.  Normally, given a node that was
+     * remove(x) or Iterator.remove.  Normally, given a node that was  // 一般来说，如果想要在链表上移除节点s，只需要把s的上一个节点的next属性改掉即可。
      * at one time known to be the predecessor of some node s that is
      * to be removed, we can unsplice s by CASing the next field of
      * its predecessor if it still points to s (otherwise s must
-     * already have been removed or is now offlist). But there are two
+     * already have been removed or is now offlist). But there are two // 但是用这种方式来让节点s不可达，在以下两种场景下是无法保证的：
      * situations in which we cannot guarantee to make node s
-     * unreachable in this way: (1) If s is the trailing node of list
+     * unreachable in this way: (1) If s is the trailing node of list  // 1. 如果节点s是链表上的尾节点，其他节点利用它来入链，此时只有当其他节点追加到节点s之后，才能够移除节点s
      * (i.e., with null next), then it is pinned as the target node
      * for appends, so can only be removed later after other nodes are
-     * appended. (2) We cannot necessarily unlink s given a
+     * appended. (2) We cannot necessarily unlink s given a            // 2. 如果节点s的上一个节点也是无效节点（已匹配或已取消），此时也无需将节点s和它断开
      * predecessor node that is matched (including the case of being
      * cancelled): the predecessor may already be unspliced, in which
      * case some previous reachable node may still point to s.
      * (For further explanation see Herlihy & Shavit "The Art of
-     * Multiprocessor Programming" chapter 9).  Although, in both
+     * Multiprocessor Programming" chapter 9).  Although, in both      // 尽管如此，还是需要采取措施在后续流程中解开无效节点
      * cases, we can rule out the need for further action if either s
      * or its predecessor are (or can be made to be) at, or fall off
      * from, the head of list.
@@ -373,7 +373,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * Without taking these into account, it would be possible for an
      * unbounded number of supposedly removed nodes to remain
      * reachable.  Situations leading to such buildup are uncommon but
-     * can occur in practice; for example when a series of short timed
+     * can occur in practice; for example when a series of short timed // 比如，当队列头部是一个阻塞的take请求节点，该节点之后是大量的超时时间很短的poll请求节点，一旦过了超时时间，队列中就会出现大量可达的无效节点。
      * calls to poll repeatedly time out but never otherwise fall off
      * the list because of an untimed call to take at the front of the
      * queue.
@@ -598,7 +598,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
      * Implements all queuing methods. See above for explanation.
      *
      * @param e the item or null for take                           // 存入、取出、移交的数据元素
-     * @param haveData true if this is a put, else a take           // 数据元素是否为空
+     * @param haveData true if this is a put, else a take           // 是否具有数据
      * @param how NOW, ASYNC, SYNC, or TIMED                        // 4 种模式
      * @param nanos timeout in nanosecs, used only if mode is TIMED // 超时时间
      * @return an item if matched, else e
@@ -616,18 +616,18 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                 boolean isData = p.isData;
                 Object item = p.item;
                 if (item != p && (item != null) == isData) { // unmatched // 节点p尚未匹配过：item不是p，item是否有值与isData相符
-                    if (isData == haveData)   // can't match // 节点p无法匹配：节点p与入参节点类型相同。此时需跳出中层循环，尝试入队
+                    if (isData == haveData)   // can't match // 节点p无法匹配：节点p与入参节点类型相同。此时需跳出本层循环，尝试入队
                         break;
                     if (p.casItem(item, e)) { // match // 节点p匹配成功：item域的值从item变更为e
-                        for (Node q = p; q != h;) { // 进入这里，说明头节点不匹配，目前正在遍历的是头节点之后的节点q（遍历的目的是设置新的头节点，把旧的头节点出队）
+                        for (Node q = p; q != h;) { // 进入这里，说明当前匹配的节点p不是头节点，而是位于头节点之后。说明队列头部具有多于一个的已匹配节点，需要设置新的头节点，把已匹配的节点出队（注意此时的head可能被其他线程修改，与h不等）
                             Node n = q.next;  // update by 2 unless singleton
-                            if (head == h && casHead(h, n == null ? q : n)) { // 如果节点h是头节点，且q已匹配，1. 若q.next为空，则将q设为新的头节点；2. 若q.next不为空，则将q.next设为新的头节点（注意此时q还在队列中）
+                            if (head == h && casHead(h, n == null ? q : n)) { // 如果节点h是头节点，而q是已匹配节点：1. 若q.next为空，则将q设为新的头节点；2. 若q.next不为空，则将q.next设为新的头节点（注意此时q还在队列中，但不可达）
                                 h.forgetNext(); // 旧的头节点h出队（若h之前还有节点，则h自连接代表着以h为尾节点的旧链表将被回收）
                                 break;
                             }                 // advance and retry
-                            if ((h = head)   == null ||                 // 进入这里，说明h不是头节点，则将其赋值为头节点，作进一步判断
-                                (q = h.next) == null || !q.isMatched()) // 如果head为空，或者head.next为空，或者head.next未匹配，则跳出不再遍历head.next了
-                                break;        // unless slack < 2
+                            if ((h = head)   == null ||                 // 进入这里，h不是头节点，说明其他线程修改过head，则取最新的head作进一步判断
+                                (q = h.next) == null || !q.isMatched()) // 1. 如果head为空，或者head.next为空，或者head.next未匹配，则跳出不再遍历head.next了
+                                break;        // unless slack < 2       // 2. 虽然取得最新head，但是head.next是已匹配节点，需要从head.next开始遍历，重新设置head
                         }
                         LockSupport.unpark(p.waiter); // 唤醒p中等待的线程
                         return LinkedTransferQueue.<E>cast(item);
