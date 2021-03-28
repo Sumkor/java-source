@@ -668,9 +668,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
             }
             else if (p.cannotPrecede(haveData))
                 return null;                  // lost race vs opposite mode // 节点p之后无法连接节点，返回null
-            else if ((n = p.next) != null)    // not last; keep traversing  // 节点p不是尾节点（因为tail并不严格指向尾节点），需继续遍历
-                p = p != t && t != (u = tail) ? (t = u) : // stale tail // 如果节点p与t不等，且t不是tail节点，则将tail赋值给p和t，重新从tail节点开始遍历
-                    (p != n) ? n : null;      // restart if off list    // 否则：1. 如果p与p.next不等，从p.next继续遍历；2. 如果p与p.next相等，则设p为空。后续会将head赋值给p，从头开始遍历
+            else if ((n = p.next) != null)    // not last; keep traversing  // 节点p不是尾节点（因为tail并不严格指向尾节点），需继续遍历p.next
+                p = p != t && t != (u = tail) ? (t = u) : // stale tail // 如果节点p与t不等，且t不是tail节点（说明其他线程修改了tail，不必遍历p.next了），则取新的tail赋值给p和t，重新从tail节点开始遍历
+                    (p != n) ? n : null;      // restart if off list    // 否则（尝试遍历p.next）：1. 如果p与p.next不等，从p.next继续遍历；2. 如果p与p.next相等，则设p为空（说明队列为空，后续会将s作为头节点）
             else if (!p.casNext(null, s))// 进入这里，说明p是尾节点。若CAS失败，说明其他线程在p后加了节点，需继续遍历p.next
                 p = p.next;                   // re-read on CAS failure
             else {                            // 进入这里，说明p是尾节点，且CAS将s设为新的尾节点成功。
