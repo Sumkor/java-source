@@ -478,13 +478,13 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
             s.waiter = null; // forget thread
 
             /*
-             * At worst we may need to traverse entire stack to unlink
-             * s. If there are multiple concurrent calls to clean, we
+             * At worst we may need to traverse entire stack to unlink  // 在最坏的情况下可能需要遍历整个栈来解除给定节点s的链接（例如给定节点在栈底）。
+             * s. If there are multiple concurrent calls to clean, we   // 在并发情况下，如果有其他线程已经移除给定节点s，当前线程可能无法看到
              * might not see s if another thread has already removed
              * it. But we can stop when we see any node known to
              * follow s. We use s.next unless it too is cancelled, in
              * which case we try the node one past. We don't check any
-             * further because we don't want to doubly traverse just to
+             * further because we don't want to doubly traverse just to // 在这里不会做更深的检查，因为为了找到失效节点而进行两次遍历是不值得的。
              * find sentinel.
              */
 

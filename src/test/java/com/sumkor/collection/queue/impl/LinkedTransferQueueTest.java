@@ -144,4 +144,36 @@ public class LinkedTransferQueueTest {
 //        new Thread(offerTask).start();//  a call to offer
 
     }
+
+    /**
+     * Thread.yield() 方法，使当前线程由执行状态，变成为就绪状态，让出 CPU 时间，再跟其他线程一起争夺 CPU 时间片
+     */
+    @Test
+    public void yieldInLoop() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(10);
+        for (int i = 0; i < 10; i++) {
+            Thread thread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    yieldRun(countDownLatch);
+                }
+            }, "thread_" + i);
+            thread.start();
+        }
+        countDownLatch.await();
+    }
+
+    private void yieldRun(CountDownLatch countDownLatch) {
+        for (int i = 1; i <= 10; i++) {
+            System.out.println("" + Thread.currentThread().getName() + "-----" + i);
+            // 当i为5时，该线程就让出CPU时间片，再跟其他线程一起争夺CPU时间片（也就是谁先抢到谁执行）
+            // 1. 如果当前线程抢到了，则继续执行
+            // 2. 如果当前线程没有抢到，则等待CPU的下一次调度（其他线程执行完毕或让出CPU时间片）
+            if (i == 5) {
+                Thread.yield();
+            }
+        }
+        countDownLatch.countDown();
+    }
+
 }

@@ -490,7 +490,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
          * follows either CAS or return from park (if ever parked;
          * else we don't care).
          */
-        final void forgetContents() { // 匹配或者节点被取消的时候会调用，设置item自连接，waiter为null
+        final void forgetContents() { // 节点被匹配或取消之后会调用：设置item自连接，waiter为null
             UNSAFE.putObject(this, itemOffset, this);
             UNSAFE.putObject(this, waiterOffset, null);
         }
@@ -499,7 +499,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
          * Returns true if this node has been matched, including the
          * case of artificial matches due to cancellation.
          */
-        final boolean isMatched() { // 是否已匹配（item自连接，或者，item是否为空与isData相反）
+        final boolean isMatched() { // 是否已匹配（已取消或已匹配：item自连接；已匹配：item == null 与 isData 的值相反）
             Object x = item;
             return (x == this) || ((x == null) == isData);
         }
@@ -507,7 +507,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
         /**
          * Returns true if this is an unmatched request node.
          */
-        final boolean isUnmatchedRequest() { // 是否是一个未匹配的请求节点（如果匹配了或取消了，item就不再为null，而是指向自己）
+        final boolean isUnmatchedRequest() { // 是否是一个未匹配的请求节点（!isData 为请求节点，item 为空说明未被修改，而一旦被匹配或取消则会修改 item）
             return !isData && item == null;
         }
 
@@ -565,7 +565,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     private transient volatile Node tail; // 队列尾节点，第一次添加节点之前为空
 
     /** The number of apparent failures to unsplice removed nodes */
-    private transient volatile int sweepVotes; // 累计到一定次数再清除无效节点
+    private transient volatile int sweepVotes; // 从链表上清除节点失败的次数
 
     // CAS methods for fields
     private boolean casTail(Node cmp, Node val) {
@@ -667,7 +667,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                     return s;                 // initialize
             }
             else if (p.cannotPrecede(haveData))
-                return null;                  // lost race vs opposite mode // 节点p之后无法连接节点，返回null
+                return null;                  // lost race vs opposite mode // 节点p之后无法连接节点，返回null（p与s匹配，不需要将s入队）
             else if ((n = p.next) != null)    // not last; keep traversing  // 节点p不是尾节点（因为tail并不严格指向尾节点），需继续遍历p.next
                 p = p != t && t != (u = tail) ? (t = u) : // stale tail // 如果节点p与t不等，且t不是tail节点（说明其他线程修改了tail，不必遍历p.next了），则取新的tail赋值给p和t，重新从tail节点开始遍历
                     (p != n) ? n : null;      // restart if off list    // 否则（尝试遍历p.next）：1. 如果p与p.next不等，从p.next继续遍历；2. 如果p与p.next相等，则设p为空（说明队列为空，后续会将s作为头节点）
@@ -723,10 +723,10 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
             else if (spins > 0) {             // spin // 自减，随机让出CPU
                 --spins;
                 if (randomYields.nextInt(CHAINED_SPINS) == 0)
-                    Thread.yield();           // occasionally yield
+                    Thread.yield();           // occasionally yield // 让出CPU时间片，若又争夺到了CPU时间片则继续执行，否则等待直到再次获得CPU时间片（由其他线程让出）
             }
-            else if (s.waiter == null) {
-                s.waiter = w;                 // request unpark then recheck
+            else if (s.waiter == null) {      // 当 spin == 0 时才会执行这里及后面的逻辑
+                s.waiter = w;                 // request unpark then recheck // 自旋结束了，设置s.waiter
             }
             else if (timed) {                 // 如果有超时，计算超时时间，并阻塞一定时间
                 nanos = deadline - System.nanoTime();
@@ -830,9 +830,9 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                     break;
             }
             Node n = p.next;
-            if (n != p)
+            if (n != p) // 节点p未出队，继续遍历p.next
                 p = n;
-            else {
+            else {      // 节点p已出队，取新的head重新开始遍历
                 count = 0;
                 p = head;
             }
@@ -1056,29 +1056,29 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
     final void unsplice(Node pred, Node s) { // 把s跟它的上一个节点pred断开连接（立即断开，或者隔段时间再断开）
         s.forgetContents(); // forget unneeded fields // s设置item自连接，waiter为null
         /*
-         * See above for rationale. Briefly: if pred still points to   // 这里的介绍感觉跟代码有点出入。
-         * s, try to unlink s.  If s cannot be unlinked, because it is // 我的理解是：如果pred的下一个节点是s： 1. 断开连接；2. 清理pred之前的节点，重设头节点；3. 累计sweepVotes直到阈值，遍历全链表进行清理无效节点。
-         * trailing node or pred might be unlinked, and neither pred
+         * See above for rationale. Briefly: if pred still points to   // 把s跟它的上一个节点pred断开连接
+         * s, try to unlink s.  If s cannot be unlinked, because it is // 如果s是尾节点，或者pred已出队，则无法断开pred与s的连接
+         * trailing node or pred might be unlinked, and neither pred   // 如果pred和s都不是头结点，且都未出队，则累计sweepVotes，当达到足够的票数，进行大扫除
          * nor s are head or offlist, add to sweepVotes, and if enough
          * votes have accumulated, sweep.
          */
         if (pred != null && pred != s && pred.next == s) { // 校验pred是否是s的上一个节点
             Node n = s.next;
             if (n == null || // s是尾节点
-                (n != s && pred.casNext(s, n) && pred.isMatched())) { // 组合条件：(s.next不为空，s未出队，pred修改下一个节点为s.next成功，pred已经被匹配)。可以看到即使pred.casNext(s, n)成功，只要pred未匹配，不会设置s的next自连接
-                for (;;) {               // check if at, or could be, head // 自旋的目的是：设置新的头节点，把旧的头节点出队。一直自旋，直到头节点为pred或s，或头节点为未匹配节点，或队列为空 // 注意这里没有使s=s.next
+                (n != s && pred.casNext(s, n) && pred.isMatched())) { // 组合条件：(s.next不为空，s未出队，pred修改下一个节点为s.next成功，pred已经被匹配)。// 注意这里没有设置s的next自连接
+                for (;;) {               // check if at, or could be, head // 自旋的目的是：设置新的头节点，把旧的头节点出队
                     Node h = head;
                     if (h == pred || h == s || h == null)
-                        return;          // at head or list empty // pred或s为头节点，或者头节点为空，直接返回
+                        return;          // at head or list empty // pred或s为头节点，或者头节点为空，直接返回，不需要处理sweepVotes
                     if (!h.isMatched())  // 头节点未被匹配，跳出循环
                         break;
                     Node hn = h.next;
                     if (hn == null)
-                        return;          // now empty // head已经被匹配了，且head.next为空，说明现在队列为空了，直接返回 // 走到这一步为止，都说明无需再变更头节点
+                        return;          // now empty // head已经被匹配了，且head.next为空，说明现在队列为空了，直接返回，不需要处理sweepVotes // 走到这一步为止，都说明无需再变更头节点
                     if (hn != h && casHead(h, hn))    // head已经被匹配了，但head.next不为空。若head不是自连接，尝试将head.next设置为新的头节点
                         h.forgetNext();  // advance head // 旧的头节点设为自连接，表示出队。后续继续从新的头节点遍历，把已匹配的节点出队，重设头节点
                 }
-                if (pred.next != pred && s.next != s) { // recheck if offlist // 再一次校验pred和s是否未出队。需要注意的是，虽然s.next!=s，但是由于s.forgetContents()，也就是说s已经是不可达的，会被垃圾回收掉。
+                if (pred.next != pred && s.next != s) { // recheck if offlist // 再一次校验pred和s是否未出队 // 进入这里，说明 1. s可能是尾节点 2. pred、s均不为头节点 3. 队列不为空
                     for (;;) {           // sweep now if enough votes
                         int v = sweepVotes;
                         if (v < SWEEP_THRESHOLD) { // 阈值为32
