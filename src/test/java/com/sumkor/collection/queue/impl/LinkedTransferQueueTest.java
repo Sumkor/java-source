@@ -155,25 +155,21 @@ public class LinkedTransferQueueTest {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    yieldRun(countDownLatch);
+                    for (int i = 1; i <= 10; i++) {
+                        System.out.println("" + Thread.currentThread().getName() + "-----" + i);
+                        // 当i为5时，该线程就让出CPU时间片，再跟其他线程一起争夺CPU时间片（也就是谁先抢到谁执行）
+                        // 1. 如果当前线程抢到了，则继续执行
+                        // 2. 如果当前线程没有抢到，则等待CPU的下一次调度（其他线程执行完毕或让出CPU时间片）
+                        if (i == 5) {
+                            Thread.yield();
+                        }
+                    }
+                    countDownLatch.countDown();
                 }
             }, "thread_" + i);
             thread.start();
         }
         countDownLatch.await();
-    }
-
-    private void yieldRun(CountDownLatch countDownLatch) {
-        for (int i = 1; i <= 10; i++) {
-            System.out.println("" + Thread.currentThread().getName() + "-----" + i);
-            // 当i为5时，该线程就让出CPU时间片，再跟其他线程一起争夺CPU时间片（也就是谁先抢到谁执行）
-            // 1. 如果当前线程抢到了，则继续执行
-            // 2. 如果当前线程没有抢到，则等待CPU的下一次调度（其他线程执行完毕或让出CPU时间片）
-            if (i == 5) {
-                Thread.yield();
-            }
-        }
-        countDownLatch.countDown();
     }
 
 }

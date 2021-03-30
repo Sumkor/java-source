@@ -301,12 +301,12 @@ public abstract class AbstractQueuedSynchronizer
     /**
      * Wait queue node class.
      *
-     * <p>The wait queue is a variant of a "CLH" (Craig, Landin, and
+     * <p>The wait queue is a variant of a "CLH" (Craig, Landin, and    // 等待队列（wait queue）是 CLH 锁队列的变种
      * Hagersten) lock queue. CLH locks are normally used for
      * spinlocks.  We instead use them for blocking synchronizers, but
      * use the same basic tactic of holding some of the control
      * information about a thread in the predecessor of its node.  A
-     * "status" field in each node keeps track of whether a thread
+     * "status" field in each node keeps track of whether a thread      // 每个节点都有 status 属性，用于表明该节点的线程是否需要阻塞
      * should block.  A node is signalled when its predecessor
      * releases.  Each node of the queue otherwise serves as a
      * specific-notification-style monitor holding a single waiting
@@ -425,7 +425,7 @@ public abstract class AbstractQueuedSynchronizer
          * signal. So, most code doesn't need to check for particular
          * values, just for sign.
          *
-         * The field is initialized to 0 for normal sync nodes, and
+         * The field is initialized to 0 for normal sync nodes, and   // sync 节点初始值为 0，condition 节点初始值为 -2
          * CONDITION for condition nodes.  It is modified using CAS
          * (or when possible, unconditional volatile writes).
          */
@@ -529,8 +529,8 @@ public abstract class AbstractQueuedSynchronizer
 
     /**
      * The synchronization state.
-     */
-    private volatile int state;
+     */                           // 锁的状态：state为0表示锁没有被占用，state大于0表示当前已经有线程持有该锁。
+    private volatile int state;   // 具有可见性，是多个线程争夺的资源。锁和资源是同一个概念。
 
     /**
      * Returns the current value of synchronization state.
