@@ -1,4 +1,4 @@
-package com.sumkor.collection.queue;
+package com.sumkor.lock;
 
 import org.junit.Test;
 

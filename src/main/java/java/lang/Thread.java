@@ -924,8 +924,8 @@ class Thread implements Runnable {
     }
 
     /**
-     * Tests whether the current thread has been interrupted.  The
-     * <i>interrupted status</i> of the thread is cleared by this method.  In
+     * Tests whether the current thread has been interrupted.  The                // 检测当前线程是否已中断
+     * <i>interrupted status</i> of the thread is cleared by this method.  In     // 清除线程的中断状态
      * other words, if this method were to be called twice in succession, the
      * second call would return false (unless the current thread were
      * interrupted again, after the first call had cleared its interrupted
