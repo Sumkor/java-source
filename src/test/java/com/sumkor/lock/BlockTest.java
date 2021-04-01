@@ -3,6 +3,7 @@ package com.sumkor.lock;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -15,7 +16,7 @@ import java.util.function.Consumer;
 public class BlockTest {
 
     /**
-     * 用于测试：阻塞之前获得锁，测试进入阻塞状态的时候，是否会释放锁？
+     * 用于测试：阻塞之前获得锁，测试进入阻塞状态的时候，是否会释放已持有的锁？
      */
     public <T> void doBlock(Object object, T input, Consumer<T> consumer) {
         assert object != null;
@@ -33,7 +34,7 @@ public class BlockTest {
     }
 
     /**
-     * Thread.sleep 不会释放锁
+     * Thread.sleep 不会释放对象锁、ReentrantLock
      *
      * The thread does not lose ownership of any monitors.
      * @see Thread#sleep(long)
@@ -83,7 +84,7 @@ public class BlockTest {
     }
 
     /**
-     * Object.wait 会释放锁，被唤醒的时候会重新获得锁
+     * Object.wait 会释放对象锁，被唤醒的时候会重新获得锁
      * 调用 object 对象的 wait 方法，当前线程必须获取该对象的监视器
      */
     @Test
@@ -131,7 +132,7 @@ public class BlockTest {
     }
 
     /**
-     * LockSupport.park 不会释放锁
+     * LockSupport.park 不会释放对象锁、ReentrantLock
      * LockSupport.park 就是将线程转入 WAITING 状态
      */
     @Test
@@ -179,8 +180,8 @@ public class BlockTest {
     }
 
     /**
-     * Condition.await 会释放锁
-     * 必须使用 ReentrantLock 来加锁之后，才可以用该 ReentrantLock 的 Condition.wait 来阻塞
+     * Condition.await 会释放 ReentrantLock，见 {@link AbstractQueuedSynchronizer.ConditionObject#await()}
+     * 必须使用 ReentrantLock 来加锁之后，才可以用该 ReentrantLock 的 Condition.wait 来阻塞，否则抛出 IllegalMonitorStateException
      */
     @Test
     public void conditionTest() throws InterruptedException {
