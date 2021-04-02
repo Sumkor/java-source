@@ -360,7 +360,7 @@ public abstract class AbstractQueuedSynchronizer
      *
      * <p>CLH queues need a dummy header node to get started. But       // CLH 队列需要一个空的头节点（dummy node）。
      * we don't create them on construction, because it would be wasted // 但是 AQS 队列不会在初始化队列的时候构建空的头节点，而是在第一次发生争用时构造：
-     * effort if there is never contention. Instead, the node           // 队列中有两个节点，当第二个节点争夺到锁时，将第一个节点出队并设置自身为空的头节点。
+     * effort if there is never contention. Instead, the node           // 即第一个线程获取锁，第二个线程获取锁失败入队，此时才会初始化队列，构造空节点并将 head/tail 指向该空节点。
      * is constructed and head and tail pointers are set upon first
      * contention.
      *
@@ -503,7 +503,7 @@ public abstract class AbstractQueuedSynchronizer
         }
 
         Node(Thread thread, Node mode) {     // Used by addWaiter
-            this.nextWaiter = mode;
+            this.nextWaiter = mode;          // 在同步队列中，nextWaiter用于标记节点的模式：独占、共享
             this.thread = thread;
         }
 
@@ -583,14 +583,14 @@ public abstract class AbstractQueuedSynchronizer
     private Node enq(final Node node) { // 从同步队列的尾部入队
         for (;;) {
             Node t = tail;
-            if (t == null) { // Must initialize   // 队列为空，则当前节点作为head和tail
+            if (t == null) { // Must initialize   // 队列为空，则创建一个空节点，作头节点
                 if (compareAndSetHead(new Node()))
                     tail = head;
             } else {
                 node.prev = t;
-                if (compareAndSetTail(t, node)) { // 队列不为空，则当前节点作为新的tail
-                    t.next = node;
-                    return t; // 返回当前节点的上一个节点（旧的尾节点）
+                if (compareAndSetTail(t, node)) { // 队列不为空，则当前节点作为新的tail // CAS失败，可能会出现尾分叉的现象，由下一次循环消除分叉
+                    t.next = node;                // 由于不是原子操作，入队操作先设置prev指针，再设置next指针，会导致并发情况下无法通过next遍历到尾节点
+                    return t;                     // 返回当前节点的上一个节点（旧的尾节点）
                 }
             }
         }
@@ -646,20 +646,20 @@ public abstract class AbstractQueuedSynchronizer
             compareAndSetWaitStatus(node, ws, 0); // CAS失败也无所谓（说明后继节点的线程先一步修改了当前节点的状态），因为接下来会手动唤醒后继节点
 
         /*
-         * Thread to unpark is held in successor, which is normally
-         * just the next node.  But if cancelled or apparently null,
-         * traverse backwards from tail to find the actual
+         * Thread to unpark is held in successor, which is normally  // 通常情况下, 要唤醒的节点就是自己的后继节点。如果后继节点存在且也在等待锁, 那就直接唤醒它
+         * just the next node.  But if cancelled or apparently null, // 但是有可能存在 后继节点取消等待锁 的情况。
+         * traverse backwards from tail to find the actual           // 此时从尾节点开始向前找起, 直到找到距离head节点最近的未取消的节点
          * non-cancelled successor.
          */
         Node s = node.next;
         if (s == null || s.waitStatus > 0) { // 后继节点为空，或已取消，则从tail开始向前遍历有效节点
             s = null;
-            for (Node t = tail; t != null && t != node; t = t.prev) // 为什么不从当前节点向后遍历有效节点呢？因为当前节点可能是尾节点
+            for (Node t = tail; t != null && t != node; t = t.prev) // 为什么不从当前节点向后遍历有效节点呢？1.当前节点可能是尾节点 2.入队时先设置prev指针，再设置next指针，根据prev指针往前遍历比较准确
                 if (t.waitStatus <= 0)
-                    s = t;
+                    s = t; // // 注意! 这里找到了之后并没有return, 而是继续向前找
         }
         if (s != null)
-            LockSupport.unpark(s.thread); // 唤醒后继节点（或者是队列中最后一个有效节点）的线程
+            LockSupport.unpark(s.thread); // 唤醒后继节点（或者是队列中距离head节点最近的有效节点）的线程
     }
 
     /**
@@ -667,7 +667,7 @@ public abstract class AbstractQueuedSynchronizer
      * propagation. (Note: For exclusive mode, release just amounts    // 互斥模式下的 release 操作：只会唤醒队列头部需要唤醒的一个后继节点
      * to calling unparkSuccessor of head if it needs signal.)
      */
-    private void doReleaseShared() { // 唤醒共享节点，释放共享资源
+    private void doReleaseShared() { // 唤醒共享节点，释放共享资源（共享模式下，当前线程获取锁成功、释放锁之后，都可能会调用该方法）
         /*
          * Ensure that a release propagates, even if there are other
          * in-progress acquires/releases.  This proceeds in the usual
@@ -711,7 +711,7 @@ public abstract class AbstractQueuedSynchronizer
         /*
          * Try to signal next queued node if:                      // 如果满足下列条件可以尝试唤醒下一个节点：
          *   Propagation was indicated by caller,
-         *     or was recorded (as h.waitStatus either before      // 1. 有剩余资源(propagate > 0)，并且前继节点h的waitStatus < 0
+         *     or was recorded (as h.waitStatus either before      // 1. 有剩余资源(propagate > 0)，或者前继节点h的waitStatus < 0
          *     or after setHead) by a previous operation
          *     (note: this uses sign-check of waitStatus because
          *      PROPAGATE status may transition to SIGNAL.)
@@ -861,14 +861,14 @@ public abstract class AbstractQueuedSynchronizer
             for (;;) {
                 final Node p = node.predecessor();
                 if (p == head && tryAcquire(arg)) { // 上一个节点如果是头结点，说明当前节点的线程可以尝试获取锁资源
-                    setHead(node);                  // 获取锁成功，当前节点作为新的头节点，并且清理掉当前节点中的线程信息（也就是说头节点是个dummy node）
+                    setHead(node);                  // 获取锁成功，当前节点作为新的头节点，并且清理掉当前节点中的线程信息（也就是说头节点是个dummy node）。这里不会发生争用，不需要CAS
                     p.next = null; // help GC
                     failed = false;
                     return interrupted;
                 }
                 if (shouldParkAfterFailedAcquire(p, node) && // 上一个节点不是头节点，或者当前节点的线程获取锁失败，需要判断是否进入阻塞：1. 不能进入阻塞，则重试获取锁。2. 进入阻塞
                     parkAndCheckInterrupt())                 // 阻塞当前线程，当从阻塞中被唤醒时，检测当前线程是否已中断，并清除中断状态。接着继续重试获取锁。
-                    interrupted = true;                      // 标记当前线程已中断
+                    interrupted = true;                      // 标记当前线程已中断（如果线程在阻塞时被中断唤醒，会重试获取锁直到成功之后，再响应中断）
             }
         } finally {
             if (failed)              // 自旋获取锁和阻塞过程中发生异常
@@ -1260,7 +1260,7 @@ public abstract class AbstractQueuedSynchronizer
     public final boolean release(int arg) { // 独占模式下释放锁/资源，Lock#unlock的内部实现
         if (tryRelease(arg)) { // 释放锁资源
             Node h = head;
-            if (h != null && h.waitStatus != 0)
+            if (h != null && h.waitStatus != 0) // head.waitStatus == 0，说明head节点后没有需要唤醒的节点
                 unparkSuccessor(h); // 唤醒head的后继节点
             return true;
         }
@@ -1280,7 +1280,7 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final void acquireShared(int arg) { // 共享模式下获取锁/资源，无视中断
         if (tryAcquireShared(arg) < 0) // 获取共享锁/资源
-            doAcquireShared(arg); // 获取锁/资源失败，再一次尝试获取
+            doAcquireShared(arg); // 获取锁/资源失败，再一次尝试获取/入队/取消
     }
 
     /**
@@ -1869,7 +1869,7 @@ public abstract class AbstractQueuedSynchronizer
          */
         private void doSignal(Node first) { // 把条件队列的头节点转移到同步队列
             do {
-                if ( (firstWaiter = first.nextWaiter) == null) // 当前节点的后继节点为空，说明队列为空
+                if ( (firstWaiter = first.nextWaiter) == null) // 当前节点的后继节点作为新的头节点（出队），若为空，说明队列为空
                     lastWaiter = null;
                 first.nextWaiter = null;
             } while (!transferForSignal(first) &&    // 把当前节点转移到同步队列，等待获取锁（说明条件队列的头节点不是dummy node）
@@ -1906,7 +1906,7 @@ public abstract class AbstractQueuedSynchronizer
          */
         private void unlinkCancelledWaiters() { // 清除条件队列中状态不为CONDITION的节点
             Node t = firstWaiter;
-            Node trail = null;  // 游标节点，记录当前遍历的最后一个有效节点
+            Node trail = null;  // 游标节点，记录当前遍历的最后一个有效节点（状态为CONDITION）
             while (t != null) { // 从条件队列的头节点开始遍历
                 Node next = t.nextWaiter;
                 if (t.waitStatus != Node.CONDITION) {
@@ -1914,7 +1914,7 @@ public abstract class AbstractQueuedSynchronizer
                     if (trail == null)
                         firstWaiter = next; // 设置新的头节点
                     else
-                        trail.nextWaiter = next; // 将无效节点t的下一个节点，挂在trail节点后面
+                        trail.nextWaiter = next; // 将无效节点t的下一个节点，挂在trail节点后面（不用立即更新trail，下一次循环再检查，是有效节点才更新trail）
                     if (next == null)
                         lastWaiter = trail;
                 }
