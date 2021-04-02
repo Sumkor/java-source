@@ -711,7 +711,7 @@ public abstract class AbstractQueuedSynchronizer
         /*
          * Try to signal next queued node if:                      // 如果满足下列条件可以尝试唤醒下一个节点：
          *   Propagation was indicated by caller,
-         *     or was recorded (as h.waitStatus either before      // 1. 有剩余资源(propagate > 0)，或者前继节点h的waitStatus < 0
+         *     or was recorded (as h.waitStatus either before      // 1. 有剩余资源(propagate > 0)，或者头节点的状态是PROPAGATE（waitStatus < 0）
          *     or after setHead) by a previous operation
          *     (note: this uses sign-check of waitStatus because
          *      PROPAGATE status may transition to SIGNAL.)
@@ -724,7 +724,7 @@ public abstract class AbstractQueuedSynchronizer
          * racing acquires/releases, so most need signals now or soon
          * anyway.
          */
-        if (propagate > 0 || h == null || h.waitStatus < 0 || // 旧的头节点h是node的前继节点，可能为空
+        if (propagate > 0 || h == null || h.waitStatus < 0 || // 若无剩余资源，则校验头节点的状态（PROPAGATE或SIGNAL，均<0）
             (h = head) == null || h.waitStatus < 0) {         // 其他线程修改了head，取新head作为前继节点来校验
             Node s = node.next;
             if (s == null || s.isShared())
