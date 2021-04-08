@@ -673,7 +673,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
                     (p != n) ? n : null;      // restart if off list    // 否则（尝试遍历p.next）：1. 如果p与p.next不等，从p.next继续遍历；2. 如果p与p.next相等，则设p为空（说明队列为空，后续会将s作为头节点）
             else if (!p.casNext(null, s))// 进入这里，说明p是尾节点。若CAS失败，说明其他线程在p后加了节点，需继续遍历p.next
                 p = p.next;                   // re-read on CAS failure
-            else {                            // 进入这里，说明p是尾节点，且CAS将s设为新的尾节点成功。
+            else {                            // 进入这里，说明p是尾节点，且CAS将s设为p.next成功。
                 if (p != t) {                 // update if slack now >= 2 // p != t 说明松弛度大于等于2，需要重新设置tail节点
                     while ((tail != t || !casTail(t, s)) &&
                            (t = tail)   != null &&

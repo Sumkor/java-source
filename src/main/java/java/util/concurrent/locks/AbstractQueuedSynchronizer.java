@@ -585,7 +585,7 @@ public abstract class AbstractQueuedSynchronizer
             Node t = tail;
             if (t == null) { // Must initialize   // 队列为空，则创建一个空节点，作头节点
                 if (compareAndSetHead(new Node()))
-                    tail = head;
+                    tail = head;                  // 初始化完成后并没有返回，而是进行下一次循环
             } else {
                 node.prev = t;
                 if (compareAndSetTail(t, node)) { // 队列不为空，则当前节点作为新的tail // CAS失败，可能会出现尾分叉的现象，由下一次循环消除分叉
@@ -689,7 +689,7 @@ public abstract class AbstractQueuedSynchronizer
                     unparkSuccessor(h);      // 唤醒head的后继节点
                 }
                 else if (ws == 0 &&          // 如果头节点状态是0（后继节点自旋中未阻塞，或者后继节点已取消），1. 改为PROPAGATE成功，完结；2. 改为PROPAGATE失败，重新校验状态
-                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE)) // 为什么当前节点状态由0改为PROPAGATE，就不再唤醒后继节点了呢？1. 只有SIGNAL才需要主动唤醒后继节点。2. PROPAGATE<0，保证下一次执行doAcquireShared获取共享锁操作成功后，继续向后传播。
+                         !compareAndSetWaitStatus(h, 0, Node.PROPAGATE)) // 为什么当前节点状态由0改为PROPAGATE，就不再唤醒后继节点了呢？1. 只有SIGNAL才需要主动唤醒后继节点。2. PROPAGATE<0，保证下一次执行doAcquireShared获取共享锁操作成功后，满足setHeadAndPropagate，继续向后传播即可。
                     continue;                // loop on failed CAS // 后继节点在自旋执行 shouldParkAfterFailedAcquire，看到前继节点状态是0或PROPAGATE，都会改为SIGNAL。所以这里CAS失败，需要重新校验当前节点状态
             }
             if (h == head)                   // loop if head changed // 校验头节点是否发送变化，若变化了则重新校验最新头节点的状态
@@ -724,8 +724,8 @@ public abstract class AbstractQueuedSynchronizer
          * racing acquires/releases, so most need signals now or soon
          * anyway.
          */
-        if (propagate > 0 || h == null || h.waitStatus < 0 || // 若无剩余资源，则校验头节点的状态（PROPAGATE或SIGNAL，均<0）
-            (h = head) == null || h.waitStatus < 0) {         // 其他线程修改了head，取新head作为前继节点来校验
+        if (propagate > 0 || h == null || h.waitStatus < 0 || // 若无剩余资源，则校验旧的头节点h的状态（PROPAGATE或SIGNAL，均<0）
+            (h = head) == null || h.waitStatus < 0) {         // 若其他线程修改了head，取新head作为前继节点来校验
             Node s = node.next;
             if (s == null || s.isShared())
                 doReleaseShared(); // 唤醒共享节点
@@ -1684,7 +1684,7 @@ public abstract class AbstractQueuedSynchronizer
         int ws = p.waitStatus;
         if (ws > 0 || !compareAndSetWaitStatus(p, ws, Node.SIGNAL))
             LockSupport.unpark(node.thread); // 上一个节点已取消，则唤醒当前节点
-        return true;
+        return true;                         // 补充：node.thread 从 ConditionObject#await 之中被唤醒，后续执行 acquireQueued 尝试获取锁
     }
 
     /**
@@ -1873,7 +1873,7 @@ public abstract class AbstractQueuedSynchronizer
                     lastWaiter = null;
                 first.nextWaiter = null;
             } while (!transferForSignal(first) &&    // 把当前节点转移到同步队列，等待获取锁（说明条件队列的头节点不是dummy node）
-                     (first = firstWaiter) != null); // 转移失败，取最新的firstWaiter，若不为空则重试
+                     (first = firstWaiter) != null); // 转移失败，取最新的firstWaiter，若不为空则重试，若为空，说明队列为空
         }
 
         /**
