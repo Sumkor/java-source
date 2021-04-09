@@ -307,7 +307,7 @@ public abstract class AbstractQueuedSynchronizer
      * use the same basic tactic of holding some of the control
      * information about a thread in the predecessor of its node.  A
      * "status" field in each node keeps track of whether a thread      // 每个节点都有 status 属性，用于表明该节点的线程是否需要阻塞
-     * should block.  A node is signalled when its predecessor          // 当前继节点释放唤醒信号后，当前节点会得到通知
+     * should block.  A node is signalled when its predecessor          // 前继节点释放唤醒信号后，当前节点会得到通知
      * releases.  Each node of the queue otherwise serves as a
      * specific-notification-style monitor holding a single waiting
      * thread. The status field does NOT control whether threads are
@@ -421,7 +421,7 @@ public abstract class AbstractQueuedSynchronizer
          *   0:          None of the above                                   // 初始状态（当前节点在同步队列中，等待获取锁）。
          *
          * The values are arranged numerically to simplify use.
-         * Non-negative values mean that a node doesn't need to              // 状态为非负数，表示当前节点无需接收通知。
+         * Non-negative values mean that a node doesn't need to              // 状态为非负数，表示当前节点无需通知其他节点。
          * signal. So, most code doesn't need to check for particular
          * values, just for sign.
          *
@@ -466,16 +466,16 @@ public abstract class AbstractQueuedSynchronizer
         volatile Thread thread;
 
         /**
-         * Link to next node waiting on condition, or the special    // 独自模式，指向条件队列中的下一个节点
-         * value SHARED.  Because condition queues are accessed only // 共享模式，值为 SHARED
+         * Link to next node waiting on condition, or the special
+         * value SHARED.  Because condition queues are accessed only
          * when holding in exclusive mode, we just need a simple
          * linked queue to hold nodes while they are waiting on
          * conditions. They are then transferred to the queue to
          * re-acquire. And because conditions can only be exclusive,
          * we save a field by using special value to indicate shared
          * mode.
-         */
-        Node nextWaiter;
+         */              // 在同步队列中，nextWaiter用于标记节点的模式：独占、共享
+        Node nextWaiter; // 在条件队列中，nextWaiter指向条件队列中的下一个节点
 
         /**
          * Returns true if node is waiting in shared mode.
@@ -528,9 +528,9 @@ public abstract class AbstractQueuedSynchronizer
     private transient volatile Node tail;
 
     /**
-     * The synchronization state. // 同步资源的状态，即锁的状态。
-     */                           // 锁的状态：state为0表示锁没有被占用，state大于0表示当前已经有线程持有该锁。
-    private volatile int state;   // 具有可见性。锁和资源是同一个概念，是多个线程争夺的对象。
+     * The synchronization state. // 同步资源。锁和资源是同一个概念，是多个线程争夺的对象。具有可见性
+     */
+    private volatile int state;
 
     /**
      * Returns the current value of synchronization state.
@@ -692,7 +692,7 @@ public abstract class AbstractQueuedSynchronizer
                          !compareAndSetWaitStatus(h, 0, Node.PROPAGATE)) // 为什么当前节点状态由0改为PROPAGATE，就不再唤醒后继节点了呢？1. 只有SIGNAL才需要主动唤醒后继节点。2. PROPAGATE<0，保证下一次执行doAcquireShared获取共享锁操作成功后，满足setHeadAndPropagate，继续向后传播即可。
                     continue;                // loop on failed CAS // 后继节点在自旋执行 shouldParkAfterFailedAcquire，看到前继节点状态是0或PROPAGATE，都会改为SIGNAL。所以这里CAS失败，需要重新校验当前节点状态
             }
-            if (h == head)                   // loop if head changed // 校验头节点是否发送变化，若变化了则重新校验最新头节点的状态
+            if (h == head)                   // loop if head changed // 校验头节点是否发生变化，若变化了则重新校验最新头节点的状态
                 break;
         }
     }

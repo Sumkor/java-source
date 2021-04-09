@@ -3,10 +3,7 @@ package com.sumkor.lock;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.*;
 import java.util.function.Consumer;
 
 /**
@@ -227,6 +224,11 @@ public class BlockTest {
          * Thread_0 结束阻塞，准备释放锁
          * Thread_4 结束阻塞，准备释放锁
          */
+
+        ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        ReentrantReadWriteLock.ReadLock readLock = readWriteLock.readLock();
+        Condition condition1 = readLock.newCondition();
+        readLock.lock();
     }
 
 }
