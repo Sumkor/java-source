@@ -1628,15 +1628,15 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node
      * @return true if is reacquiring
      */
-    final boolean isOnSyncQueue(Node node) {
-        if (node.waitStatus == Node.CONDITION || node.prev == null)
-            return false;
+    final boolean isOnSyncQueue(Node node) {                        // 节点在同步队列上的两种情况：1. 一直是处于同步队列 2. 从条件队列转移到同步队列
+        if (node.waitStatus == Node.CONDITION || node.prev == null) // 将节点从条件队列转移到同步队列的方法：AbstractQueuedSynchronizer#transferForSignal、AbstractQueuedSynchronizer#transferAfterCancelledWait
+            return false;                                           // 都是首先 CAS 设置 waitStatus 状态为 CONDITION，再执行 AbstractQueuedSynchronizer#enq
         if (node.next != null) // If has successor, it must be on queue
             return true;
         /*
-         * node.prev can be non-null, but not yet on queue because
-         * the CAS to place it on queue can fail. So we have to
-         * traverse from tail to make sure it actually made it.  It
+         * node.prev can be non-null, but not yet on queue because   // 存在 node.prev != null 但是节点还没有完全入队成功的情况
+         * the CAS to place it on queue can fail. So we have to      // 因为入队操作设置 prev -> tail -> next 是非原子操作，见 AbstractQueuedSynchronizer#enq
+         * traverse from tail to make sure it actually made it.  It  // 所以需要从 tail 向前遍历，才能准确判断 node 是否位于同步队列上
          * will always be near the tail in calls to this method, and
          * unless the CAS failed (which is unlikely), it will be
          * there, so we hardly ever traverse much.
@@ -1872,7 +1872,7 @@ public abstract class AbstractQueuedSynchronizer
                 if ( (firstWaiter = first.nextWaiter) == null) // 当前节点的后继节点作为新的头节点（出队），若为空，说明队列为空
                     lastWaiter = null;
                 first.nextWaiter = null;
-            } while (!transferForSignal(first) &&    // 把当前节点转移到同步队列，等待获取锁（说明条件队列的头节点不是dummy node）
+            } while (!transferForSignal(first) &&    // 把当前节点转移到同步队列（入队），等待获取锁（说明条件队列的头节点不是dummy node）
                      (first = firstWaiter) != null); // 转移失败，取最新的firstWaiter，若不为空则重试，若为空，说明队列为空
         }
 
@@ -2036,14 +2036,14 @@ public abstract class AbstractQueuedSynchronizer
             int savedState = fullyRelease(node); // 释放已经持有的锁（就是在调用 Condition#await 之前持有的 Lock#lock 锁），并返回释放前的锁状态
             int interruptMode = 0;
             while (!isOnSyncQueue(node)) {       // 检查节点是否在同步队列上
-                LockSupport.park(this);  // 节点还在条件队列中，则阻塞   // 注意，线程被唤醒，可能是执行了 LockSupport#unpark，也可能是调用了 Thread#interrupt，后者会更新线程的中断标识，并且会唤醒处于阻塞状态下的线程。
+                LockSupport.park(this);  // 节点还在条件队列中，则阻塞   // 注意，线程被唤醒，可能是执行了 LockSupport#unpark，也可能是调用了 Thread#interrupt，后者会更新线程的中断标识。
                 if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)  // 节点从阻塞中被唤醒（condition#signal，Thread#interrupt），检查中断状态，设置中断处理模式
-                    break;                                                    // 补充：被 condition#signal 唤醒后的线程会从条件队列转移到同步队列
-            }                                                                 // 补充：若在条件队列中就发生了中断，也会被转移到同步队列，见 transferAfterCancelledWait
+                    break;                                                    // 补充：被 condition#signal 唤醒后的线程会从条件队列转移到同步队列（先出队再入队）
+            }                                                                 // 补充：若在条件队列中就发生了中断，也会被转移到同步队列（不出队，只入队，见 checkInterruptWhileWaiting -> transferAfterCancelledWait）
             if (acquireQueued(node, savedState) && interruptMode != THROW_IE) // 在同步队列等待获取资源直到成功，判断设置中断处理模式
                 interruptMode = REINTERRUPT;
-            if (node.nextWaiter != null)  // clean up if cancelled // nextWaiter不为空，说明当前节点是由 Thread#interrupt 唤醒的（condition#signal 唤醒阻塞节点会设置nextWaiter为空）
-                unlinkCancelledWaiters(); // 清除已取消的节点
+            if (node.nextWaiter != null)  // clean up if cancelled // nextWaiter不为空，说明当前节点是由 Thread#interrupt 唤醒的（condition#signal 唤醒阻塞节点会设置nextWaiter为空），此时当前节点同时存在于同步队列、条件队列上！
+                unlinkCancelledWaiters(); // 清除条件队列中已取消的节点
             if (interruptMode != 0)
                 reportInterruptAfterWait(interruptMode); // 处理中断：抛异常，或者补上中断状态
         }
