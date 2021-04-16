@@ -895,7 +895,7 @@ public abstract class AbstractQueuedSynchronizer
                 }
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
-                    throw new InterruptedException();
+                    throw new InterruptedException(); // 线程在阻塞等待锁的过程中，被中断唤醒，则放弃等待锁，直接抛出异常
             }
         } finally {
             if (failed)
@@ -1219,7 +1219,7 @@ public abstract class AbstractQueuedSynchronizer
         if (Thread.interrupted())
             throw new InterruptedException();
         if (!tryAcquire(arg))
-            doAcquireInterruptibly(arg);
+            doAcquireInterruptibly(arg); // 等待锁过程中发生中断，则立即抛出中断异常
     }
 
     /**
@@ -1509,7 +1509,7 @@ public abstract class AbstractQueuedSynchronizer
      *         is at the head of the queue or the queue is empty
      * @since 1.7
      */
-    public final boolean hasQueuedPredecessors() {
+    public final boolean hasQueuedPredecessors() { // 是否具有前继节点，判断是否有其他线程等待时间比当前线程还长
         // The correctness of this depends on head being initialized
         // before tail and on head.next being accurate if the current
         // thread is first in queue.
@@ -1517,7 +1517,7 @@ public abstract class AbstractQueuedSynchronizer
         Node h = head;
         Node s;
         return h != t &&
-            ((s = h.next) == null || s.thread != Thread.currentThread());
+            ((s = h.next) == null || s.thread != Thread.currentThread()); // 头节点的下一个节点，不是当前线程的节点，说明当前线程具有前继节点
     }
 
 
@@ -1694,9 +1694,9 @@ public abstract class AbstractQueuedSynchronizer
      * @param node the node
      * @return true if cancelled before the node was signalled
      */
-    final boolean transferAfterCancelledWait(Node node) { // 检查发生中断时，节点是位于条件队列，还是同步队列。如果是位于条件队列，则将其添加到同步队列，返回true；否则返回false
-        if (compareAndSetWaitStatus(node, Node.CONDITION, 0)) { // 使用CAS修改节点状态，如果还能修改成功，说明线程被中断时，signal还没有被调用（中断时还在条件队列中）
-            enq(node); // 如果CAS成功，将节点添加到同步队列
+    final boolean transferAfterCancelledWait(Node node) { // 检查发生中断或超时的时候，节点是位于条件队列，还是同步队列。如果是位于条件队列，则将其添加到同步队列，返回true；否则返回false
+        if (compareAndSetWaitStatus(node, Node.CONDITION, 0)) { // 使用CAS修改节点状态，如果还能修改成功，说明线程被中断时，Condition#signal还没有被调用
+            enq(node); // 如果CAS成功，说明节点还在条件队列中，需要将节点添加到同步队列
             return true;
         }
         /*
@@ -1892,35 +1892,35 @@ public abstract class AbstractQueuedSynchronizer
 
         /**
          * Unlinks cancelled waiter nodes from condition queue.
-         * Called only while holding lock. This is called when
-         * cancellation occurred during condition wait, and upon
-         * insertion of a new waiter when lastWaiter is seen to have
+         * Called only while holding lock. This is called when        // 持有锁时才可调用该方法
+         * cancellation occurred during condition wait, and upon      // 调用该方法的时机：当前线程在 Condition#wait 中阻塞，在被 Condition#signal 唤醒之前，由线程中断或doSignal等待超时唤醒
+         * insertion of a new waiter when lastWaiter is seen to have  // 此时需要调用该方法清除条件队列中的无效节点
          * been cancelled. This method is needed to avoid garbage
          * retention in the absence of signals. So even though it may
-         * require a full traversal, it comes into play only when
+         * require a full traversal, it comes into play only when     // 尽管该方法会遍历整个队列，但调用该方法的条件很苛刻
          * timeouts or cancellations occur in the absence of
-         * signals. It traverses all nodes rather than stopping at a
+         * signals. It traverses all nodes rather than stopping at a  // 该方法会遍历整个条件队列，一次性把所有无效节点都清除掉，当队列中短时机出现大量无效节点时（cancellation storms）可避免多次遍历队列
          * particular target to unlink all pointers to garbage nodes
          * without requiring many re-traversals during cancellation
          * storms.
          */
         private void unlinkCancelledWaiters() { // 清除条件队列中状态不为CONDITION的节点
-            Node t = firstWaiter;
-            Node trail = null;  // 游标节点，记录当前遍历的最后一个有效节点（状态为CONDITION）
-            while (t != null) { // 从条件队列的头节点开始遍历
+            Node t = firstWaiter; // 游标节点，记录当前遍历的节点
+            Node trail = null;    // 游标节点，记录遍历过的最后一个有效节点（状态为CONDITION）
+            while (t != null) {   // 从条件队列的头节点开始遍历（下面注释用next代表下一个节点）
                 Node next = t.nextWaiter;
-                if (t.waitStatus != Node.CONDITION) {
+                if (t.waitStatus != Node.CONDITION) { // 当前t为无效节点
                     t.nextWaiter = null;
-                    if (trail == null)
-                        firstWaiter = next; // 设置新的头节点
+                    if (trail == null)           // 首次遍历到t为有效节点时，才会初始化trail
+                        firstWaiter = next;      // 设置t.next为新的头节点（下一次循环校验t.next：若t.next无效，则把t.next.next设为新的头节点）
                     else
-                        trail.nextWaiter = next; // 将无效节点t的下一个节点，挂在trail节点后面（不用立即更新trail，下一次循环再检查，是有效节点才更新trail）
+                        trail.nextWaiter = next; // 设置trail.next为t.next（把t出队，下一次循环校验t.next：若t.next无效，则把t.next.next设为trail.next）
                     if (next == null)
-                        lastWaiter = trail;
+                        lastWaiter = trail;      // 设置trail为新的尾节点
                 }
-                else
+                else      // 当前t为有效节点
                     trail = t;
-                t = next;
+                t = next; // 继续遍历t.next
             }
         }
 
@@ -2067,18 +2067,18 @@ public abstract class AbstractQueuedSynchronizer
                 throw new InterruptedException();
             Node node = addConditionWaiter();
             int savedState = fullyRelease(node);
-            final long deadline = System.nanoTime() + nanosTimeout;
+            final long deadline = System.nanoTime() + nanosTimeout; // 等待截止的时间戳
             int interruptMode = 0;
             while (!isOnSyncQueue(node)) {
-                if (nanosTimeout <= 0L) {
+                if (nanosTimeout <= 0L) { // 已超时，检查节点所在位置，判断是否把节点加入同步队列
                     transferAfterCancelledWait(node);
                     break;
                 }
-                if (nanosTimeout >= spinForTimeoutThreshold)
+                if (nanosTimeout >= spinForTimeoutThreshold) // 大于时间阈值，进行阻塞；小于时间阈值，进行自旋
                     LockSupport.parkNanos(this, nanosTimeout);
-                if ((interruptMode = checkInterruptWhileWaiting(node)) != 0)
+                if ((interruptMode = checkInterruptWhileWaiting(node)) != 0) // 从阻塞中唤醒后，检查是否发生中断，如有中断则结束自旋
                     break;
-                nanosTimeout = deadline - System.nanoTime();
+                nanosTimeout = deadline - System.nanoTime(); // 剩余等待时间
             }
             if (acquireQueued(node, savedState) && interruptMode != THROW_IE)
                 interruptMode = REINTERRUPT;
@@ -2086,7 +2086,7 @@ public abstract class AbstractQueuedSynchronizer
                 unlinkCancelledWaiters();
             if (interruptMode != 0)
                 reportInterruptAfterWait(interruptMode);
-            return deadline - System.nanoTime();
+            return deadline - System.nanoTime(); // 返回剩余的阻塞时间
         }
 
         /**

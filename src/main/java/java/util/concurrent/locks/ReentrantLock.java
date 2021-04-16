@@ -123,19 +123,19 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         abstract void lock();
 
         /**
-         * Performs non-fair tryLock.  tryAcquire is implemented in
-         * subclasses, but both need nonfair try for trylock method.
+         * Performs non-fair tryLock.  tryAcquire is implemented in  // 非公平模式获取锁
+         * subclasses, but both need nonfair try for trylock method. // ReentrantLock.NonfairSync#tryAcquire 和 ReentrantLock#tryLock() 均会调用
          */
         final boolean nonfairTryAcquire(int acquires) {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
-                if (compareAndSetState(0, acquires)) {
+                if (compareAndSetState(0, acquires)) { // 不管当前线程在同步队列中是否等待最久，都来 CAS 争夺锁
                     setExclusiveOwnerThread(current);
                     return true;
                 }
             }
-            else if (current == getExclusiveOwnerThread()) {
+            else if (current == getExclusiveOwnerThread()) {  // 如果已获得锁，则重入。逻辑与公平锁一致
                 int nextc = c + acquires;
                 if (nextc < 0) // overflow
                     throw new Error("Maximum lock count exceeded");
@@ -146,12 +146,12 @@ public class ReentrantLock implements Lock, java.io.Serializable {
         }
 
         protected final boolean tryRelease(int releases) {
-            int c = getState() - releases;
+            int c = getState() - releases; // 计算释放之后的state
             if (Thread.currentThread() != getExclusiveOwnerThread())
                 throw new IllegalMonitorStateException();
             boolean free = false;
             if (c == 0) {
-                free = true; // 锁全部释放，可以唤醒下一个等待线程
+                free = true; // 锁已全部释放（获取锁的次数必须等于释放次数），返回true，表明可以唤醒下一个等待线程
                 setExclusiveOwnerThread(null); // 设置独占锁持有线程为null
             }
             setState(c);
@@ -232,16 +232,16 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
-                if (!hasQueuedPredecessors() &&
-                    compareAndSetState(0, acquires)) {
-                    setExclusiveOwnerThread(current);
+                if (!hasQueuedPredecessors() &&               // 判断当前线程是否具有前继节点
+                    compareAndSetState(0, acquires)) { // 进入这里，说明当前线程等待时间最长，则CAS修改state
+                    setExclusiveOwnerThread(current);         // 将当前线程设置为持有锁的线程
                     return true;
                 }
             }
-            else if (current == getExclusiveOwnerThread()) {
-                int nextc = c + acquires;
+            else if (current == getExclusiveOwnerThread()) {  // 当前线程已持有锁
+                int nextc = c + acquires; // 重入次数
                 if (nextc < 0)
-                    throw new Error("Maximum lock count exceeded");
+                    throw new Error("Maximum lock count exceeded"); // 可重入的最大次数 Integer.MAX_VALUE
                 setState(nextc);
                 return true;
             }
