@@ -130,7 +130,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
-                if (compareAndSetState(0, acquires)) { // 不管当前线程在同步队列中是否等待最久，都来 CAS 争夺锁
+                if (compareAndSetState(0, acquires)) { // 不管同步队列中是否具有等待很久的节点，当前线程直接 CAS 争夺锁
                     setExclusiveOwnerThread(current);
                     return true;
                 }
@@ -232,8 +232,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             final Thread current = Thread.currentThread();
             int c = getState();
             if (c == 0) {
-                if (!hasQueuedPredecessors() &&               // 判断当前线程是否具有前继节点
-                    compareAndSetState(0, acquires)) { // 进入这里，说明当前线程等待时间最长，则CAS修改state
+                if (!hasQueuedPredecessors() &&               // 判断同步队列中是否有等待时间更长的节点
+                    compareAndSetState(0, acquires)) {      // 进入这里，说明当前线程等待锁时间最长，则CAS修改state
                     setExclusiveOwnerThread(current);         // 将当前线程设置为持有锁的线程
                     return true;
                 }

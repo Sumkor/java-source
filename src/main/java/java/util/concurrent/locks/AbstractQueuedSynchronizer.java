@@ -927,13 +927,13 @@ public abstract class AbstractQueuedSynchronizer
                     return true;
                 }
                 nanosTimeout = deadline - System.nanoTime();
-                if (nanosTimeout <= 0L)
+                if (nanosTimeout <= 0L) // 直到超时都没有获得锁，则返回false
                     return false;
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     nanosTimeout > spinForTimeoutThreshold)
-                    LockSupport.parkNanos(this, nanosTimeout);
+                    LockSupport.parkNanos(this, nanosTimeout); // 可以进入阻塞的情况下，剩余时间大于阈值，则阻塞，否则自旋
                 if (Thread.interrupted())
-                    throw new InterruptedException();
+                    throw new InterruptedException(); // 线程在阻塞等待锁的过程中，被中断唤醒，则放弃等待锁，直接抛出异常
             }
         } finally {
             if (failed)
@@ -1509,7 +1509,7 @@ public abstract class AbstractQueuedSynchronizer
      *         is at the head of the queue or the queue is empty
      * @since 1.7
      */
-    public final boolean hasQueuedPredecessors() { // 是否具有前继节点，判断是否有其他线程等待时间比当前线程还长
+    public final boolean hasQueuedPredecessors() { // 判断同步队列中是否具有比当前线程等待锁时间还长的节点
         // The correctness of this depends on head being initialized
         // before tail and on head.next being accurate if the current
         // thread is first in queue.
@@ -1517,7 +1517,7 @@ public abstract class AbstractQueuedSynchronizer
         Node h = head;
         Node s;
         return h != t &&
-            ((s = h.next) == null || s.thread != Thread.currentThread()); // 头节点的下一个节点，不是当前线程的节点，说明当前线程具有前继节点
+            ((s = h.next) == null || s.thread != Thread.currentThread()); // 头节点的下一个节点，不是当前线程的节点，说明当前线程等待锁时间不是最长的
     }
 
 
