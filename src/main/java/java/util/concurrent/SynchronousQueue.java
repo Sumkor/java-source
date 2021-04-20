@@ -390,7 +390,7 @@ public class SynchronousQueue<E> extends AbstractQueue<E>
                 } else {                            // help a fulfiller // 执行到这里，说明栈顶元素跟当前元素的模式不同，且栈顶是匹配模式（表示栈顶和栈顶下面的节点正在发生匹配，当前请求需要做协助工作）
                     SNode m = h.next;               // m is h's match
                     if (m == null)                  // waiter is gone // 节点m是h匹配的节点，但是m为空，说明m已经被其它线程先一步匹配了
-                        casHead(h, null);       // pop fulfilling node
+                        casHead(h, null);       // pop fulfilling node // 清空队列，节点h需要重新入队（由h中的线程自行操作）
                     else {
                         SNode mn = m.next;
                         if (m.tryMatch(h))          // help match // 协助匹配，如果节点m和h匹配，则弹出h和m

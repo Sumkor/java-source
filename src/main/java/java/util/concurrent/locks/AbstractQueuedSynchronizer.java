@@ -1460,10 +1460,10 @@ public abstract class AbstractQueuedSynchronizer
      */
     final boolean apparentlyFirstQueuedIsExclusive() {
         Node h, s;
-        return (h = head) != null &&
-            (s = h.next)  != null &&
-            !s.isShared()         &&
-            s.thread != null;
+        return (h = head) != null && // 头节点h不为空
+            (s = h.next)  != null && // 存在等待中的节点s
+            !s.isShared()         && // 节点s不是共享模式，即互斥
+            s.thread != null;        // 节点s不是无效节点
     }
 
     /**

@@ -672,14 +672,14 @@ public class ReentrantReadWriteLock
             return false; // writers can always barge
         }
         final boolean readerShouldBlock() {
-            /* As a heuristic to avoid indefinite writer starvation,
-             * block if the thread that momentarily appears to be head
-             * of queue, if one exists, is a waiting writer.  This is
-             * only a probabilistic effect since a new reader will not
+            /* As a heuristic to avoid indefinite writer starvation,    // 由于非公平的竞争，并且读锁可以共享，所以可能会出现源源不断的读，
+             * block if the thread that momentarily appears to be head  // 使得写锁永远竞争不到，然后出现饿死的现象。
+             * of queue, if one exists, is a waiting writer.  This is   // 为了避免这种情况，当一个写锁申请线程出现在头结点后面的时候，
+             * only a probabilistic effect since a new reader will not  // 会立刻阻塞所有还未获取读锁的其他线程，让步给写线程先执行。
              * block if there is a waiting writer behind other enabled
              * readers that have not yet drained from the queue.
              */
-            return apparentlyFirstQueuedIsExclusive();
+            return apparentlyFirstQueuedIsExclusive(); // 如果同步队列中等待时间最长的节点是互斥节点，返回true；否则返回false
         }
     }
 
@@ -689,7 +689,7 @@ public class ReentrantReadWriteLock
     static final class FairSync extends Sync {
         private static final long serialVersionUID = -2274990926593161451L;
         final boolean writerShouldBlock() {
-            return hasQueuedPredecessors();
+            return hasQueuedPredecessors(); // 如果同步队列中等待时间最长的节点不是当前线程，返回true；否则返回false
         }
         final boolean readerShouldBlock() {
             return hasQueuedPredecessors();

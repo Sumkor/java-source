@@ -233,7 +233,7 @@ public class ReentrantLock implements Lock, java.io.Serializable {
             int c = getState();
             if (c == 0) {
                 if (!hasQueuedPredecessors() &&               // 判断同步队列中是否有等待时间更长的节点
-                    compareAndSetState(0, acquires)) {      // 进入这里，说明当前线程等待锁时间最长，则CAS修改state
+                    compareAndSetState(0, acquires)) { // 进入这里，说明当前线程等待锁时间最长，则CAS修改state
                     setExclusiveOwnerThread(current);         // 将当前线程设置为持有锁的线程
                     return true;
                 }
