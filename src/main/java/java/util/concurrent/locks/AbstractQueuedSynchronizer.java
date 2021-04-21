@@ -1279,8 +1279,8 @@ public abstract class AbstractQueuedSynchronizer
      *        and can represent anything you like.
      */
     public final void acquireShared(int arg) { // 共享模式下获取锁/资源，无视中断
-        if (tryAcquireShared(arg) < 0) // 获取共享锁/资源
-            doAcquireShared(arg); // 获取锁/资源失败，再一次尝试获取/入队/取消
+        if (tryAcquireShared(arg) < 0) // 获取共享锁/资源，获取失败则进入下一步
+            doAcquireShared(arg); // 进入同步队列中等待获取锁/资源
     }
 
     /**
