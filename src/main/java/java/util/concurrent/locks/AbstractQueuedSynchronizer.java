@@ -667,8 +667,8 @@ public abstract class AbstractQueuedSynchronizer
      * propagation. (Note: For exclusive mode, release just amounts    // 互斥模式下的 release 操作：只会唤醒队列头部需要唤醒的一个后继节点
      * to calling unparkSuccessor of head if it needs signal.)
      */
-    private void doReleaseShared() { // 唤醒共享节点，释放共享资源（共享模式下，当前线程获取锁成功、释放锁之后，都可能会调用该方法）
-        /*
+    private void doReleaseShared() { // 共享模式下唤醒后继节点（共享模式下，当前线程获取锁成功、释放锁之后，都可能会调用该方法）
+        /*                           // 头节点是共享节点，但是这个方法不会区分后继节点是否是共享节点
          * Ensure that a release propagates, even if there are other
          * in-progress acquires/releases.  This proceeds in the usual
          * way of trying to unparkSuccessor of head if it needs        // 通常情况下，该操作会唤醒队首需要唤醒的后继节点
@@ -699,7 +699,7 @@ public abstract class AbstractQueuedSynchronizer
 
     /**
      * Sets head of queue, and checks if successor may be waiting   // 将当前节点设置为新的头节点
-     * in shared mode, if so propagating if either propagate > 0 or // 如果共享资源有盈余，唤醒后续等待中的共享节点
+     * in shared mode, if so propagating if either propagate > 0 or // 如果前继节点是共享节点，唤醒后续等待中的共享节点
      * PROPAGATE status was set.
      *
      * @param node the node
@@ -727,8 +727,8 @@ public abstract class AbstractQueuedSynchronizer
         if (propagate > 0 || h == null || h.waitStatus < 0 || // 若无剩余资源，则校验旧的头节点h的状态（PROPAGATE或SIGNAL，均<0）
             (h = head) == null || h.waitStatus < 0) {         // 若其他线程修改了head，取新head作为前继节点来校验
             Node s = node.next;
-            if (s == null || s.isShared())
-                doReleaseShared(); // 唤醒共享节点
+            if (s == null || s.isShared()) // node.next != null 时，这里限制了只会唤醒共享节点！
+                doReleaseShared(); // 唤醒后继节点
         }
     }
 
@@ -953,9 +953,9 @@ public abstract class AbstractQueuedSynchronizer
             for (;;) {
                 final Node p = node.predecessor();
                 if (p == head) {
-                    int r = tryAcquireShared(arg);    // 如果上一个节点是头结点，则尝试获取共享资源，返回剩余的资源数量
+                    int r = tryAcquireShared(arg);    // 如果上一个节点是头结点，则尝试获取共享资源，返回成功获取的资源数量
                     if (r >= 0) {
-                        setHeadAndPropagate(node, r); // 设置当前节点为新的头节点（dummy node），并传播资源盈余信息给后继共享节点
+                        setHeadAndPropagate(node, r); // 设置当前节点为新的头节点（dummy node），并唤醒后继共享节点
                         p.next = null; // help GC     // 旧的头节点出队
                         if (interrupted)
                             selfInterrupt();

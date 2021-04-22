@@ -2,6 +2,8 @@ package com.sumkor.lock;
 
 import org.junit.Test;
 
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 /**
  * @author Sumkor
  * @since 2021/4/21
@@ -34,4 +36,21 @@ public class ReadWriteLockTest {
         System.out.println("sharedCount(state) = " + sharedCount(state));
         System.out.println("exclusiveCount(state) = " + exclusiveCount(state));
     }
+
+    /**
+     * 锁降级
+     */
+    @Test
+    public void lockDegrade() {
+        ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        ReentrantReadWriteLock.ReadLock readLock = readWriteLock.readLock();
+        ReentrantReadWriteLock.WriteLock writeLock = readWriteLock.writeLock();
+
+        writeLock.lock();
+        readLock.lock();
+        writeLock.unlock();
+
+        System.out.println("readLock.toString() = " + readLock.toString()); // [Read locks = 1]
+    }
+
 }
