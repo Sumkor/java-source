@@ -995,7 +995,7 @@ public abstract class AbstractQueuedSynchronizer
                 }
                 if (shouldParkAfterFailedAcquire(p, node) &&
                     parkAndCheckInterrupt())
-                    throw new InterruptedException();
+                    throw new InterruptedException(); // 线程在阻塞等待锁的过程中，被中断唤醒，则放弃等待锁，直接抛出异常
             }
         } finally {
             if (failed)
@@ -1301,7 +1301,7 @@ public abstract class AbstractQueuedSynchronizer
         if (Thread.interrupted())
             throw new InterruptedException();
         if (tryAcquireShared(arg) < 0)
-            doAcquireSharedInterruptibly(arg);
+            doAcquireSharedInterruptibly(arg); // 等待锁过程中发生中断，则立即抛出中断异常
     }
 
     /**
@@ -1325,7 +1325,7 @@ public abstract class AbstractQueuedSynchronizer
         if (Thread.interrupted())
             throw new InterruptedException();
         return tryAcquireShared(arg) >= 0 ||
-            doAcquireSharedNanos(arg, nanosTimeout);
+            doAcquireSharedNanos(arg, nanosTimeout); // 等待锁直到获取成功、发生中断、获取超时
     }
 
     /**

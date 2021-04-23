@@ -197,7 +197,7 @@ public class CountDownLatch {
      */
     public CountDownLatch(int count) {
         if (count < 0) throw new IllegalArgumentException("count < 0");
-        this.sync = new Sync(count);
+        this.sync = new Sync(count); // 初始化 state
     }
 
     /**
@@ -228,7 +228,7 @@ public class CountDownLatch {
      *         while waiting
      */
     public void await() throws InterruptedException {
-        sync.acquireSharedInterruptibly(1);
+        sync.acquireSharedInterruptibly(1); // state == 0 才能成功获取锁
     }
 
     /**
@@ -288,7 +288,7 @@ public class CountDownLatch {
      * <p>If the current count equals zero then nothing happens.
      */
     public void countDown() {
-        sync.releaseShared(1);
+        sync.releaseShared(1); // state 减一
     }
 
     /**

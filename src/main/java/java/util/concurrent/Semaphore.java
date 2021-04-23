@@ -174,7 +174,7 @@ public class Semaphore implements java.io.Serializable {
             return getState();
         }
 
-        final int nonfairTryAcquireShared(int acquires) {
+        final int nonfairTryAcquireShared(int acquires) { // 不需要排队
             for (;;) {
                 int available = getState();
                 int remaining = available - acquires;
@@ -184,10 +184,10 @@ public class Semaphore implements java.io.Serializable {
             }
         }
 
-        protected final boolean tryReleaseShared(int releases) {
+        protected final boolean tryReleaseShared(int releases) { // 释放锁
             for (;;) {
                 int current = getState();
-                int next = current + releases;
+                int next = current + releases; // 没有校验当前线程是否持有锁，直接累加
                 if (next < current) // overflow
                     throw new Error("Maximum permit count exceeded");
                 if (compareAndSetState(current, next))
@@ -195,7 +195,7 @@ public class Semaphore implements java.io.Serializable {
             }
         }
 
-        final void reducePermits(int reductions) {
+        final void reducePermits(int reductions) { // 根据指定的缩减量减小可用许可的数目。
             for (;;) {
                 int current = getState();
                 int next = current - reductions;
@@ -206,7 +206,7 @@ public class Semaphore implements java.io.Serializable {
             }
         }
 
-        final int drainPermits() {
+        final int drainPermits() { // 获取并返回立即可用的所有许可。
             for (;;) {
                 int current = getState();
                 if (current == 0 || compareAndSetState(current, 0))
@@ -242,12 +242,12 @@ public class Semaphore implements java.io.Serializable {
 
         protected int tryAcquireShared(int acquires) {
             for (;;) {
-                if (hasQueuedPredecessors())
+                if (hasQueuedPredecessors()) // 需排队
                     return -1;
                 int available = getState();
                 int remaining = available - acquires;
-                if (remaining < 0 ||
-                    compareAndSetState(available, remaining))
+                if (remaining < 0 ||                          // 超额无法获取
+                    compareAndSetState(available, remaining)) // 自旋 CAS 获取锁
                     return remaining;
             }
         }
@@ -616,7 +616,7 @@ public class Semaphore implements java.io.Serializable {
      *
      * @return the number of permits available in this semaphore
      */
-    public int availablePermits() {
+    public int availablePermits() { // 返回此信号量中当前可用的许可数。
         return sync.getPermits();
     }
 
@@ -625,7 +625,7 @@ public class Semaphore implements java.io.Serializable {
      *
      * @return the number of permits acquired
      */
-    public int drainPermits() {
+    public int drainPermits() { // 获取并返回立即可用的所有许可。
         return sync.drainPermits();
     }
 
@@ -639,7 +639,7 @@ public class Semaphore implements java.io.Serializable {
      * @param reduction the number of permits to remove
      * @throws IllegalArgumentException if {@code reduction} is negative
      */
-    protected void reducePermits(int reduction) {
+    protected void reducePermits(int reduction) { // 根据指定的缩减量减小可用许可的数目。
         if (reduction < 0) throw new IllegalArgumentException();
         sync.reducePermits(reduction);
     }

@@ -425,7 +425,7 @@ public class ReentrantReadWriteLock
                 if (count <= 1) {
                     readHolds.remove();
                     if (count <= 0)
-                        throw unmatchedUnlockException();
+                        throw unmatchedUnlockException(); // 当前线程没有持有锁，报错
                 }
                 --rh.count;
             }

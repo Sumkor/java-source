@@ -53,4 +53,14 @@ public class ReadWriteLockTest {
         System.out.println("readLock.toString() = " + readLock.toString()); // [Read locks = 1]
     }
 
+    /**
+     * 释放共享锁之前，校验当前线程是否持有锁
+     */
+    @Test(expected = IllegalMonitorStateException.class)
+    public void releaseShared() {
+        ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+        ReentrantReadWriteLock.ReadLock readLock = readWriteLock.readLock();
+        readLock.unlock();
+    }
+
 }
