@@ -166,7 +166,7 @@ import java.security.Permissions;
  * @since 1.7
  * @author Doug Lea
  */
-@sun.misc.Contended
+@sun.misc.Contended // 避免伪共享
 public class ForkJoinPool extends AbstractExecutorService {
 
     /*

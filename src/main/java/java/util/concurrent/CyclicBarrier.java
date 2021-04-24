@@ -174,7 +174,7 @@ public class CyclicBarrier {
      * Updates state on barrier trip and wakes up everyone.
      * Called only while holding lock.
      */
-    private void nextGeneration() { // 下一代
+    private void nextGeneration() { // 产生下一代
         // signal completion of last generation
         trip.signalAll();
         // set up next generation
@@ -226,7 +226,7 @@ public class CyclicBarrier {
                         breakBarrier();// 这里将栅栏破坏掉（破坏后，后继线程无法继续使用），由于这里没有 catch 异常，实际会抛出异常，不会执行后面的代码
                 }
             }
-            // 进入这里，说明最后一个线程未到达栅栏
+            // 进入这里，说明最后一个线程未到达栅栏，其他线程需在 Condition 上等待所有线程都到达栅栏
             // loop until tripped, broken, interrupted, or timed out
             for (;;) {
                 try {

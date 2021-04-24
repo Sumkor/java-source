@@ -1,5 +1,7 @@
 package com.sumkor.lock;
 
+import org.junit.Test;
+
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -49,4 +51,33 @@ public class CountDownLatchTest {
         endGate.await();
         onCompletion();
     }
+
+    /**
+     * 倒计时过程中，其中一个线程出错没有 countDown
+     * 会导致 await 一直阻塞
+     */
+    @Test
+    public void countDownWithException() throws InterruptedException {
+        final int nThreads = 10;
+        final CountDownLatch countDownLatch = new CountDownLatch(nThreads);
+
+        for (int i = 0; i < nThreads; i++) {
+            final int index = i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    if (index == 8) {
+                        throw new RuntimeException("出现异常");
+                    }
+                    try {
+                        doSomeTask();
+                    } finally {
+                        countDownLatch.countDown();
+                    }
+                }
+            }).start();
+        }
+        countDownLatch.await();
+    }
+
 }

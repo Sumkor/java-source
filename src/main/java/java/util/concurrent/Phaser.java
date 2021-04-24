@@ -41,10 +41,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * A reusable synchronization barrier, similar in functionality to
- * {@link java.util.concurrent.CyclicBarrier CyclicBarrier} and
+ * A reusable synchronization barrier, similar in functionality to  // 一个可重用的同步屏障（phaser：相位器、阶段器）
+ * {@link java.util.concurrent.CyclicBarrier CyclicBarrier} and     // 功能与 CyclicBarrier、CountDownLatch 类似
  * {@link java.util.concurrent.CountDownLatch CountDownLatch}
- * but supporting more flexible usage.
+ * but supporting more flexible usage.                              // 但是提供了更灵活的用法
  *
  * <p><b>Registration.</b> Unlike the case for other barriers, the
  * number of parties <em>registered</em> to synchronize on a phaser
@@ -266,12 +266,12 @@ public class Phaser {
      */
 
     /**
-     * Primary state representation, holding four bit-fields:
+     * Primary state representation, holding four bit-fields: // state 共 64 位，分为 4 部分
      *
-     * unarrived  -- the number of parties yet to hit barrier (bits  0-15)
-     * parties    -- the number of parties to wait            (bits 16-31)
-     * phase      -- the generation of the barrier            (bits 32-62)
-     * terminated -- set if barrier is terminated             (bit  63 / sign)
+     * unarrived  -- the number of parties yet to hit barrier (bits  0-15)     // 还没有到达栅栏的线程数
+     * parties    -- the number of parties to wait            (bits 16-31)     // 参与的线程数
+     * phase      -- the generation of the barrier            (bits 32-62)     // 栅栏的年代
+     * terminated -- set if barrier is terminated             (bit  63 / sign) // 栅栏是否终止
      *
      * Except that a phaser with no registered parties is
      * distinguished by the otherwise illegal state of having zero
@@ -294,7 +294,7 @@ public class Phaser {
      */
     private volatile long state;
 
-    private static final int  MAX_PARTIES     = 0xffff;
+    private static final int  MAX_PARTIES     = 0xffff; // 十进制：65535  二进制：1111 1111 1111 1111
     private static final int  MAX_PHASE       = Integer.MAX_VALUE;
     private static final int  PARTIES_SHIFT   = 16;
     private static final int  PHASE_SHIFT     = 32;
@@ -933,9 +933,9 @@ public class Phaser {
      *   protected boolean onAdvance(int phase, int parties) { return false; }
      * }}</pre>
      *
-     * @param phase the current phase number on entry to this method,
+     * @param phase the current phase number on entry to this method,    // 表示在 phaser 完结之前，当前是第几次重试
      * before this phaser is advanced
-     * @param registeredParties the current number of registered parties
+     * @param registeredParties the current number of registered parties // 当前注册参与的线程数
      * @return {@code true} if this phaser should terminate
      */
     protected boolean onAdvance(int phase, int registeredParties) {
