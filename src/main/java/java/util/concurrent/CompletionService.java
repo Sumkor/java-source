@@ -95,7 +95,7 @@ public interface CompletionService<V> {
      * @return the Future representing the next completed task
      * @throws InterruptedException if interrupted while waiting
      */
-    Future<V> take() throws InterruptedException;
+    Future<V> take() throws InterruptedException; // 获取并移除表示下一个已完成任务的 Future，如果目前不存在这样的任务，则等待。
 
     /**
      * Retrieves and removes the Future representing the next
@@ -104,7 +104,7 @@ public interface CompletionService<V> {
      * @return the Future representing the next completed task, or
      *         {@code null} if none are present
      */
-    Future<V> poll();
+    Future<V> poll(); // 获取并移除表示下一个已完成任务的 Future，如果不存在这样的任务，则返回 null。
 
     /**
      * Retrieves and removes the Future representing the next

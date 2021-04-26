@@ -128,9 +128,9 @@ package java.util.concurrent;
 public interface Executor {
 
     /**
-     * Executes the given command at some time in the future.  The command
-     * may execute in a new thread, in a pooled thread, or in the calling
-     * thread, at the discretion of the {@code Executor} implementation.
+     * Executes the given command at some time in the future.  The command // 在未来的某一段时间执行 command
+     * may execute in a new thread, in a pooled thread, or in the calling  // command 会在新的线程、线程池中的线程、当前线程中执行
+     * thread, at the discretion of the {@code Executor} implementation.   // 由 Executor 的实现类自行抉择
      *
      * @param command the runnable task
      * @throws RejectedExecutionException if this task cannot be
