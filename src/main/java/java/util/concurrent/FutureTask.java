@@ -229,7 +229,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
     protected void set(V v) {
         if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) { // state: NEW -> COMPLETING
             outcome = v;
-            UNSAFE.putOrderedInt(this, stateOffset, NORMAL); // final state // 由于 state 属性是 volatile, 这里 putOrderedInt 和 putIntVolatile 是等价的，保证可见性
+            UNSAFE.putOrderedInt(this, stateOffset, NORMAL); // final state: COMPLETING -> NORMAL // 只有一个线程会执行到这里，无需使用 CAS
             finishCompletion();
         }
     }
@@ -245,9 +245,9 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * @param t the cause of failure
      */
     protected void setException(Throwable t) {
-        if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) {
+        if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) { // state: NEW -> COMPLETING
             outcome = t;
-            UNSAFE.putOrderedInt(this, stateOffset, EXCEPTIONAL); // final state
+            UNSAFE.putOrderedInt(this, stateOffset, EXCEPTIONAL); // final state // 由于 state 属性是 volatile, 这里 putOrderedInt 和 putIntVolatile 是等价的，保证可见性
             finishCompletion();
         }
     }
@@ -280,16 +280,16 @@ public class FutureTask<V> implements RunnableFuture<V> {
             // state must be re-read after nulling runner to prevent
             // leaked interrupts
             int s = state;
-            if (s >= INTERRUPTING) // INTERRUPTING、INTERRUPTED
-                handlePossibleCancellationInterrupt(s);
+            if (s >= INTERRUPTING) // 其他线程执行 cancel(true) 中断当前线程之前，会设置 state 为 INTERRUPTING
+                handlePossibleCancellationInterrupt(s); // 等待其他线程中断当前线程
         }
     }
 
     /**
-     * Executes the computation without setting its result, and then
-     * resets this future to initial state, failing to do so if the
-     * computation encounters an exception or is cancelled.  This is
-     * designed for use with tasks that intrinsically execute more
+     * Executes the computation without setting its result, and then  // 执行任务，不用返回任务结果，
+     * resets this future to initial state, failing to do so if the   // 最后把任务状态重置为初始状态。
+     * computation encounters an exception or is cancelled.  This is  // 如果执行异常或者取消任务，则不会重置状态。
+     * designed for use with tasks that intrinsically execute more    // 设计用来支持定时任务
      * than once.
      *
      * @return {@code true} if successfully run and reset
@@ -331,7 +331,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
     private void handlePossibleCancellationInterrupt(int s) {
         // It is possible for our interrupter to stall before getting a
         // chance to interrupt us.  Let's spin-wait patiently.
-        if (s == INTERRUPTING)
+        if (s == INTERRUPTING)  // 检测到 state == INTERRUPTING 说明其他线程正在执行 cancel(true)，这里需要等待其他线程中断当前线程
             while (state == INTERRUPTING)
                 Thread.yield(); // wait out pending interrupt
 
@@ -361,7 +361,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * Removes and signals all waiting threads, invokes done(), and
      * nulls out callable.
      */
-    private void finishCompletion() {
+    private void finishCompletion() { // 执行完毕，唤醒等待线程
         // assert state > COMPLETING;
         for (WaitNode q; (q = waiters) != null;) {
             if (UNSAFE.compareAndSwapObject(this, waitersOffset, q, null)) { // 将waiters属性置空：1.CAS成功，遍历链表唤醒所有节点；2. CAS失败，重新读取waiters
@@ -381,7 +381,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
             }
         }
 
-        done();
+        done(); // 预留方法
 
         callable = null;        // to reduce footprint
     }
