@@ -64,4 +64,16 @@ public class FutureTest {
         System.out.println("future.isDone() = " + future.isDone());
         System.out.println("future.isCancelled() = " + future.isCancelled());
     }
+
+    @Test
+    public void executors() throws Exception {
+        Callable<String> callable = Executors.callable(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("run!");
+            }
+        }, "haha");
+        String call = callable.call();
+        System.out.println("call = " + call); // haha
+    }
 }

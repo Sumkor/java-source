@@ -36,9 +36,9 @@
 package java.util.concurrent;
 
 /**
- * A service that decouples the production of new asynchronous tasks
+ * A service that decouples the production of new asynchronous tasks   // 将 生产新的异步任务 与 使用已完成任务的结果 分离开来的服务。
  * from the consumption of the results of completed tasks.  Producers
- * {@code submit} tasks for execution. Consumers {@code take}
+ * {@code submit} tasks for execution. Consumers {@code take}          // 生产者 submit 执行的任务。消费者 take 已完成的任务，并按照这些任务的完成顺序处理它们的结果。
  * completed tasks and process their results in the order they
  * complete.  A {@code CompletionService} can for example be used to
  * manage asynchronous I/O, in which tasks that perform reads are

@@ -154,7 +154,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
     }
 
     public boolean isCancelled() {
-        return state >= CANCELLED;
+        return state >= CANCELLED; // CANCELLED、INTERRUPTING、INTERRUPTED
     }
 
     public boolean isDone() {
@@ -227,9 +227,9 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * @param v the value
      */
     protected void set(V v) {
-        if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) {
+        if (UNSAFE.compareAndSwapInt(this, stateOffset, NEW, COMPLETING)) { // state: NEW -> COMPLETING
             outcome = v;
-            UNSAFE.putOrderedInt(this, stateOffset, NORMAL); // final state
+            UNSAFE.putOrderedInt(this, stateOffset, NORMAL); // final state // 由于 state 属性是 volatile, 这里 putOrderedInt 和 putIntVolatile 是等价的，保证可见性
             finishCompletion();
         }
     }
@@ -253,8 +253,8 @@ public class FutureTask<V> implements RunnableFuture<V> {
     }
 
     public void run() {
-        if (state != NEW ||
-            !UNSAFE.compareAndSwapObject(this, runnerOffset,
+        if (state != NEW ||                                       // state != NEW 说明任务已经执行完毕，不再重复执行
+            !UNSAFE.compareAndSwapObject(this, runnerOffset,   // 将 runner 属性设置为当前线程，若设置失败说明其他线程已获取执行权
                                          null, Thread.currentThread()))
             return;
         try {
@@ -263,15 +263,15 @@ public class FutureTask<V> implements RunnableFuture<V> {
                 V result;
                 boolean ran;
                 try {
-                    result = c.call();
+                    result = c.call(); // 执行 Callable#call
                     ran = true;
                 } catch (Throwable ex) {
                     result = null;
                     ran = false;
-                    setException(ex);
+                    setException(ex); // 执行失败，设置异常
                 }
                 if (ran)
-                    set(result);
+                    set(result); // 执行成功，设置结果
             }
         } finally {
             // runner must be non-null until state is settled to
@@ -280,7 +280,7 @@ public class FutureTask<V> implements RunnableFuture<V> {
             // state must be re-read after nulling runner to prevent
             // leaked interrupts
             int s = state;
-            if (s >= INTERRUPTING)
+            if (s >= INTERRUPTING) // INTERRUPTING、INTERRUPTED
                 handlePossibleCancellationInterrupt(s);
         }
     }
@@ -352,8 +352,8 @@ public class FutureTask<V> implements RunnableFuture<V> {
      * for more detailed explanation.
      */
     static final class WaitNode {
-        volatile Thread thread;
-        volatile WaitNode next;
+        volatile Thread thread; // 等待任务执行结果的线程
+        volatile WaitNode next; // 栈的下一个节点
         WaitNode() { thread = Thread.currentThread(); }
     }
 
@@ -364,17 +364,17 @@ public class FutureTask<V> implements RunnableFuture<V> {
     private void finishCompletion() {
         // assert state > COMPLETING;
         for (WaitNode q; (q = waiters) != null;) {
-            if (UNSAFE.compareAndSwapObject(this, waitersOffset, q, null)) {
+            if (UNSAFE.compareAndSwapObject(this, waitersOffset, q, null)) { // 将waiters属性置空：1.CAS成功，遍历链表唤醒所有节点；2. CAS失败，重新读取waiters
                 for (;;) {
                     Thread t = q.thread;
                     if (t != null) {
                         q.thread = null;
-                        LockSupport.unpark(t);
+                        LockSupport.unpark(t); // 唤醒节点上的线程
                     }
                     WaitNode next = q.next;
                     if (next == null)
                         break;
-                    q.next = null; // unlink to help gc
+                    q.next = null; // unlink to help gc // 出栈
                     q = next;
                 }
                 break;

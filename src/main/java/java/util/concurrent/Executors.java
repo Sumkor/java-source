@@ -396,7 +396,7 @@ public class Executors {
      * can be useful when applying methods requiring a
      * {@code Callable} to an otherwise resultless action.
      * @param task the task to run
-     * @param result the result to return
+     * @param result the result to return // 设置 Callable 返回值
      * @param <T> the type of the result
      * @return a callable object
      * @throws NullPointerException if task null
