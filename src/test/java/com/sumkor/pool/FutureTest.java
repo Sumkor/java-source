@@ -35,6 +35,7 @@ public class FutureTest {
      */
     @Test
     public void future() throws InterruptedException {
+        // 定义任务
         Callable<String> callable = new Callable<String>() {
             @Override
             public String call() throws Exception {
@@ -45,11 +46,14 @@ public class FutureTest {
                 return "This is a result";
             }
         };
+        // 异步执行任务
         ExecutorService executorService = Executors.newCachedThreadPool();
         Future<String> future = executorService.submit(callable);
 
-        Thread.sleep(1000); // 模拟处理其他耗时操作
+        // 模拟处理其他耗时操作
+        Thread.sleep(1000);
 
+        // 获取任务异步执行结果
         try {
             String result = future.get();
             System.out.println("Callable 执行的结果是: " + result);
