@@ -711,7 +711,7 @@ class Thread implements Runnable {
 
         boolean started = false;
         try {
-            start0();
+            start0(); // 由 JVM 映射到系统层面，创建线程！
             started = true;
         } finally {
             try {
