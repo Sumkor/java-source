@@ -16,12 +16,21 @@ public class ThreadTest {
                 System.out.println("hello");
             }
         });
+        System.out.println(thread.isAlive()); // false
         thread.start();
+        System.out.println(thread.isAlive()); // true
+
         thread.join();
 
         thread.stop();
         thread.resume();
 
-        thread.start();
+        // thread.start();
+    }
+
+    @Test
+    public void sleep() throws InterruptedException {
+        Thread.currentThread().sleep(100);
+        Thread.sleep(100);
     }
 }

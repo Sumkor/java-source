@@ -332,7 +332,7 @@ public class Object {
      * was invoked.
      * <p>
      * A thread can also wake up without being notified, interrupted, or
-     * timing out, a so-called <i>spurious wakeup</i>.  While this will rarely
+     * timing out, a so-called <i>spurious wakeup</i>.  While this will rarely  // 通知、中断、超时、虚假唤醒，都会唤醒该线程
      * occur in practice, applications must guard against it by testing for
      * the condition that should have caused the thread to be awakened, and
      * continuing to wait if the condition is not satisfied.  In other words,
@@ -361,9 +361,9 @@ public class Object {
      * other objects on which the current thread may be synchronized remain
      * locked while the thread waits.
      * <p>
-     * This method should only be called by a thread that is the owner
-     * of this object's monitor. See the {@code notify} method for a
-     * description of the ways in which a thread can become the owner of
+     * This method should only be called by a thread that is the owner    // 调用该方法之前，线程必须持有监视器锁（monitor lock）
+     * of this object's monitor. See the {@code notify} method for a      // 线程在等待过程中，会释放锁，进入 TIMED_WAITING/WAITING 状态。
+     * description of the ways in which a thread can become the owner of  // 线程从等待中唤醒，重新等待获取锁，进入 BLOCKED 状态。
      * a monitor.
      *
      * @param      timeout   the maximum time to wait in milliseconds.
@@ -461,7 +461,7 @@ public class Object {
     }
 
     /**
-     * Causes the current thread to wait until another thread invokes the
+     * Causes the current thread to wait until another thread invokes the // 当前线程一直等待，直到被其他线程唤醒，没有超时时间
      * {@link java.lang.Object#notify()} method or the
      * {@link java.lang.Object#notifyAll()} method for this object.
      * In other words, this method behaves exactly as if it simply

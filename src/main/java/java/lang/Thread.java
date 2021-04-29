@@ -282,9 +282,9 @@ class Thread implements Runnable {
     public static native void yield();
 
     /**
-     * Causes the currently executing thread to sleep (temporarily cease
+     * Causes the currently executing thread to sleep (temporarily cease      // 使当前线程进入休眠
      * execution) for the specified number of milliseconds, subject to
-     * the precision and accuracy of system timers and schedulers. The thread
+     * the precision and accuracy of system timers and schedulers. The thread // 不会释放任何监视器锁
      * does not lose ownership of any monitors.
      *
      * @param  millis
@@ -308,10 +308,10 @@ class Thread implements Runnable {
      * monitors.
      *
      * @param  millis
-     *         the length of time to sleep in milliseconds
+     *         the length of time to sleep in milliseconds       // 毫秒
      *
      * @param  nanos
-     *         {@code 0-999999} additional nanoseconds to sleep
+     *         {@code 0-999999} additional nanoseconds to sleep  // 纳秒
      *
      * @throws  IllegalArgumentException
      *          if the value of {@code millis} is negative, or the value of
@@ -1240,11 +1240,11 @@ class Thread implements Runnable {
             throw new IllegalArgumentException("timeout value is negative");
         }
 
-        if (millis == 0) {
+        if (millis == 0) { // 需要一直等待
             while (isAlive()) {
                 wait(0);
             }
-        } else {
+        } else { // 进入等待，有超时时间
             while (isAlive()) {
                 long delay = millis - now;
                 if (delay <= 0) {
@@ -1725,8 +1725,8 @@ class Thread implements Runnable {
      * </ul>
      *
      * <p>
-     * A thread can be in only one state at a given point in time.
-     * These states are virtual machine states which do not reflect
+     * A thread can be in only one state at a given point in time.       // 线程在同一时间下，只会处于一种状态
+     * These states are virtual machine states which do not reflect      // 这些状态是在 JVM 层面的，不会映射到操作系统层面的线程状态。
      * any operating system thread states.
      *
      * @since   1.5
@@ -1734,30 +1734,30 @@ class Thread implements Runnable {
      */
     public enum State {
         /**
-         * Thread state for a thread which has not yet started.
+         * Thread state for a thread which has not yet started.           // 尚未启动的线程状态。
          */
         NEW,
 
         /**
-         * Thread state for a runnable thread.  A thread in the runnable
-         * state is executing in the Java virtual machine but it may
-         * be waiting for other resources from the operating system
+         * Thread state for a runnable thread.  A thread in the runnable  // 可执行的线程状态。
+         * state is executing in the Java virtual machine but it may      // 该状态下的线程正在 JVM 中运行，
+         * be waiting for other resources from the operating system       // 但是可能需要等待操作系统的资源，如 CPU 调度等。
          * such as processor.
          */
         RUNNABLE,
 
         /**
-         * Thread state for a thread blocked waiting for a monitor lock.
-         * A thread in the blocked state is waiting for a monitor lock
-         * to enter a synchronized block/method or
-         * reenter a synchronized block/method after calling
+         * Thread state for a thread blocked waiting for a monitor lock.  // 阻塞中的线程状态。
+         * A thread in the blocked state is waiting for a monitor lock    // 等待监视器锁（monitor lock）的线程处于这个状态，分为两种情况：
+         * to enter a synchronized block/method or                        // 1. 等待获取锁，用于进入 synchronized 块；
+         * reenter a synchronized block/method after calling              // 2. 在调用 Object#wait、Object.wait 方法之后，等待重新获取锁，用于重入 synchronized 块。
          * {@link Object#wait() Object.wait}.
          */
         BLOCKED,
 
         /**
-         * Thread state for a waiting thread.
-         * A thread is in the waiting state due to calling one of the
+         * Thread state for a waiting thread.                                 // 无限期等待中的线程状态。
+         * A thread is in the waiting state due to calling one of the         // 调用以下方法之一，线程会处于该状态。
          * following methods:
          * <ul>
          *   <li>{@link Object#wait() Object.wait} with no timeout</li>
@@ -1765,7 +1765,7 @@ class Thread implements Runnable {
          *   <li>{@link LockSupport#park() LockSupport.park}</li>
          * </ul>
          *
-         * <p>A thread in the waiting state is waiting for another thread to
+         * <p>A thread in the waiting state is waiting for another thread to  // 处于等待状态的线程，在等待的是其他线程执行特定的操作。
          * perform a particular action.
          *
          * For example, a thread that has called <tt>Object.wait()</tt>
@@ -1777,8 +1777,8 @@ class Thread implements Runnable {
         WAITING,
 
         /**
-         * Thread state for a waiting thread with a specified waiting time.
-         * A thread is in the timed waiting state due to calling one of
+         * Thread state for a waiting thread with a specified waiting time.   // 有限期等待中的线程状态。
+         * A thread is in the timed waiting state due to calling one of       // 调用以下方法之一，线程会处于该状态。
          * the following methods with a specified positive waiting time:
          * <ul>
          *   <li>{@link #sleep Thread.sleep}</li>
@@ -1791,8 +1791,8 @@ class Thread implements Runnable {
         TIMED_WAITING,
 
         /**
-         * Thread state for a terminated thread.
-         * The thread has completed execution.
+         * Thread state for a terminated thread.    // 已终止的线程状态。
+         * The thread has completed execution.      // 线程已经结束执行。
          */
         TERMINATED;
     }
