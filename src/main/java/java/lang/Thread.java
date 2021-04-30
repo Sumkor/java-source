@@ -1231,7 +1231,7 @@ class Thread implements Runnable {
      *          <i>interrupted status</i> of the current thread is
      *          cleared when this exception is thrown.
      */
-    public final synchronized void join(long millis)
+    public final synchronized void join(long millis) // threadA 执行 threadB.join()，指的是 threadA 需要等待 threadB 执行完毕
     throws InterruptedException {
         long base = System.currentTimeMillis();
         long now = 0;
@@ -1240,9 +1240,9 @@ class Thread implements Runnable {
             throw new IllegalArgumentException("timeout value is negative");
         }
 
-        if (millis == 0) { // 需要一直等待
-            while (isAlive()) {
-                wait(0);
+        if (millis == 0) {       // threadA 需要一直等待
+            while (isAlive()) {  // threadA 检查 threadB 是否存活
+                wait(0); // threadA 执行 threadB.wait() 进入等待，直到 threadB 终止时调用 threadB.notifyAll() 来唤醒
             }
         } else { // 进入等待，有超时时间
             while (isAlive()) {

@@ -320,8 +320,8 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     /**
      * The main pool control state, ctl, is an atomic integer packing
      * two conceptual fields
-     *   workerCount, indicating the effective number of threads
-     *   runState,    indicating whether running, shutting down etc
+     *   workerCount, indicating the effective number of threads      // 工作线程数量
+     *   runState,    indicating whether running, shutting down etc   // 线程池运行状态
      *
      * In order to pack them into one int, we limit workerCount to
      * (2^29)-1 (about 500 million) threads rather than (2^31)-1 (2
