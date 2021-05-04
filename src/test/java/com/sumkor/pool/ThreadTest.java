@@ -35,6 +35,31 @@ public class ThreadTest {
     }
 
     @Test
+    public void state() throws InterruptedException {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        System.out.println("thread.isAlive() = " + thread.isAlive());  // false
+        System.out.println("thread.getState() = " + thread.getState());// NEW
+
+        thread.start();
+        Thread.sleep(200);
+        System.out.println("thread.isAlive() = " + thread.isAlive());  // true
+        System.out.println("thread.getState() = " + thread.getState());// TIMED_WAITING
+
+        thread.join();
+        System.out.println("thread.isAlive() = " + thread.isAlive());  // false
+        System.out.println("thread.getState() = " + thread.getState());// TERMINATED
+    }
+
+    @Test
     public void dealInterrupt() {
         Thread subThread = new Thread(new Runnable() {
             @Override

@@ -403,7 +403,7 @@ public class ReentrantReadWriteLock
                 return true;
             }
             if (writerShouldBlock() ||  // 进入这里，说明锁未被持有（但是同步队列中可能有线程在等待），则校验公平性策略看能否获取写锁
-                !compareAndSetState(c, c + acquires)) // 能够获取写锁，则 CAS 获取读锁（低16位加1）
+                !compareAndSetState(c, c + acquires)) // 能够获取写锁，则 CAS 获取（低16位加1）
                 return false;
             setExclusiveOwnerThread(current); // 获取写锁成功，记录持有写锁的是当前线程
             return true;
