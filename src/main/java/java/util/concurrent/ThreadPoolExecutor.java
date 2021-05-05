@@ -1086,9 +1086,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      * external code, in which case completedAbruptly holds, which
      * usually leads processWorkerExit to replace this thread.
      *
-     * 2. Before running any task, the lock is acquired to prevent
+     * 2. Before running any task, the lock is acquired to prevent     // 线程执行任务之前，需要获取 worker 的锁
      * other pool interrupts while the task is executing, and then we
-     * ensure that unless pool is stopping, this thread does not have
+     * ensure that unless pool is stopping, this thread does not have  // 可以保证除非线程池关闭，否则没有其他线程能够中断当前任务
      * its interrupt set.
      *
      * 3. Each task run is preceded by a call to beforeExecute, which
@@ -1125,21 +1125,21 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         boolean completedAbruptly = true;
         try {
             while (task != null || (task = getTask()) != null) { // firstTask 不为空，或者从队列拉取到任务不为空
-                w.lock();
+                w.lock(); // 加锁，保证 worker 一次只执行一个任务
                 // If pool is stopping, ensure thread is interrupted;
                 // if not, ensure thread is not interrupted.  This
                 // requires a recheck in second case to deal with
                 // shutdownNow race while clearing interrupt
                 if ((runStateAtLeast(ctl.get(), STOP) ||
                      (Thread.interrupted() &&
-                      runStateAtLeast(ctl.get(), STOP))) &&
-                    !wt.isInterrupted())
+                      runStateAtLeast(ctl.get(), STOP))) && // 如果线程池状态 >= STOP，则中断当前线程，不需要执行新任务
+                    !wt.isInterrupted())                    // 这里可能会两次执行 isInterrupted，是为了避免 shutdownNow 过程中清除了线程中断状态
                     wt.interrupt();
                 try {
-                    beforeExecute(wt, task);
+                    beforeExecute(wt, task); // 前置工作，预留
                     Throwable thrown = null;
                     try {
-                        task.run();
+                        task.run(); // 执行任务
                     } catch (RuntimeException x) {
                         thrown = x; throw x;
                     } catch (Error x) {
@@ -1147,7 +1147,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                     } catch (Throwable x) {
                         thrown = x; throw new Error(x);
                     } finally {
-                        afterExecute(task, thrown);
+                        afterExecute(task, thrown); // 后置工作，预留
                     }
                 } finally {
                     task = null;
@@ -1155,9 +1155,9 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                     w.unlock();
                 }
             }
-            completedAbruptly = false;
+            completedAbruptly = false; // 走到这里说明线程没有任务可执行
         } finally {
-            processWorkerExit(w, completedAbruptly);
+            processWorkerExit(w, completedAbruptly); // 工作线程退出
         }
     }
 
