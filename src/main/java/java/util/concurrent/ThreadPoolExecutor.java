@@ -851,7 +851,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
     private List<Runnable> drainQueue() {
         BlockingQueue<Runnable> q = workQueue;
         ArrayList<Runnable> taskList = new ArrayList<Runnable>();
-        q.drainTo(taskList);
+        q.drainTo(taskList); // 批量将队列中的任务转移到 taskList
         if (!q.isEmpty()) {
             for (Runnable r : q.toArray(new Runnable[0])) {
                 if (q.remove(r))
@@ -1132,7 +1132,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 // shutdownNow race while clearing interrupt
                 if ((runStateAtLeast(ctl.get(), STOP) ||
                      (Thread.interrupted() &&
-                      runStateAtLeast(ctl.get(), STOP))) && // 如果线程池状态 >= STOP，则中断当前线程，不需要执行新任务
+                      runStateAtLeast(ctl.get(), STOP))) && // 如果线程池状态 >= STOP，则中断当前线程，不再执行新任务
                     !wt.isInterrupted())                    // 这里可能会两次执行 isInterrupted，是为了避免 shutdownNow 过程中清除了线程中断状态
                     wt.interrupt();
                 try {
@@ -1384,14 +1384,14 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         final ReentrantLock mainLock = this.mainLock;
         mainLock.lock();
         try {
-            checkShutdownAccess();
-            advanceRunState(SHUTDOWN);
-            interruptIdleWorkers();
+            checkShutdownAccess();     // 检查关闭权限
+            advanceRunState(SHUTDOWN); // 修改线程池状态
+            interruptIdleWorkers();    // 依次中断所有线程
             onShutdown(); // hook for ScheduledThreadPoolExecutor
         } finally {
             mainLock.unlock();
         }
-        tryTerminate();
+        tryTerminate(); // 尝试关闭线程池
     }
 
     /**
@@ -1419,7 +1419,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
             checkShutdownAccess();
             advanceRunState(STOP);
             interruptWorkers();
-            tasks = drainQueue();
+            tasks = drainQueue(); // 移除等待队列中的所有任务
         } finally {
             mainLock.unlock();
         }
