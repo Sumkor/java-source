@@ -82,13 +82,13 @@ public class ThreadLocal<T> {
      * are used by the same threads, while remaining well-behaved in
      * less common cases.
      */
-    private final int threadLocalHashCode = nextHashCode();
+    private final int threadLocalHashCode = nextHashCode(); // 实例变量。ThreadLocal 每次实例化时都会执行 nextHashCode()，为当前实例生成一个 hashCode。
 
     /**
      * The next hash code to be given out. Updated atomically. Starts at
      * zero.
      */
-    private static AtomicInteger nextHashCode =
+    private static AtomicInteger nextHashCode = // 类变量。每次实例化 ThreadLocal 时，生成的 hashCode 是在上一次的基础上增加 0x61c88647。
         new AtomicInteger();
 
     /**
@@ -158,7 +158,7 @@ public class ThreadLocal<T> {
      */
     public T get() {
         Thread t = Thread.currentThread();
-        ThreadLocalMap map = getMap(t);
+        ThreadLocalMap map = getMap(t); // 获取当前线程的 ThreadLocalMap 属性
         if (map != null) {
             ThreadLocalMap.Entry e = map.getEntry(this);
             if (e != null) {
@@ -167,7 +167,7 @@ public class ThreadLocal<T> {
                 return result;
             }
         }
-        return setInitialValue();
+        return setInitialValue(); // 如果当前线程的 ThreadLocalMap 属性为空，则进行初始化
     }
 
     /**
@@ -198,11 +198,11 @@ public class ThreadLocal<T> {
      */
     public void set(T value) {
         Thread t = Thread.currentThread();
-        ThreadLocalMap map = getMap(t);
+        ThreadLocalMap map = getMap(t); // 获取当前线程的 ThreadLocalMap 属性
         if (map != null)
             map.set(this, value);
         else
-            createMap(t, value);
+            createMap(t, value); // 当前线程的 ThreadLocalMap 属性为空，则进行创建
     }
 
     /**
@@ -464,21 +464,21 @@ public class ThreadLocal<T> {
 
             for (Entry e = tab[i];
                  e != null;
-                 e = tab[i = nextIndex(i, len)]) {
+                 e = tab[i = nextIndex(i, len)]) { // Entry不为空，但是key不相等，说明出现了Hash冲突，则继续对比下一个桶：1.下一个桶为空，则跳出循环；2.下一个桶不为空，则对比key
                 ThreadLocal<?> k = e.get();
 
-                if (k == key) {
+                if (k == key) { // key 相同，则更新旧值
                     e.value = value;
                     return;
                 }
 
-                if (k == null) {
+                if (k == null) { // Entry 不为空，但是 key 为空，说明已被回收，需清除 Entry
                     replaceStaleEntry(key, value, i);
                     return;
                 }
             }
 
-            tab[i] = new Entry(key, value);
+            tab[i] = new Entry(key, value); // 走到这里，说明 tab[i] 为空，进行初始赋值。
             int sz = ++size;
             if (!cleanSomeSlots(i, sz) && sz >= threshold)
                 rehash();

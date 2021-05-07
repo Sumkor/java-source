@@ -647,7 +647,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
 
         void interruptIfStarted() {
             Thread t;
-            if (getState() >= 0 && (t = thread) != null && !t.isInterrupted()) {
+            if (getState() >= 0 && (t = thread) != null && !t.isInterrupted()) { // 注意这里没有获取锁！
                 try {
                     t.interrupt();
                 } catch (SecurityException ignore) {
@@ -784,7 +784,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         try {
             for (Worker w : workers) {
                 Thread t = w.thread;
-                if (!t.isInterrupted() && w.tryLock()) {
+                if (!t.isInterrupted() && w.tryLock()) { // 能够获取锁，说明当前线程没有在执行任务，是“空闲”的
                     try {
                         t.interrupt();
                     } catch (SecurityException ignore) {
@@ -1068,7 +1068,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
                 if (r != null)
                     return r;
                 timedOut = true; // 表示直到超时，都没有获取任务
-            } catch (InterruptedException retry) {
+            } catch (InterruptedException retry) { // 拉取时被中断唤醒，继续自旋
                 timedOut = false;
             }
         }
@@ -1125,7 +1125,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         boolean completedAbruptly = true;
         try {
             while (task != null || (task = getTask()) != null) { // firstTask 不为空，或者从队列拉取到任务不为空
-                w.lock(); // 加锁，保证 worker 一次只执行一个任务
+                w.lock(); // 加锁，确保除非线程池关闭，否则没有其他线程能够中断当前任务
                 // If pool is stopping, ensure thread is interrupted;
                 // if not, ensure thread is not interrupted.  This
                 // requires a recheck in second case to deal with
@@ -1386,7 +1386,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         try {
             checkShutdownAccess();     // 检查关闭权限
             advanceRunState(SHUTDOWN); // 修改线程池状态
-            interruptIdleWorkers();    // 依次中断所有线程
+            interruptIdleWorkers();    // 依次中断所有空闲线程
             onShutdown(); // hook for ScheduledThreadPoolExecutor
         } finally {
             mainLock.unlock();
@@ -1418,7 +1418,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
         try {
             checkShutdownAccess();
             advanceRunState(STOP);
-            interruptWorkers();
+            interruptWorkers();   // 中断所有线程
             tasks = drainQueue(); // 移除等待队列中的所有任务
         } finally {
             mainLock.unlock();
