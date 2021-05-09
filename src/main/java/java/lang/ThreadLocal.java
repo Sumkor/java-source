@@ -416,7 +416,7 @@ public class ThreadLocal<T> {
             if (e != null && e.get() == key)
                 return e;
             else
-                return getEntryAfterMiss(key, i, e);
+                return getEntryAfterMiss(key, i, e); // hash 冲突，从 i 位置继续往后找
         }
 
         /**
@@ -439,7 +439,7 @@ public class ThreadLocal<T> {
                 if (k == null)
                     expungeStaleEntry(i);
                 else
-                    i = nextIndex(i, len);
+                    i = nextIndex(i, len); // i++
                 e = tab[i];
             }
             return null;
@@ -464,7 +464,7 @@ public class ThreadLocal<T> {
 
             for (Entry e = tab[i];                 // 遍历逻辑：先通过 hash 找到数组下标，然后寻找相等的 key
                  e != null;                        // Entry不为空才会进入循环
-                 e = tab[i = nextIndex(i, len)]) { // Entry不为空，但是key不相等，说明出现了Hash冲突，则继续对比下一个桶：1.下一个桶为空，则跳出循环；2.下一个桶不为空，则对比key
+                 e = tab[i = nextIndex(i, len)]) { // Entry不为空，但是key不相等，说明出现了hash冲突，则继续对比下一个桶：1.下一个桶为空，则跳出循环；2.下一个桶不为空，则对比key
                 ThreadLocal<?> k = e.get();
 
                 if (k == key) { // key 相同，则更新旧值
@@ -480,7 +480,7 @@ public class ThreadLocal<T> {
 
             tab[i] = new Entry(key, value); // 走到这里，说明没有找到，进行初始赋值。
             int sz = ++size;
-            if (!cleanSomeSlots(i, sz) && sz >= threshold)
+            if (!cleanSomeSlots(i, sz) && sz >= threshold) // 如果没有移除元素，且超过了阈值，则进行扩容
                 rehash();
         }
 
@@ -518,7 +518,7 @@ public class ThreadLocal<T> {
          *         searching for key.
          */
         private void replaceStaleEntry(ThreadLocal<?> key, Object value,
-                                       int staleSlot) {
+                                       int staleSlot) { // staleSlot 位置的 key 被回收了，在存入新的 key-value 之前，需要处理因 hash 冲突而被移位的元素
             Entry[] tab = table;
             int len = tab.length;
             Entry e;
@@ -555,7 +555,7 @@ public class ThreadLocal<T> {
                     // Start expunge at preceding stale entry if it exists
                     if (slotToExpunge == staleSlot) // 说明上一个循环没有在 staleSlot 左侧找到过期的
                         slotToExpunge = i;          // 由于 staleSlot 已经和 i 换位置了，只需要清理 i 位置的 entry
-                    cleanSomeSlots(expungeStaleEntry(slotToExpunge), len);
+                    cleanSomeSlots(expungeStaleEntry(slotToExpunge), len); // 清理 slotToExpunge 位置的过期元素，并把冲突元素移位
                     return;
                 }
 
@@ -586,7 +586,7 @@ public class ThreadLocal<T> {
          * (all between staleSlot and this slot will have been checked
          * for expunging).
          */
-        private int expungeStaleEntry(int staleSlot) {
+        private int expungeStaleEntry(int staleSlot) { // 清除 staleSlot 位置元素，并对后续冲突元素进行 rehash
             Entry[] tab = table;
             int len = tab.length;
 
@@ -646,7 +646,7 @@ public class ThreadLocal<T> {
          *
          * @return true if any stale entries have been removed.
          */
-        private boolean cleanSomeSlots(int i, int n) {
+        private boolean cleanSomeSlots(int i, int n) { // 对从 i 到 n 范围内的过期元素进行清理
             boolean removed = false;
             Entry[] tab = table;
             int len = tab.length;
@@ -671,7 +671,7 @@ public class ThreadLocal<T> {
             expungeStaleEntries();
 
             // Use lower threshold for doubling to avoid hysteresis
-            if (size >= threshold - threshold / 4)
+            if (size >= threshold - threshold / 4) // 阈值 0.75
                 resize();
         }
 
@@ -692,7 +692,7 @@ public class ThreadLocal<T> {
                     if (k == null) {
                         e.value = null; // Help the GC
                     } else {
-                        int h = k.threadLocalHashCode & (newLen - 1);
+                        int h = k.threadLocalHashCode & (newLen - 1); // 重新对 hash 取模
                         while (newTab[h] != null)
                             h = nextIndex(h, newLen);
                         newTab[h] = e;
@@ -709,7 +709,7 @@ public class ThreadLocal<T> {
         /**
          * Expunge all stale entries in the table.
          */
-        private void expungeStaleEntries() {
+        private void expungeStaleEntries() { // 遍历整个数组，清除过期元素
             Entry[] tab = table;
             int len = tab.length;
             for (int j = 0; j < len; j++) {
