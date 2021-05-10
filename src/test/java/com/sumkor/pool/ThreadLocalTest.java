@@ -24,7 +24,7 @@ public class ThreadLocalTest {
                 String result = threadLocal.get();
                 System.out.println(Thread.currentThread().getName() + " " + result);
             }
-        });
+        }, "sub");
         thread.start();
         thread.join();
     }
@@ -60,4 +60,15 @@ public class ThreadLocalTest {
         String result = threadLocal.get();
         System.out.println(Thread.currentThread().getName() + " " + result); // xixi
     }
+
+    /**
+     * cleanSomeSlots 对 n 的控制
+     */
+    @Test
+    public void test04() {
+        int n = 16;
+        System.out.println(n >>>= 1);
+        System.out.println("n = " + n);
+    }
+
 }

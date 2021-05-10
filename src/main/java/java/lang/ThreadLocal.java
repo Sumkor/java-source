@@ -480,7 +480,7 @@ public class ThreadLocal<T> {
 
             tab[i] = new Entry(key, value); // 走到这里，说明没有找到，进行初始赋值。
             int sz = ++size;
-            if (!cleanSomeSlots(i, sz) && sz >= threshold) // 如果没有移除元素，且超过了阈值，则进行扩容
+            if (!cleanSomeSlots(i, sz) && sz >= threshold) // 如果从i到数组末尾都没有过期元素，且超过了阈值，则进行扩容
                 rehash();
         }
 
@@ -528,15 +528,15 @@ public class ThreadLocal<T> {
             // incremental rehashing due to garbage collector freeing // 同时也避免过多的过期对象的占用，导致这个时候刚好来了一个新的元素达到阀值而触发一次新的 rehash
             // up refs in bunches (i.e., whenever the collector runs).// （注意这里只是 key 被回收，value 还没被回收，entry 更加没回收，所以需要让他们回收）
             int slotToExpunge = staleSlot;
-            for (int i = prevIndex(staleSlot, len); // 向前遍历，利用 slotToExpunge 记录 staleSlot 左手边第一个空的 entry 到 staleSlot 之间，第一个 key 过期对象的 index
+            for (int i = prevIndex(staleSlot, len); // 向前遍历，利用 slotToExpunge 记录 staleSlot 左边第一个空的 entry 到 staleSlot 之间，第一个 key 过期对象的 index
                  (e = tab[i]) != null; // 一直往前找到第一个空的 entry
                  i = prevIndex(i, len))
                 if (e.get() == null)   // 记录 key 过期的桶 index
                     slotToExpunge = i;
 
             // Find either the key or trailing null slot of run, whichever // 使用 i++ 从 staleSlot 位置向后遍历
-            // occurs first // 目的是为了在左边遇到的第一个空的 entry 到右边遇到的第一空的 entry 之间，查询所有过期的对象
-            for (int i = nextIndex(staleSlot, len);
+            // occurs first
+            for (int i = nextIndex(staleSlot, len); // 向后遍历，利用 slotToExpunge 记录 staleSlot 左边第一个空的 entry 到右边第一个空的 entry 之间，第一个 key 过期对象的 index
                  (e = tab[i]) != null; // 一直往后找到第一个空的 entry
                  i = nextIndex(i, len)) {
                 ThreadLocal<?> k = e.get();
@@ -554,8 +554,8 @@ public class ThreadLocal<T> {
 
                     // Start expunge at preceding stale entry if it exists
                     if (slotToExpunge == staleSlot) // 说明上一个循环没有在 staleSlot 左侧找到过期的
-                        slotToExpunge = i;          // 由于 staleSlot 已经和 i 换位置了，只需要清理 i 位置的 entry
-                    cleanSomeSlots(expungeStaleEntry(slotToExpunge), len); // 清理 slotToExpunge 位置的过期元素，并把冲突元素移位
+                        slotToExpunge = i;          // 由于 staleSlot 已经和 i 换位置了，只需从 i 位置开始清理
+                    cleanSomeSlots(expungeStaleEntry(slotToExpunge), len); // 清理 slotToExpunge 位置开始的过期元素，并对后续冲突元素进行移位
                     return;
                 }
 
@@ -595,7 +595,7 @@ public class ThreadLocal<T> {
             tab[staleSlot] = null;
             size--;
 
-            // Rehash until we encounter null // 由于采用了开放地址法，如果删除的元素是众多冲突元素中的一个，需要把后面的元素向前移
+            // Rehash until we encounter null // 由于采用了开放地址法，如果删除的元素是众多冲突元素中的一个，需要进行 rehash 把后面的元素向前移
             Entry e;
             int i;
             for (i = nextIndex(staleSlot, len);
@@ -646,7 +646,7 @@ public class ThreadLocal<T> {
          *
          * @return true if any stale entries have been removed.
          */
-        private boolean cleanSomeSlots(int i, int n) { // 对从 i 到 n 范围内的过期元素进行清理
+        private boolean cleanSomeSlots(int i, int n) { // 从 i+1 开始扫描，对过期元素进行清理，对非过期元素进行移位
             boolean removed = false;
             Entry[] tab = table;
             int len = tab.length;
@@ -658,7 +658,7 @@ public class ThreadLocal<T> {
                     removed = true;
                     i = expungeStaleEntry(i);
                 }
-            } while ( (n >>>= 1) != 0);
+            } while ( (n >>>= 1) != 0); // n = n >>> 1 // 如果连续 log(n) 个单元不需要擦除，则结束方法
             return removed;
         }
 
