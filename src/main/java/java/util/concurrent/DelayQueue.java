@@ -74,19 +74,19 @@ public class DelayQueue<E extends Delayed> extends AbstractQueue<E>
     private final PriorityQueue<E> q = new PriorityQueue<E>();
 
     /**
-     * Thread designated to wait for the element at the head of
-     * the queue.  This variant of the Leader-Follower pattern
+     * Thread designated to wait for the element at the head of    // leader是等待获取队列头元素的线程
+     * the queue.  This variant of the Leader-Follower pattern     // 采用主从式设计，以减少不必要的等待
      * (http://www.cs.wustl.edu/~schmidt/POSA/POSA2/) serves to
      * minimize unnecessary timed waiting.  When a thread becomes
-     * the leader, it waits only for the next delay to elapse, but
-     * other threads await indefinitely.  The leader thread must
-     * signal some other thread before returning from take() or
-     * poll(...), unless some other thread becomes leader in the
+     * the leader, it waits only for the next delay to elapse, but // 当一个线程成为 leader，它只会等待下一个延迟届期
+     * other threads await indefinitely.  The leader thread must   // 但是其他线程的等待时间是不确定的
+     * signal some other thread before returning from take() or    // leader 线程从 take() 或 poll() 获取数据返回前，必须唤醒其他等待的线程
+     * poll(...), unless some other thread becomes leader in the   // 除非其他线程在这期间变成 leader
      * interim.  Whenever the head of the queue is replaced with
-     * an element with an earlier expiration time, the leader
-     * field is invalidated by being reset to null, and some
-     * waiting thread, but not necessarily the current leader, is
-     * signalled.  So waiting threads must be prepared to acquire
+     * an element with an earlier expiration time, the leader      // 如果队列头被一个有着更快过期时间的元素替换掉
+     * field is invalidated by being reset to null, and some       // leader 将会被设置为 null 而失效
+     * waiting thread, but not necessarily the current leader, is  // 并唤醒其他等待线程（不一定是当前 leader 线程）
+     * signalled.  So waiting threads must be prepared to acquire  // 所以等待线程在等待期间必须时刻准备获取或失去 leader 权限
      * and lose leadership while waiting.
      */
     private Thread leader = null;
@@ -138,9 +138,9 @@ public class DelayQueue<E extends Delayed> extends AbstractQueue<E>
         lock.lock();
         try {
             q.offer(e);
-            if (q.peek() == e) {
-                leader = null;
-                available.signal();
+            if (q.peek() == e) {    // 如果当前入队的元素，成为队列的头节点，说明它的延迟时间（与队列中其他节点相比）是最短的
+                leader = null;      // 则设置 leader 为空（因为此时需要选举新的 leader 线程，其等待时间比旧的 leader 还短）
+                available.signal(); // 并唤醒一个等待队列中的线程，让它去成为新的 leader
             }
             return true;
         } finally {
@@ -201,36 +201,36 @@ public class DelayQueue<E extends Delayed> extends AbstractQueue<E>
      * @return the head of this queue
      * @throws InterruptedException {@inheritDoc}
      */
-    public E take() throws InterruptedException {
+    public E take() throws InterruptedException { // 一直等待直到元素可用
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
             for (;;) {
                 E first = q.peek();
                 if (first == null)
-                    available.await();
+                    available.await(); // 队列为空，等待直到非空
                 else {
                     long delay = first.getDelay(NANOSECONDS);
                     if (delay <= 0)
-                        return q.poll();
+                        return q.poll(); // 已到期，出队
                     first = null; // don't retain ref while waiting
-                    if (leader != null)
+                    if (leader != null)  // leader不为空，证明有其他线程已经获取到leader，当前线程加入条件队列等待直到被唤醒
                         available.await();
                     else {
                         Thread thisThread = Thread.currentThread();
                         leader = thisThread;
                         try {
-                            available.awaitNanos(delay);
+                            available.awaitNanos(delay); // 当前线程成为leader，只会等待下一个延迟届期
                         } finally {
-                            if (leader == thisThread)
-                                leader = null;
+                            if (leader == thisThread)    // 当前线程等待结束，下一次循环可以获取元素出队
+                                leader = null;           // 清空leader（因为不需要再等待下一个延迟届期）
                         }
                     }
                 }
             }
         } finally {
-            if (leader == null && q.peek() != null)
-                available.signal();
+            if (leader == null && q.peek() != null) // 当前线程取到值后，退出之前，发现队列中还有元素，但是没有线程成为leader
+                available.signal();                 // 唤醒一个等待线程，以便它去成为leader
             lock.unlock();
         }
     }
