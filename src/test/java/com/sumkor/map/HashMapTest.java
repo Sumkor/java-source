@@ -25,8 +25,8 @@ import java.util.*;
  * <p>
  * 从结构实现来讲，HashMap是数组+链表+红黑树（JDK1.8增加了红黑树部分）实现的。
  *
- * @see java.util.HashMap
  * @author Sumkor
+ * @see java.util.HashMap
  * @since 2020/10/21
  */
 public class HashMapTest {
@@ -334,23 +334,22 @@ public class HashMapTest {
      * 旧链表数据迁移至新链表
      * 由于每次扩容是2次幂的扩展(指数组长度/桶数量扩为原来2倍)，所以，元素的位置要么是在原位置，要么是在原位置再移动2次幂的位置。
      * 本例中，桶的数量由1扩容为2.
-     *
+     * <p>
      * 执行结果：
-     *
+     * <p>
      * 1=A -> 2=B -> 3=C ->
      * --------------------------
      * 2=B ->
      * 1=A -> 3=C ->
      * --------------------------
-     *
+     * <p>
      * 执行结果：
-     *
+     * <p>
      * 1=A -> 2=B -> 3=C -> 4=D -> 5=E -> 6=F -> 8=H -> 10=J ->
      * --------------------------
      * 2=B -> 4=D -> 6=F -> 8=H -> 10=J ->
      * 1=A -> 3=C -> 5=E ->
      * --------------------------
-     *
      */
     @Test
     public void resizeLink02() {
@@ -478,4 +477,55 @@ public class HashMapTest {
         }
     }
 
+    /**
+     * computeIfAbsent 的方法有两个参数：第一个是所选 map 的 key，第二个是需要做的操作。
+     * 这个方法当 key 值不存在时才起作用。
+     */
+    @Test
+    public void computeIfAbsent() {
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        map.put("3", null);
+        Integer integer0 = map.computeIfAbsent("1", key -> null); // key存在，value不为空，返回旧value
+        Integer integer1 = map.computeIfAbsent("2", key -> 4);    // key存在，value不为空，返回旧value
+        Integer integer2 = map.computeIfAbsent("3", key -> 4);    // key存在，value为空，执行函数更新value，返回新value
+        Integer integer3 = map.computeIfAbsent("4", key -> 4);    // key不存在，执行函数，存入key-value，返回新value
+        System.out.println(integer0);
+        System.out.println(integer1);
+        System.out.println(integer2);
+        System.out.println(integer3);
+        System.out.println(map.toString());
+        /**
+         * 1
+         * 2
+         * 4
+         * 4
+         * {1=1, 2=2, 3=4, 4=4}
+         */
+    }
+
+    @Test
+    public void computeIfPresent() {
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        map.put("3", null);
+        Integer integer0 = map.computeIfPresent("1", (key, value) -> null); // key存在，value不为空，执行函数生成value为空，则移除该节点
+        Integer integer1 = map.computeIfPresent("2", (key, value) -> 4);    // key存在，value不为空，执行函数生成value不为空，则更新value
+        Integer integer2 = map.computeIfPresent("3", (key, value) -> 4);    // key存在，value为空，不处理
+        Integer integer3 = map.computeIfPresent("4", (key, value) -> 4);    // key不存在，不处理
+        System.out.println(integer0);
+        System.out.println(integer1);
+        System.out.println(integer2);
+        System.out.println(integer3);
+        System.out.println(map.toString());
+        /**
+         * null
+         * 4
+         * null
+         * null
+         * {2=4, 3=null}
+         */
+    }
 }

@@ -553,7 +553,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
      */
     public V get(Object key) {
         Node<K,V> e;
-        return (e = getNode(hash(key), key)) == null ? null : e.value;
+        return (e = getNode(hash(key), key)) == null ? null : e.value; // 查找key所在节点，返回节点的value
     }
 
     /**
@@ -566,18 +566,18 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     final Node<K,V> getNode(int hash, Object key) {
         Node<K,V>[] tab; Node<K,V> first, e; int n; K k;
         if ((tab = table) != null && (n = tab.length) > 0 &&
-            (first = tab[(n - 1) & hash]) != null) {
+            (first = tab[(n - 1) & hash]) != null) { // 找到key所在桶位置
             if (first.hash == hash && // always check first node
                 ((k = first.key) == key || (key != null && key.equals(k))))
                 return first;
             if ((e = first.next) != null) {
                 if (first instanceof TreeNode)
-                    return ((TreeNode<K,V>)first).getTreeNode(hash, key);
+                    return ((TreeNode<K,V>)first).getTreeNode(hash, key); // 树结构查找
                 do {
                     if (e.hash == hash &&
                         ((k = e.key) == key || (key != null && key.equals(k))))
                         return e;
-                } while ((e = e.next) != null);
+                } while ((e = e.next) != null); // 链结构查找
             }
         }
         return null;
@@ -1094,8 +1094,8 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         Node<K,V> old = null;
         if (size > threshold || (tab = table) == null ||
             (n = tab.length) == 0)
-            n = (tab = resize()).length;
-        if ((first = tab[i = (n - 1) & hash]) != null) {
+            n = (tab = resize()).length; // 达到扩容阈值，或者数组为空，则进行扩容
+        if ((first = tab[i = (n - 1) & hash]) != null) { // 如果key在map中存在，且value不为空，则返回该value
             if (first instanceof TreeNode)
                 old = (t = (TreeNode<K,V>)first).getTreeNode(hash, key);
             else {
@@ -1107,7 +1107,7 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                         break;
                     }
                     ++binCount;
-                } while ((e = e.next) != null);
+                } while ((e = e.next) != null); // 遍历链表
             }
             V oldValue;
             if (old != null && (oldValue = old.value) != null) {
@@ -1115,18 +1115,18 @@ public class HashMap<K,V> extends AbstractMap<K,V>
                 return oldValue;
             }
         }
-        V v = mappingFunction.apply(key);
+        V v = mappingFunction.apply(key); // 来到这里，说明key在map中不存在，或者key存在而value为空，则执行函数生成新的value
         if (v == null) {
             return null;
-        } else if (old != null) {
+        } else if (old != null) { // key存在而value为空，则更新value
             old.value = v;
             afterNodeAccess(old);
             return v;
         }
         else if (t != null)
-            t.putTreeVal(this, tab, hash, key, v);
+            t.putTreeVal(this, tab, hash, key, v); // key不存在，key-value以树的方式存入map
         else {
-            tab[i] = newNode(hash, key, v, first);
+            tab[i] = newNode(hash, key, v, first);  // key不存在，key-value以链表的方式存入map
             if (binCount >= TREEIFY_THRESHOLD - 1)
                 treeifyBin(tab, hash);
         }
@@ -1142,9 +1142,9 @@ public class HashMap<K,V> extends AbstractMap<K,V>
             throw new NullPointerException();
         Node<K,V> e; V oldValue;
         int hash = hash(key);
-        if ((e = getNode(hash, key)) != null &&
-            (oldValue = e.value) != null) {
-            V v = remappingFunction.apply(key, oldValue);
+        if ((e = getNode(hash, key)) != null && // 找到key所在节点
+            (oldValue = e.value) != null) {     // value不为空
+            V v = remappingFunction.apply(key, oldValue); // 生成新的value
             if (v != null) {
                 e.value = v;
                 afterNodeAccess(e);

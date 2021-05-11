@@ -296,7 +296,7 @@ public class LinkedHashMap<K,V>
 
     void afterNodeInsertion(boolean evict) { // possibly remove eldest // 是否删除最旧的节点，实际是空操作
         LinkedHashMap.Entry<K,V> first;
-        if (evict && (first = head) != null && removeEldestEntry(first)) {
+        if (evict && (first = head) != null && removeEldestEntry(first)) { // 在HashMap中evict默认为 true，在LinkedHashMap中removeEldestEntry默认为 false
             K key = first.key;
             removeNode(hash(key), key, null, false, true);
         }
