@@ -654,11 +654,11 @@ public class ThreadLocal<T> {
                 i = nextIndex(i, len);
                 Entry e = tab[i];
                 if (e != null && e.get() == null) {
-                    n = len;
+                    n = len; // 如果扫描过程中找到一个过期节点，则将 n 重置为数组长度，重新开始新一轮的计数
                     removed = true;
                     i = expungeStaleEntry(i);
                 }
-            } while ( (n >>>= 1) != 0); // n = n >>> 1 // 如果连续 log(n) 个单元不需要擦除，则结束方法
+            } while ( (n >>>= 1) != 0); // n = n >>> 1 // 如果连续 log(n) 个桶不需要擦除，则结束方法
             return removed;
         }
 
