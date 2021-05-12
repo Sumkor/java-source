@@ -12,4 +12,14 @@ public class MyTest {
     public void test() {
         System.out.println("Hello World");
     }
+
+    /**
+     * TODO
+     * Queue：DelayQueue、PriorityQueue
+     * Map：ConcurrentSkipListMap、EnumMap
+     * Pool：ForkJoinPool、ScheduledThreadPoolExecutor
+     * Lock：CountDownLatch、CyclicBarrier、Exchanger、Phaser、Semaphore、StampedLock
+     * Socket
+     * NIO
+     */
 }
