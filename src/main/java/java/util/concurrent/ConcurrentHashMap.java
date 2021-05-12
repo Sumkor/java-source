@@ -1653,7 +1653,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             else if ((f = tabAt(tab, i = (n - 1) & h)) == null) {
                 Node<K,V> r = new ReservationNode<K,V>();
                 synchronized (r) {
-                    if (casTabAt(tab, i, null, r)) {
+                    if (casTabAt(tab, i, null, r)) { // 在 table 的 i 位置插入预留节点 r（其key和value均为null）
                         binCount = 1;
                         Node<K,V> node = null;
                         try {

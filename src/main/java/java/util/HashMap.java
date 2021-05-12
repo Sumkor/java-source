@@ -1145,12 +1145,12 @@ public class HashMap<K,V> extends AbstractMap<K,V>
         if ((e = getNode(hash, key)) != null && // 找到key所在节点
             (oldValue = e.value) != null) {     // value不为空
             V v = remappingFunction.apply(key, oldValue); // 生成新的value
-            if (v != null) {
+            if (v != null) { // 新的value不为空，则进行更新
                 e.value = v;
                 afterNodeAccess(e);
                 return v;
             }
-            else
+            else // 新的value为空，则进行删除
                 removeNode(hash, key, null, false, true);
         }
         return null;

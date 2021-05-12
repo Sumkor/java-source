@@ -478,8 +478,34 @@ public class HashMapTest {
     }
 
     /**
-     * computeIfAbsent 的方法有两个参数：第一个是所选 map 的 key，第二个是需要做的操作。
-     * 这个方法当 key 值不存在时才起作用。
+     * key 不存在（或 key 存在 value 为空），则将入参 key-value 存入 Map，返回旧的 value。
+     */
+    @Test
+    public void putIfAbsent() {
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        map.put("3", null);
+        Integer integer0 = map.putIfAbsent("1", null); // key存在，则不处理，返回旧value
+        Integer integer1 = map.putIfAbsent("2", 4);    // key存在，则不处理，返回旧value
+        Integer integer2 = map.putIfAbsent("3", 4);    // key存在，value为空，执行函数更新value，返回新value
+        Integer integer3 = map.putIfAbsent("4", 4);    // key不存在，执行函数生成value，存入key-value，返回新value
+        System.out.println(integer0);
+        System.out.println(integer1);
+        System.out.println(integer2);
+        System.out.println(integer3);
+        System.out.println(map.toString());
+        /**
+         * 1
+         * 2
+         * null
+         * null
+         * {1=1, 2=2, 3=4, 4=4}
+         */
+    }
+
+    /**
+     * key 不存在（或 key 存在 value 为空）则生成新的 value 进行插入，返回当前 value
      */
     @Test
     public void computeIfAbsent() {
@@ -487,10 +513,10 @@ public class HashMapTest {
         map.put("1", 1);
         map.put("2", 2);
         map.put("3", null);
-        Integer integer0 = map.computeIfAbsent("1", key -> null); // key存在，value不为空，返回旧value
-        Integer integer1 = map.computeIfAbsent("2", key -> 4);    // key存在，value不为空，返回旧value
+        Integer integer0 = map.computeIfAbsent("1", key -> null); // key存在，value不为空，则不处理，返回旧value
+        Integer integer1 = map.computeIfAbsent("2", key -> 4);    // key存在，value不为空，则不处理，返回旧value
         Integer integer2 = map.computeIfAbsent("3", key -> 4);    // key存在，value为空，执行函数更新value，返回新value
-        Integer integer3 = map.computeIfAbsent("4", key -> 4);    // key不存在，执行函数，存入key-value，返回新value
+        Integer integer3 = map.computeIfAbsent("4", key -> 4);    // key不存在，执行函数生成value，存入key-value，返回新value
         System.out.println(integer0);
         System.out.println(integer1);
         System.out.println(integer2);
@@ -505,14 +531,17 @@ public class HashMapTest {
          */
     }
 
+    /**
+     * key 存在（且 value 不为空）则生成新的 value 进行更新，返回当前 value
+     */
     @Test
     public void computeIfPresent() {
         HashMap<String, Integer> map = new HashMap<>();
         map.put("1", 1);
         map.put("2", 2);
         map.put("3", null);
-        Integer integer0 = map.computeIfPresent("1", (key, value) -> null); // key存在，value不为空，执行函数生成value为空，则移除该节点
-        Integer integer1 = map.computeIfPresent("2", (key, value) -> 4);    // key存在，value不为空，执行函数生成value不为空，则更新value
+        Integer integer0 = map.computeIfPresent("1", (key, value) -> null); // key存在，value不为空，函数生成value为空，则移除该节点
+        Integer integer1 = map.computeIfPresent("2", (key, value) -> 4);    // key存在，value不为空，函数生成value不为空，则更新value
         Integer integer2 = map.computeIfPresent("3", (key, value) -> 4);    // key存在，value为空，不处理
         Integer integer3 = map.computeIfPresent("4", (key, value) -> 4);    // key不存在，不处理
         System.out.println(integer0);
@@ -526,6 +555,60 @@ public class HashMapTest {
          * null
          * null
          * {2=4, 3=null}
+         */
+    }
+
+    /**
+     * 不管 key、value 存在与否，都将 key-value 设置为指定值
+     */
+    @Test
+    public void compute() {
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        map.put("3", null);
+        Integer integer0 = map.compute("1", (key, value) -> null);
+        Integer integer1 = map.compute("2", (key, value) -> 4);
+        Integer integer2 = map.compute("3", (key, value) -> 4);
+        Integer integer3 = map.compute("4", (key, value) -> 4);
+        System.out.println(integer0);
+        System.out.println(integer1);
+        System.out.println(integer2);
+        System.out.println(integer3);
+        System.out.println(map.toString());
+        /**
+         * null
+         * 4
+         * 4
+         * 4
+         * {2=4, 3=4, 4=4}
+         */
+    }
+
+    /**
+     * 不管 key、value 存在与否，都将 key-value 设置为指定值
+     */
+    @Test
+    public void merge() {
+        HashMap<String, Integer> map = new HashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        map.put("3", null);
+        Integer integer0 = map.merge("1", 4, (oldValue, newValue) -> oldValue + newValue);
+        Integer integer1 = map.merge("2", 4, (oldValue, newValue) -> oldValue + newValue);
+        Integer integer2 = map.merge("3", 4, (oldValue, newValue) -> oldValue + newValue);
+        Integer integer3 = map.merge("4", 4, (oldValue, newValue) -> oldValue + newValue);
+        System.out.println(integer0);
+        System.out.println(integer1);
+        System.out.println(integer2);
+        System.out.println(integer3);
+        System.out.println(map.toString());
+        /**
+         * 5
+         * 6
+         * 4
+         * 4
+         * {1=5, 2=6, 3=4, 4=4}
          */
     }
 }

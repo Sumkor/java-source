@@ -142,7 +142,7 @@ public class ConcurrentHashMapTest {
 
     /**
      * 不用帮忙扩容
-     *
+     * <p>
      * 计算 hash 值，定位到该 table 索引位置，如果是首节点符合就返回。
      * 如果遇到树结构 TreeBin 或扩容节点 ForwardingNode，会调用对应的 find 方法，查找该节点，匹配就返回
      * 以上都不符合的话，说明是链表结构，往下遍历节点，匹配就返回，否则最后就返回 null
@@ -163,12 +163,142 @@ public class ConcurrentHashMapTest {
          */
     }
 
+    /**
+     * HashMap 允许 null key 和 null value
+     * ConcurrentHashMap 均不允许，是因为无法分辨是 key 没找到的 null，还是有 key 值为 null，这在多线程里面是模糊不清的，所以压根就不让 put null。
+     */
+    @Test
+    public void putNull() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put(null, 1);
+        map.put(1, null);
+    }
+
+    /**
+     * key 不存在则存入，返回旧值
+     */
+    @Test
+    public void putIfAbsent() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        Object object0 = map.putIfAbsent("2", 3);
+        Object object1 = map.putIfAbsent("3", 3);
+        System.out.println(object0);
+        System.out.println(object1);
+        System.out.println(map);
+        /**
+         * 2
+         * null
+         * {1=1, 2=2, 3=3}
+         */
+    }
+
+    /**
+     * key 不存在则生成新的 value 进行插入，返回当前 value
+     */
+    @Test
+    public void computeIfAbsent() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        Object object0 = map.computeIfAbsent("2", key -> 3); // key存在，不处理，返回旧value
+        Object object1 = map.computeIfAbsent("3", key -> 3); // key不存在，执行函数生成value，存入key-value，返回新value
+        System.out.println(object0);
+        System.out.println(object1);
+        System.out.println(map);
+        /**
+         * 2
+         * 3
+         * {1=1, 2=2, 3=3}
+         */
+    }
+
+    /**
+     * key 存在则生成新的 value 进行更新，返回当前 value
+     */
+    @Test
+    public void computeIfPresent() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        Object object0 = map.computeIfPresent("2", (key, value) -> 3); // key存在，执行函数更新value，返回旧value
+        Object object1 = map.computeIfPresent("3", (key, value) -> 3); // key不存在，不处理
+        System.out.println(object0);
+        System.out.println(object1);
+        System.out.println(map);
+        /**
+         * 3
+         * null
+         * {1=1, 2=3}
+         */
+    }
+
+    /**
+     * 不管 key、value 存在与否，都将 key-value 设置为指定值
+     */
+    @Test
+    public void compute() {
+        ConcurrentHashMap<Object, Object> map = new ConcurrentHashMap<>();
+        map.put("1", 1);
+        map.put("2", 2);
+        Object object0 = map.compute("2", (key, value) -> 3);
+        Object object1 = map.compute("3", (key, value) -> 3);
+        System.out.println(object0);
+        System.out.println(object1);
+        System.out.println(map);
+        /**
+         * 3
+         * 3
+         * {1=1, 2=3, 3=3}
+         */
+    }
+
+    /**
+     * 在 concurrentHashMap 中使用 computeIfAbsent/compute 方法修改一个 key 时，如果其中的 lambda 函数修改的 key 与之 hash 冲突，会出现死循环。
+     *
+     * ConcurrentHashMap BUG 死循环
+     * https://blog.csdn.net/zhanglong_4444/article/details/93638844
+     *
+     * 说明：
+     * 当 map 中不存在 key="AaAa" 时，computeIfAbsent 会插入该 key，并将 lambda 函数的返回值 42 作为它的 value。
+     * 而这个 lambda 函数其实会继续去对 key="BBBB" 的 Node 进行同样操作，并设置 value=42。
+     * 但是由于这里的 “AaAa” 和 “BBBB” 这个字符串的 hashCode 一样，导致执行出现死循环。
+     *
+     * 分析：
+     * 执行第一个 computeIfAbsent，根据 key "AaAa" 定位到一个空桶，此时 (f = tabAt(tab, i = (n - 1) & h)) == null 成立，因此在 i 位置插入预留节点 ReservationNode；
+     * 接下来执行第二个 computeIfAbsent，根据 key "BBBB" 定位到同一个桶，由于桶中的节点 f 是上一步创建的 ReservationNode 类型对象，
+     * 此时 f == null 不成立，并且 f 也无法进行其他操作，陷入死循环中。
+     *
+     * This is fixed in JDK 9 with JDK-8071667 . When the test case is run in JDK 9-ea, it gives a ConcurrentModification Exception.
+     */
+    @Test
+    public void deadLock() {
+        ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>(16);
+        map.computeIfAbsent("AaAa", key -> map.computeIfAbsent("BBBB", key2 -> 42));
+        System.out.println("======  end  =============");
+    }
+
+    @Test
+    public void deadLock02() {
+        ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>(16);
+        map.compute("AaAa", (key, value) -> map.compute("BBBB", (key2, value2) -> 42));
+        System.out.println("======  end  =============");
+    }
+
+    @Test
+    public void deadLock03() {
+        ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>(16);
+        map.computeIfAbsent("AaAa", key -> map.put("BBBB", 42));
+        System.out.println("======  end  =============");
+    }
+
     //-------------------------------------------------------------
 
     /**
      * 扩容时 sizeCtl = -N
      * N是int类型，分为两部分，高15位是指定容量标识，低16位表示并行扩容线程数+1
-     *
+     * <p>
      * https://blog.csdn.net/tp7309/article/details/76532366
      */
     @Test
