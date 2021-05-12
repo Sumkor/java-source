@@ -243,7 +243,7 @@ public class CyclicBarrier {
                         // been interrupted, so this interrupt is deemed to
                         // "belong" to subsequent execution. // 进入这里，可能是：
                         Thread.currentThread().interrupt();  // 1. 栅栏换代后，当前线程发生中断，需重新中断，使当前线程下一次使用栅栏失败；
-                    }                                        // 2. 其他线程标记栅栏已破坏，则当前线程发生中断，只需重新中断。
+                    }                                        // 2. 其他线程已经标记栅栏为已破坏，此时当前线程发生中断，只需重新中断，不用重复标记栅栏状态。
                 }
 
                 if (g.broken) // 其他线程发生中断，导致栅栏被破坏，则当前线程无法使用栅栏
