@@ -19,6 +19,9 @@ public class MyTest {
      * Map：ConcurrentSkipListMap、EnumMap
      * Pool：ForkJoinPool、ScheduledThreadPoolExecutor
      * Lock：CountDownLatch、CyclicBarrier、Exchanger、Phaser、Semaphore、StampedLock
+     * Atomic：Striped64、LongAdder、AtomicReference
+     * Tool：Collections、Executors
+     * Proxy
      * Socket
      * NIO
      */

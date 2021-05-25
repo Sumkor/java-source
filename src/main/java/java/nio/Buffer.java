@@ -36,14 +36,14 @@ import java.util.Spliterator;
  *
  * <blockquote>
  *
- *   <p> A buffer's <i>capacity</i> is the number of elements it contains.  The
+ *   <p> A buffer's <i>capacity</i> is the number of elements it contains.  The  // 缓冲区的容量 capacity 是它所包含的元素的数量。缓冲区的容量不能为负并且不能更改。
  *   capacity of a buffer is never negative and never changes.  </p>
  *
- *   <p> A buffer's <i>limit</i> is the index of the first element that should
+ *   <p> A buffer's <i>limit</i> is the index of the first element that should   // 缓冲区的限制 limit 是第一个不应该读取或写入的元素的索引。缓冲区的限制不能为负，并且不能大于其容量。
  *   not be read or written.  A buffer's limit is never negative and is never
  *   greater than its capacity.  </p>
  *
- *   <p> A buffer's <i>position</i> is the index of the next element to be
+ *   <p> A buffer's <i>position</i> is the index of the next element to be       // 缓冲区的位置 position 是下一个要读取或写入的元素的索引。缓冲区的位置不能为负，并且不能大于其限制。
  *   read or written.  A buffer's position is never negative and is never
  *   greater than its limit.  </p>
  *
@@ -59,14 +59,14 @@ import java.util.Spliterator;
  *
  * <blockquote>
  *
- *   <p> <i>Relative</i> operations read or write one or more elements starting
+ *   <p> <i>Relative</i> operations read or write one or more elements starting  // 相对 操作读取或写入一个或多个元素，它从当前位置开始，然后将位置增加所传输的元素数。
  *   at the current position and then increment the position by the number of
  *   elements transferred.  If the requested transfer exceeds the limit then a
- *   relative <i>get</i> operation throws a {@link BufferUnderflowException}
- *   and a relative <i>put</i> operation throws a {@link
+ *   relative <i>get</i> operation throws a {@link BufferUnderflowException}     // 如果请求的传输超出限制，则
+ *   and a relative <i>put</i> operation throws a {@link                         // 1. 相对 get 操作将抛出 BufferUnderflowException； 2. 相对 put 操作将抛出 BufferOverflowException
  *   BufferOverflowException}; in either case, no data is transferred.  </p>
  *
- *   <p> <i>Absolute</i> operations take an explicit element index and do not
+ *   <p> <i>Absolute</i> operations take an explicit element index and do not    // 绝对 操作采用显式元素索引，该操作不影响 position。
  *   affect the position.  Absolute <i>get</i> and <i>put</i> operations throw
  *   an {@link IndexOutOfBoundsException} if the index argument exceeds the
  *   limit.  </p>
@@ -74,22 +74,22 @@ import java.util.Spliterator;
  * </blockquote>
  *
  * <p> Data may also, of course, be transferred in to or out of a buffer by the
- * I/O operations of an appropriate channel, which are always relative to the
+ * I/O operations of an appropriate channel, which are always relative to the    // 通过对 channel 的 IO 操作，将数据传入 buffer 或从 buffer 传出，通常都与当前的 position 有关。
  * current position.
  *
  *
  * <h2> Marking and resetting </h2>
  *
- * <p> A buffer's <i>mark</i> is the index to which its position will be reset
+ * <p> A buffer's <i>mark</i> is the index to which its position will be reset   // 缓冲区的标记 mark 是一个索引，在调用 reset 方法时会将缓冲区的 position 重置为该索引。
  * when the {@link #reset reset} method is invoked.  The mark is not always
- * defined, but when it is defined it is never negative and is never greater
- * than the position.  If the mark is defined then it is discarded when the
+ * defined, but when it is defined it is never negative and is never greater     // 并非总是需要定义标记，但在定义 mark 时，不能将其定义为负数，并且不能让它大于 position。
+ * than the position.  If the mark is defined then it is discarded when the      // 如果定义了 mark，则在将 position 或 limit 调整为小于该 mark 的值时，该 mark 将被丢弃。
  * position or the limit is adjusted to a value smaller than the mark.  If the
- * mark is not defined then invoking the {@link #reset reset} method causes an
+ * mark is not defined then invoking the {@link #reset reset} method causes an   // 如果未定义 mark，那么调用 reset 方法将导致抛出 InvalidMarkException。
  * {@link InvalidMarkException} to be thrown.
  *
  *
- * <h2> Invariants </h2>
+ * <h2> Invariants </h2> // 不变式： 0 <= mark <= position <= limit <= capacity
  *
  * <p> The following invariant holds for the mark, position, limit, and
  * capacity values:
@@ -117,16 +117,16 @@ import java.util.Spliterator;
  *
  * <ul>
  *
- *   <li><p> {@link #clear} makes a buffer ready for a new sequence of
- *   channel-read or relative <i>put</i> operations: It sets the limit to the
- *   capacity and the position to zero.  </p></li>
+ *   <li><p> {@link #clear} makes a buffer ready for a new sequence of          // clear() 方法为以下操作之一做好准备：
+ *   channel-read or relative <i>put</i> operations: It sets the limit to the   // 1. buffer 从 channel 中读取数据（channel-read）； 2. 将数据放入 buffer 之中（relative put）。
+ *   capacity and the position to zero.  </p></li>                              // 它将 limit 大小设为 capacity，将 position 设为 0（因此可以从 buffer 的 0 到 capacity 范围写入数据）。
  *
- *   <li><p> {@link #flip} makes a buffer ready for a new sequence of
- *   channel-write or relative <i>get</i> operations: It sets the limit to the
- *   current position and then sets the position to zero.  </p></li>
+ *   <li><p> {@link #flip} makes a buffer ready for a new sequence of           // flip() 方法为以下操作之一做好准备：
+ *   channel-write or relative <i>get</i> operations: It sets the limit to the  // 1. buffer 中的数据写入 channel（channel-write）； 2. 将数据从 buffer 之中取出（relative get）。
+ *   current position and then sets the position to zero.  </p></li>            // 它将 limit 大小设为 position，再将 position 设为 0（因此可以从 buffer 的 0 到 limit 范围读取到数据）。
  *
- *   <li><p> {@link #rewind} makes a buffer ready for re-reading the data that
- *   it already contains: It leaves the limit unchanged and sets the position
+ *   <li><p> {@link #rewind} makes a buffer ready for re-reading the data that  // rewind() 方法为重新读取数据做好准备：
+ *   it already contains: It leaves the limit unchanged and sets the position   // 它将 limit 大小保持不变，将 position 设为 0（因此可以从 buffer 的 0 到 limit 范围读取到数据）。
  *   to zero.  </p></li>
  *
  * </ul>
@@ -145,8 +145,8 @@ import java.util.Spliterator;
  *
  * <h2> Thread safety </h2>
  *
- * <p> Buffers are not safe for use by multiple concurrent threads.  If a
- * buffer is to be used by more than one thread then access to the buffer
+ * <p> Buffers are not safe for use by multiple concurrent threads.  If a    // 多个当前线程使用缓冲区是不安全的。
+ * buffer is to be used by more than one thread then access to the buffer    // 如果一个缓冲区由不止一个线程使用，则应该通过适当的同步来控制对该缓冲区的访问。
  * should be controlled by appropriate synchronization.
  *
  *
