@@ -60,6 +60,37 @@ public class ThreadTest {
     }
 
     @Test
+    public void join() throws InterruptedException {
+        Thread threadB = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    System.out.println(Thread.currentThread().getName() + " 开始运行...");
+                    Thread.sleep(1000);
+                    System.out.println(Thread.currentThread().getName() + " 结束运行...");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, "threadB");
+        Thread threadA = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    System.out.println(Thread.currentThread().getName() + " 开始运行...");
+                    threadB.start();
+                    threadB.join();
+                    System.out.println(Thread.currentThread().getName() + " 结束运行...");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, "threadA");
+        threadA.start();
+        threadA.join();
+    }
+
+    @Test
     public void dealInterrupt() {
         Thread subThread = new Thread(new Runnable() {
             @Override

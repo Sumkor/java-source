@@ -75,11 +75,10 @@ public class ChannelTest {
     @Test
     public void socketChannel() throws IOException {
         SocketChannel socketChannel = SocketChannel.open();
-        // 非阻塞模式
-        socketChannel.configureBlocking(false);
-
         socketChannel.connect(new InetSocketAddress("localhost", 9999));
 
+        // 非阻塞模式
+        socketChannel.configureBlocking(false);
         // 在非阻塞模式中，或许连接还没有建立，connect 方法就返回了，因此需要检查当前是否是连接到了主机
         while (!socketChannel.finishConnect()) {
             System.out.println("waiting to connect...");

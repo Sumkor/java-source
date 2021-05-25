@@ -39,11 +39,11 @@ import java.util.Spliterator;
  *   <p> A buffer's <i>capacity</i> is the number of elements it contains.  The  // 缓冲区的容量 capacity 是它所包含的元素的数量。缓冲区的容量不能为负并且不能更改。
  *   capacity of a buffer is never negative and never changes.  </p>
  *
- *   <p> A buffer's <i>limit</i> is the index of the first element that should   // 缓冲区的限制 limit 是第一个不应该读取或写入的元素的索引。缓冲区的限制不能为负，并且不能大于其容量。
+ *   <p> A buffer's <i>limit</i> is the index of the first element that should   // 缓冲区的限制 limit 是第一个不应该读取或写入的元素的索引。缓冲区的限制不能为负，并且不能大于 capacity。
  *   not be read or written.  A buffer's limit is never negative and is never
  *   greater than its capacity.  </p>
  *
- *   <p> A buffer's <i>position</i> is the index of the next element to be       // 缓冲区的位置 position 是下一个要读取或写入的元素的索引。缓冲区的位置不能为负，并且不能大于其限制。
+ *   <p> A buffer's <i>position</i> is the index of the next element to be       // 缓冲区的位置 position 是下一个要读取或写入的元素的索引。缓冲区的位置不能为负，并且不能大于 limit。
  *   read or written.  A buffer's position is never negative and is never
  *   greater than its limit.  </p>
  *
@@ -63,8 +63,8 @@ import java.util.Spliterator;
  *   at the current position and then increment the position by the number of
  *   elements transferred.  If the requested transfer exceeds the limit then a
  *   relative <i>get</i> operation throws a {@link BufferUnderflowException}     // 如果请求的传输超出限制，则
- *   and a relative <i>put</i> operation throws a {@link                         // 1. 相对 get 操作将抛出 BufferUnderflowException； 2. 相对 put 操作将抛出 BufferOverflowException
- *   BufferOverflowException}; in either case, no data is transferred.  </p>
+ *   and a relative <i>put</i> operation throws a {@link
+ *   BufferOverflowException}; in either case, no data is transferred.  </p>     // 1. 相对 get 操作将抛出 BufferUnderflowException；2. 相对 put 操作将抛出 BufferOverflowException
  *
  *   <p> <i>Absolute</i> operations take an explicit element index and do not    // 绝对 操作采用显式元素索引，该操作不影响 position。
  *   affect the position.  Absolute <i>get</i> and <i>put</i> operations throw
