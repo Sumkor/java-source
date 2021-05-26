@@ -79,18 +79,22 @@ public class ChannelTest {
         // 非阻塞模式
         socketChannel.configureBlocking(false);
         // 在非阻塞模式中，或许连接还没有建立，connect 方法就返回了，因此需要检查当前是否是连接到了主机
+        System.out.print("waiting to connect...");
         while (!socketChannel.finishConnect()) {
-            System.out.println("waiting to connect...");
+            System.out.print(".");
         }
+        System.out.println();
 
         // 从 Channel 读取数据到 Buffer
         ByteBuffer byteBuffer = ByteBuffer.allocate(48);
         int read = socketChannel.read(byteBuffer);
         System.out.println("read = " + read);
 
+        System.out.print("waiting to read...");
         while (socketChannel.read(byteBuffer) == 0) {
-            System.out.println("waiting to read...");
+            System.out.print(".");
         }
+        System.out.println();
 
         byteBuffer.flip();
 
@@ -98,6 +102,13 @@ public class ChannelTest {
         CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
         CharBuffer charBuffer = decoder.decode(byteBuffer);
         System.out.println(charBuffer.toString());
+
+        /**
+         * waiting to connect...
+         * read = 0
+         * waiting to read.............................................
+         * New String to write to file... 1622023696903
+         */
     }
 
     /**

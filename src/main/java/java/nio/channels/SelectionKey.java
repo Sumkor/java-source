@@ -251,7 +251,7 @@ public abstract class SelectionKey {
      * <tt>OP_CONNECT</tt> to the key's ready set and add the key to its
      * selected-key&nbsp;set.  </p>
      */
-    public static final int OP_CONNECT = 1 << 3;
+    public static final int OP_CONNECT = 1 << 3; // 客户端需关注的事件，当与服务端建立 TCP 连接时触发
 
     /**
      * Operation-set bit for socket-accept operations.
@@ -264,7 +264,7 @@ public abstract class SelectionKey {
      * <tt>OP_ACCEPT</tt> to the key's ready set and add the key to its
      * selected-key&nbsp;set.  </p>
      */
-    public static final int OP_ACCEPT = 1 << 4;
+    public static final int OP_ACCEPT = 1 << 4; // 服务端需关注的事件，当与客户端建立 TCP 连接时触发
 
     /**
      * Tests whether this key's channel is ready for reading.

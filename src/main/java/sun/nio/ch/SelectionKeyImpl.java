@@ -44,8 +44,8 @@ public class SelectionKeyImpl
     // Index for a pollfd array in Selector that this key is registered with
     private int index;
 
-    private volatile int interestOps;
-    private int readyOps;
+    private volatile int interestOps; // 感兴趣的事件集合
+    private int readyOps;             // 已就绪的事件集合
 
     SelectionKeyImpl(SelChImpl ch, SelectorImpl sel) {
         channel = ch;
