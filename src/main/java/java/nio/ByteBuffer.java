@@ -1028,14 +1028,14 @@ public abstract class ByteBuffer
     /**
      * Compacts this buffer&nbsp;&nbsp;<i>(optional operation)</i>.
      *
-     * <p> The bytes between the buffer's current position and its limit,
+     * <p> The bytes between the buffer's current position and its limit,      // 先把 position~limit 之间的数据拷贝到 0~n 处
      * if any, are copied to the beginning of the buffer.  That is, the
      * byte at index <i>p</i>&nbsp;=&nbsp;<tt>position()</tt> is copied
      * to index zero, the byte at index <i>p</i>&nbsp;+&nbsp;1 is copied
      * to index one, and so forth until the byte at index
      * <tt>limit()</tt>&nbsp;-&nbsp;1 is copied to index
      * <i>n</i>&nbsp;=&nbsp;<tt>limit()</tt>&nbsp;-&nbsp;<tt>1</tt>&nbsp;-&nbsp;<i>p</i>.
-     * The buffer's position is then set to <i>n+1</i> and its limit is set to
+     * The buffer's position is then set to <i>n+1</i> and its limit is set to // 再把 position 设置为 n+1，把 limit 设为 capacity
      * its capacity.  The mark, if defined, is discarded.
      *
      * <p> The buffer's position is set to the number of bytes copied,

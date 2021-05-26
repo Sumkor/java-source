@@ -10,7 +10,6 @@ import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 
@@ -38,30 +37,30 @@ public class ChannelTest {
      *     ServerSocketChannel，TCP 操作，使用在服务器端.
      */
 
-
+    /**
+     * 文件 Channel，只有阻塞模式
+     *
+     * Channel#read 从 Channel 中读取数据
+     * Map#get      从 Map     中获取数据
+     */
     @Test
     public void fileChannel() throws Exception {
         RandomAccessFile aFile = new RandomAccessFile("D:\\a.txt", "rw");
-        FileChannel inChannel = aFile.getChannel();
-
-        System.out.println(inChannel.size()); // 文件大小，单位 bytes
+        FileChannel fileChannel = aFile.getChannel();
+        System.out.println(fileChannel.size()); // 文件大小，单位 bytes
 
         ByteBuffer buf = ByteBuffer.allocate(48); // 分配一个新的字节缓冲区。
 
-        int bytesRead = inChannel.read(buf); // Reads a sequence of bytes from this channel into the given buffer
-        /**
-         * Channel#read 从 Channel 中读取数据
-         * Map#get      从 Map     中获取数据
-         */
+        int bytesRead = fileChannel.read(buf); // Reads a sequence of bytes from this channel into the given buffer
         while (bytesRead != -1) {
-            buf.flip(); // 准备从 Buffer 的 0-limit 读取数据
+            buf.flip(); // 准备从 Buffer 的 0~limit 读取数据
 
             while (buf.hasRemaining()) { // Buffer 中还有数据可读
                 System.out.print((char) buf.get()); // 读取此缓冲区当前位置的字节，然后该位置递增。
             }
 
-            buf.clear(); // 准备从 Buffer 的 0-capacity 写入数据
-            bytesRead = inChannel.read(buf);
+            buf.clear(); // 准备从 Buffer 的 0~capacity 写入数据
+            bytesRead = fileChannel.read(buf);
         }
         aFile.close();
     }
@@ -118,8 +117,6 @@ public class ChannelTest {
 
         // Buffer 写入 Channel
         byteBuffer.flip();
-        while(byteBuffer.hasRemaining()) {
-            socketChannel.write(byteBuffer);
-        }
+        socketChannel.write(byteBuffer);
     }
 }
