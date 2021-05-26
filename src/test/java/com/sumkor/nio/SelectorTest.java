@@ -32,63 +32,23 @@ public class SelectorTest {
      *
      * Selector 的基本使用流程
      *
-     *     1. 通过 Selector.open() 打开一个 Selector.
-     *     2. 将 Channel 注册到 Selector 中, 并设置需要监听的事件(interest set)
-     *     3. 不断重复:
-     *         调用 select() 方法
-     *         调用 selector.selectedKeys() 获取 selected keys
-     *         迭代每个 selected key:
-     *             *从 selected key 中获取 对应的 Channel 和附加信息(如果有的话)
-     *             *判断是哪些 IO 事件已经就绪了, 然后处理它们. 如果是 OP_ACCEPT 事件, 则调用 "SocketChannel clientChannel = ((ServerSocketChannel) key.channel()).accept()" 获取 SocketChannel, 并将它设置为 非阻塞的, 然后将这个 Channel 注册到 Selector 中.
-     *             *根据需要更改 selected key 的监听事件.
-     *             *将已经处理过的 key 从 selected keys 集合中删除.
+     * 1. 通过 Selector.open() 打开一个 Selector.
+     * 2. 将 Channel 注册到 Selector 中, 并设置需要监听的事件(interest set)
+     * 3. 不断重复:
+     *    调用 select() 方法
+     *    调用 selector.selectedKeys() 获取 selected keys
+     *    迭代每个 selected key:
+     *       *从 selected key 中获取 对应的 Channel 和附加信息(如果有的话)
+     *       *判断是哪些 IO 事件已经就绪了, 然后处理它们. 如果是 OP_ACCEPT 事件, 则通过 accept() 获取 SocketChannel, 并将它设置为非阻塞的, 并注册到 Selector 中.
+     *       *根据需要更改 selected key 的监听事件.
+     *       *将已经处理过的 key 从 selected keys 集合中删除.
+     *
+     *
+     * SelectionKey#isAcceptable: a connection was accepted by a ServerSocketChannel.
+     * SelectionKey#isConnectable: a connection was established with a remote server.
+     * SelectionKey#isReadable: a channel is ready for reading.
+     * SelectionKey#isWritable: a channel is ready for writing.
      */
-
-    @Test
-    public void server0() throws IOException {
-        // 创建 Selector
-        Selector selector = Selector.open();
-
-        // 创建 Channel
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        serverSocketChannel.socket().bind(new InetSocketAddress(9999));
-        while (true) {
-            SocketChannel socketChannel = serverSocketChannel.accept();
-
-            // 将 Channel 注册到 Selector 中。
-            socketChannel.configureBlocking(false); // 必须是非阻塞才可以注册 Selector
-            socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE); // 关注读和写事件
-
-            // 通过 Selector 选择 Channel
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
-            Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
-            while (keyIterator.hasNext()) {
-                SelectionKey key = keyIterator.next();
-                if (key.isAcceptable()) {
-                    // a connection was accepted by a ServerSocketChannel.
-
-                } else if (key.isConnectable()) {
-                    // a connection was established with a remote server.
-
-                } else if (key.isReadable()) {
-                    // a channel is ready for reading
-
-                } else if (key.isWritable()) {
-                    // a channel is ready for writing
-                }
-
-                keyIterator.remove();
-                /**
-                 * 注意，在每次迭代时，都要调用 "keyIterator.remove()" 将这个 key 从迭代器中删除，
-                 * 因为 select() 方法仅仅是简单地将就绪的 IO 操作放到 selectedKeys 集合中，
-                 * 因此如果我们从 selectedKeys 获取到一个 key，但是没有将它删除，
-                 * 那么下一次 select 时，这个 key 所对应的 IO 事件还在 selectedKeys 中。
-                 */
-            }
-        }
-
-
-    }
 
     @Test
     public void server() throws IOException {
@@ -105,12 +65,12 @@ public class SelectorTest {
         serverSocketChannel.socket().bind(new InetSocketAddress(8080));
         serverSocketChannel.configureBlocking(false);
 
-        // 将 channel 注册到 selector 中.
-        // 通常都是先注册一个 OP_ACCEPT 事件，然后在 OP_ACCEPT 到来时，再将这个 Channel 的 OP_READ 注册到 Selector 中.
+        // 将 channel 注册到 selector 中，返回一个 SelectionKey 对象。
+        // 通常都是先监听 OP_ACCEPT 事件，然后在 OP_ACCEPT 事件到来时，再监听该 Channel 的 OP_READ 事件。
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         while (true) {
-            // 通过调用 select 方法，阻塞地等待 channel I/O 可操作
+            // 通过调用 select 方法，阻塞等待直到 channel 可进行 IO 操作
             if (selector.select(TIMEOUT) == 0) {
                 System.out.print(".");
                 continue;
@@ -130,17 +90,17 @@ public class SelectorTest {
                 // 而在 OP_WRITE 和 OP_READ 事件中，从 key.channel() 返回的是 SocketChannel.
 
                 if (key.isAcceptable()) {
-                    // 当 OP_ACCEPT 事件到来时，我们就有从 ServerSocketChannel 中获取一个 SocketChannel，代表客户端的连接
+                    // 当 OP_ACCEPT 事件到来时，从 ServerSocketChannel 中获取一个 SocketChannel，代表客户端的连接
                     SocketChannel clientChannel = ((ServerSocketChannel) key.channel()).accept();
                     clientChannel.configureBlocking(false);
-                    // 在 OP_ACCEPT 到来时，再将这个 Channel 的 OP_READ 注册到 Selector 中.
+                    // 再将这个 Channel 的 OP_READ 注册到 Selector 中，表示监听 OP_READ 事件
                     clientChannel.register(key.selector(), SelectionKey.OP_READ, ByteBuffer.allocate(BUF_SIZE));
-                    // 注意，这里我们如果没有设置 OP_READ 的话，即 interest set 仍然是 OP_ACCEPT 的话，那么 select 方法会一直直接返回.
+                    // 注意，如果没有监听 OP_READ，即 interest set 仍然是 OP_ACCEPT 的话，那么 select 方法会直接返回.
                 }
 
                 if (key.isReadable()) {
                     SocketChannel clientChannel = (SocketChannel) key.channel();
-                    ByteBuffer buf = (ByteBuffer) key.attachment();
+                    ByteBuffer buf = (ByteBuffer) key.attachment(); // 获取监听 OP_READ 事件时所设置的附加对象 ByteBuffer
                     long bytesRead = clientChannel.read(buf);
                     if (bytesRead == -1) {
                         clientChannel.close();
