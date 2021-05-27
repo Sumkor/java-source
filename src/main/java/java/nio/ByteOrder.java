@@ -43,15 +43,15 @@ public final class ByteOrder {
     }
 
     /**
-     * Constant denoting big-endian byte order.  In this order, the bytes of a
-     * multibyte value are ordered from most significant to least significant.
+     * Constant denoting big-endian byte order.  In this order, the bytes of a  // 大端模式：高位字节排放在内存的低地址端，低位字节排放在内存的高地址端
+     * multibyte value are ordered from most significant to least significant.  // 比如数字 0x12345678 在内存中的表示形式： 低地址 ---> 高地址  0x12  |  0x34  |  0x56  |  0x78
      */
     public static final ByteOrder BIG_ENDIAN
         = new ByteOrder("BIG_ENDIAN");
 
     /**
-     * Constant denoting little-endian byte order.  In this order, the bytes of
-     * a multibyte value are ordered from least significant to most
+     * Constant denoting little-endian byte order.  In this order, the bytes of // 小端模式：低位字节排放在内存的低地址端，高位字节排放在内存的高地址端
+     * a multibyte value are ordered from least significant to most             // 比如数字 0x12345678 在内存中的表示形式： 低地址 ---> 高地址  0x78  |  0x56  |  0x34  |  0x12
      * significant.
      */
     public static final ByteOrder LITTLE_ENDIAN

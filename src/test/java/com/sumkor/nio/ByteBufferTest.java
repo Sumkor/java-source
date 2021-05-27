@@ -3,6 +3,7 @@ package com.sumkor.nio;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 /**
@@ -40,6 +41,8 @@ public class ByteBufferTest {
         // byteBuffer.get();         // java.nio.BufferUnderflowException
         // byteBuffer.put((byte) 6); // java.nio.BufferOverflowException
 
+        ByteOrder order = byteBuffer.order(); // Java和所有的网络通讯协议都是使用Big-Endian的编码。
+        System.out.println("order = " + order);
     }
 
     /**
