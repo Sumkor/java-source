@@ -80,32 +80,25 @@ public class ChannelTest {
         socketChannel.configureBlocking(false);
         // 在非阻塞模式中，或许连接还没有建立，connect 方法就返回了，因此需要检查当前是否是连接到了主机
         while (!socketChannel.finishConnect()) {
-            System.out.println("waiting to connect...");
+            // waiting to connect...
         }
 
         // 从 Channel 读取数据到 Buffer
         ByteBuffer byteBuffer = ByteBuffer.allocate(48);
-        int read = socketChannel.read(byteBuffer);
-        System.out.println("read = " + read);
-
         while (socketChannel.read(byteBuffer) == 0) {
-            System.out.println("waiting to read...");
+            // waiting to read...
         }
+        // Buffer 转为 String
+        System.out.println(bufferToString(byteBuffer));
 
+        // String 写入 Buffer
+        byteBuffer.clear();
+        byteBuffer.put("Hello, I am Client. ".getBytes());
+        // Buffer 写入 Channel
         byteBuffer.flip();
-
-        // Buffer 转换 String
-        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-        CharBuffer charBuffer = decoder.decode(byteBuffer);
-        System.out.println(charBuffer.toString());
-
-        /**
-         * waiting to connect...
-         * read = 0
-         * waiting to read...
-         * waiting to read...
-         * New String to write to file... 1622023696903
-         */
+        while (socketChannel.write(byteBuffer) == 0) {
+            // waiting to write...
+        }
     }
 
     /**
@@ -119,12 +112,26 @@ public class ChannelTest {
         SocketChannel socketChannel = serverSocketChannel.accept();
 
         // String 写入 Buffer
-        String newData = "New String to write to file... " + System.currentTimeMillis();
         ByteBuffer byteBuffer = ByteBuffer.allocate(48);
-        byteBuffer.put(newData.getBytes());
-
+        byteBuffer.put("Hello, I am Server. ".getBytes());
         // Buffer 写入 Channel
         byteBuffer.flip();
         socketChannel.write(byteBuffer);
+
+        // Channel 写入 Buffer
+        byteBuffer.clear();
+        socketChannel.read(byteBuffer);
+        // Buffer 转为 String
+        System.out.println(bufferToString(byteBuffer));
+    }
+
+    /**
+     * Buffer 转换 String
+     */
+    private String bufferToString(ByteBuffer byteBuffer) throws IOException {
+        byteBuffer.flip();
+        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        CharBuffer charBuffer = decoder.decode(byteBuffer);
+        return charBuffer.toString();
     }
 }

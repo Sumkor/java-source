@@ -10,7 +10,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
  * @author Sumkor
@@ -30,59 +29,42 @@ public class SelectorTest {
      * 当这个方法返回后，当前的这个线程就可以处理 Channel 的事件了。
      *
      *
-     * Selector 的基本使用流程
-     *
-     * 1. 通过 Selector.open() 打开一个 Selector.
-     * 2. 将 Channel 注册到 Selector 中, 并设置需要监听的事件(interest set)
-     * 3. 不断重复:
-     *    调用 select() 方法
-     *    调用 selector.selectedKeys() 获取 selected keys
-     *    迭代每个 selected key:
-     *       *从 selected key 中获取 对应的 Channel 和附加信息(如果有的话)
-     *       *判断是哪些 IO 事件已经就绪了, 然后处理它们. 如果是 OP_ACCEPT 事件, 则通过 accept() 获取 SocketChannel, 并将它设置为非阻塞的, 并注册到 Selector 中.
-     *       *根据需要更改 selected key 的监听事件.
-     *       *将已经处理过的 key 从 selected keys 集合中删除.
-     *
-     *
      * SelectionKey#isAcceptable: a connection was accepted by a ServerSocketChannel.
      * SelectionKey#isConnectable: a connection was established with a remote server.
      * SelectionKey#isReadable: a channel is ready for reading.
      * SelectionKey#isWritable: a channel is ready for writing.
      */
 
+    private final int port = 9999;
+
+    /**
+     * 非阻塞 NIO 服务端，先写后读
+     */
     @Test
     public void server() throws IOException {
-        final int BUF_SIZE = 256;
-        final int TIMEOUT = 3000;
-
         // 打开服务端 Socket
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-
         // 打开 Selector
         Selector selector = Selector.open();
 
         // 服务端 Socket 监听8080端口，并配置为非阻塞模式（必须是非阻塞才可以注册 Selector）
-        serverSocketChannel.socket().bind(new InetSocketAddress(8080));
         serverSocketChannel.configureBlocking(false);
+        serverSocketChannel.socket().bind(new InetSocketAddress(port));
 
-        // 将 channel 注册到 selector 中，返回一个 SelectionKey 对象。
-        // 通常都是先监听 OP_ACCEPT 事件，然后在 OP_ACCEPT 事件到来时，再监听该 Channel 的 OP_READ 事件。
+        // 将 Channel 注册到 Selector 中，监听 OP_ACCEPT 事件，等待连接建立之后再监听其他事件
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         while (true) {
-            // 通过调用 select 方法，阻塞等待直到 channel 可进行 IO 操作
-            if (selector.select(TIMEOUT) == 0) {
+            // 通过调用 select 方法，阻塞等待直到 Channel 可进行 IO 操作
+            if (selector.select(3000) == 0) {
                 System.out.print(".");
                 continue;
             }
 
             // 获取 I/O 操作就绪的 SelectionKey，通过 SelectionKey 可以知道哪些 Channel 的哪类 I/O 操作已经就绪.
             Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-
             while (keyIterator.hasNext()) {
-
                 SelectionKey key = keyIterator.next();
-
                 // 当获取一个 SelectionKey 后，就要将它删除，表示我们已经对这个 IO 事件进行了处理.
                 keyIterator.remove();
 
@@ -90,37 +72,101 @@ public class SelectorTest {
                 // 而在 OP_WRITE 和 OP_READ 事件中，从 key.channel() 返回的是 SocketChannel.
 
                 if (key.isAcceptable()) {
+                    System.out.println("Channel is acceptable...");
                     // 当 OP_ACCEPT 事件到来时，从 ServerSocketChannel 中获取一个 SocketChannel，代表客户端的连接
                     SocketChannel clientChannel = ((ServerSocketChannel) key.channel()).accept();
                     clientChannel.configureBlocking(false);
-                    // 再将这个 Channel 的 OP_READ 注册到 Selector 中，表示监听 OP_READ 事件
-                    clientChannel.register(key.selector(), SelectionKey.OP_READ, ByteBuffer.allocate(BUF_SIZE));
-                    // 注意，如果没有监听 OP_READ，即 interest set 仍然是 OP_ACCEPT 的话，那么 select 方法会直接返回.
+                    // 监听 Channel 的读写事件，设置附加对象 ByteBuffer
+                    clientChannel.register(key.selector(), SelectionKey.OP_WRITE, ByteBuffer.allocate(256));
                 }
 
                 if (key.isReadable()) {
+                    System.out.println("Channel is readable...");
                     SocketChannel clientChannel = (SocketChannel) key.channel();
-                    ByteBuffer buf = (ByteBuffer) key.attachment(); // 获取监听 OP_READ 事件时所设置的附加对象 ByteBuffer
-                    long bytesRead = clientChannel.read(buf);
-                    if (bytesRead == -1) {
+                    ByteBuffer byteBuffer = (ByteBuffer) key.attachment(); // 获取附加对象 ByteBuffer
+                    byteBuffer.clear();
+                    // 从 Channel 中读取数据到 ByteBuffer
+                    long bytesRead = clientChannel.read(byteBuffer);
+                    if (bytesRead == -1) { // IOStatus.EOF
                         clientChannel.close();
-                    } else if (bytesRead > 0) {
-                        key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
-                        System.out.println("Get data length: " + bytesRead);
+                    } else if (bytesRead > 0) { // 说明从 Channel 读取到了数据
+                        key.interestOps(SelectionKey.OP_WRITE);
+                        System.out.println(new String(byteBuffer.array()));
                     }
                 }
 
                 if (key.isValid() && key.isWritable()) {
-                    ByteBuffer buf = (ByteBuffer) key.attachment();
-                    buf.flip();
+                    System.out.println("Channel is writeable...");
                     SocketChannel clientChannel = (SocketChannel) key.channel();
+                    ByteBuffer byteBuffer = (ByteBuffer) key.attachment();
+                    byteBuffer.clear();
+                    byteBuffer.put("hello, I am Server. ".getBytes());
+                    byteBuffer.flip();
+                    // 将 ByteBuffer 的数据写入 Channel
+                    clientChannel.write(byteBuffer);
+                    key.interestOps(SelectionKey.OP_READ);
+                }
+            }
+        }
+    }
 
-                    clientChannel.write(buf);
+    /**
+     * 非阻塞 NIO 客户端，先读后写
+     */
+    @Test
+    public void client() throws IOException {
+        SocketChannel socketChannel = SocketChannel.open();
+        Selector selector = Selector.open();
 
-                    if (!buf.hasRemaining()) {
-                        key.interestOps(SelectionKey.OP_READ);
+        // 连接服务端
+        socketChannel.configureBlocking(false);
+        socketChannel.connect(new InetSocketAddress("localhost", port));
+
+        // 将 Channel 注册到 Selector
+        socketChannel.register(selector, SelectionKey.OP_CONNECT, ByteBuffer.allocate(256));
+
+        // 等待 Channel 的 IO 操作就绪
+        while (true) {
+            selector.select();
+            Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
+            while (keyIterator.hasNext()) {
+                SelectionKey key = keyIterator.next();
+                keyIterator.remove();
+
+                if (key.isConnectable()) {
+                    System.out.println("Channel is connectable...");
+                    // 完成连接的建立
+                    if (socketChannel.isConnectionPending()) {
+                        socketChannel.finishConnect();
                     }
-                    buf.compact();
+                    key.interestOps(SelectionKey.OP_READ);
+                }
+
+                if (key.isReadable()) {
+                    System.out.println("Channel is readable...");
+                    SocketChannel clientChannel = (SocketChannel) key.channel();
+                    ByteBuffer byteBuffer = (ByteBuffer) key.attachment(); // 获取附加对象 ByteBuffer
+                    byteBuffer.clear();
+                    // 从 Channel 中读取数据到 ByteBuffer
+                    long bytesRead = clientChannel.read(byteBuffer);
+                    if (bytesRead == -1) { // IOStatus.EOF
+                        clientChannel.close();
+                    } else if (bytesRead > 0) { // 说明从 Channel 读取到了数据
+                        key.interestOps(SelectionKey.OP_WRITE);
+                        System.out.println(new String(byteBuffer.array()));
+                    }
+                }
+
+                if (key.isValid() && key.isWritable()) {
+                    System.out.println("Channel is writeable...");
+                    SocketChannel clientChannel = (SocketChannel) key.channel();
+                    ByteBuffer byteBuffer = (ByteBuffer) key.attachment();
+                    byteBuffer.clear();
+                    byteBuffer.put("hello, I am Client. ".getBytes());
+                    byteBuffer.flip();
+                    // 将 ByteBuffer 的数据写入 Channel
+                    clientChannel.write(byteBuffer);
+                    key.interestOps(SelectionKey.OP_READ);
                 }
             }
         }
