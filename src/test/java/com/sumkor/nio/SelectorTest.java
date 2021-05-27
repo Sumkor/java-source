@@ -171,4 +171,44 @@ public class SelectorTest {
             }
         }
     }
+
+    /**
+     * Java NIO类库Selector机制解析（上）
+     * https://blog.csdn.net/haoel/article/details/2224055
+     */
+    @Test
+    public void selectorOpen() {
+        int MAXSIZE = 65535;
+        Selector[] selectors = new Selector[MAXSIZE];
+        try {
+            for (int i = 0; i < MAXSIZE; ++i) {
+                selectors[i] = Selector.open();
+                //selectors[i].close();
+            }
+            Thread.sleep(3000000);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Java NIO类库Selector机制解析（下）
+     * https://blog.csdn.net/haoel/article/details/2224069
+     *
+     * 对于熟悉于系统调用的C/C++程序员来说，一个阻塞在select上的线程有以下三种方式可以被唤醒：
+     *
+     * 1）  有数据可读/写，或出现异常。
+     * 2）  阻塞时间到，即time out。
+     * 3）  收到一个non-block的信号。可由kill或pthread_kill发出。
+     *
+     * 所以，Selector.wakeup()要唤醒阻塞的select，那么也只能通过这三种方法，其中：
+     *
+     * 1）第二种方法可以排除，因为select一旦阻塞，应无法修改其time out时间。
+     * 2）而第三种看来只能在Linux上实现，Windows上没有这种信号通知的机制。
+     *
+     * 所以，看来只有第一种方法了。再回想到为什么每个Selector.open()，在Windows会建立一对自己和自己的loopback的TCP连接；在Linux上会开一对pipe（pipe在Linux下一般都是成对打开），
+     * 估计我们能够猜得出来——那就是如果想要唤醒select，只需要朝着自己的这个loopback连接发点数据过去，于是，就可以唤醒阻塞在select上的线程了。
+     *
+     * 可见，JDK的Selector自己和自己建的那些TCP连接或是pipe，正是用来实现Selector的notify和wakeup的功能的。
+     */
 }
