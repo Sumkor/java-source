@@ -1,7 +1,9 @@
 package com.sumkor.nio;
 
 import org.junit.Test;
+import sun.misc.Unsafe;
 
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -41,8 +43,6 @@ public class ByteBufferTest {
         // byteBuffer.get();         // java.nio.BufferUnderflowException
         // byteBuffer.put((byte) 6); // java.nio.BufferOverflowException
 
-        ByteOrder order = byteBuffer.order(); // Java和所有的网络通讯协议都是使用Big-Endian的编码。
-        System.out.println("order = " + order);
     }
 
     /**
@@ -133,5 +133,46 @@ public class ByteBufferTest {
          * b = 2
          * b = 2
          */
+    }
+
+    @Test
+    public void byteOrder() {
+        // 在TCP/IP协议规定了在网络上必须采用网络字节顺序，也就是大端模式
+        ByteBuffer byteBuffer = ByteBuffer.allocate(10);
+        ByteOrder order = byteBuffer.order();
+        System.out.println("order = " + order); // BIG_ENDIAN
+
+        // 在操作系统中，x86和一般的OS(如windows，FreeBSD，Linux)使用的是小端模式。
+        ByteOrder nativeOrder = ByteOrder.nativeOrder();
+        System.out.println("nativeOrder = " + nativeOrder); // LITTLE_ENDIAN
+    }
+
+    /**
+     * java.nio.Bits#static
+     */
+    @Test
+    public void getByteOrder() throws Exception {
+        // Unsafe
+        Field field = Unsafe.class.getDeclaredField("theUnsafe");
+        field.setAccessible(true);
+        sun.misc.Unsafe unsafe = (Unsafe) field.get(null);
+
+        // ByteOrder
+        ByteOrder byteOrder;
+        long a = unsafe.allocateMemory(8); // long 类型为 8 个字节
+        try {
+            unsafe.putLong(a, 0x0102030405060708L);
+            byte b = unsafe.getByte(a); // 获取低位地址的字节
+            switch (b) {
+                case 0x01: byteOrder = ByteOrder.BIG_ENDIAN;     break;
+                case 0x08: byteOrder = ByteOrder.LITTLE_ENDIAN;  break;
+                default:
+                    assert false;
+                    byteOrder = null;
+            }
+        } finally {
+            unsafe.freeMemory(a);
+        }
+        System.out.println("byteOrder = " + byteOrder);
     }
 }

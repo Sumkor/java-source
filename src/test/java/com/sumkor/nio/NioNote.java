@@ -48,5 +48,7 @@ public class NioNote {
     /**
      * Java NIO 系列教程
      * https://segmentfault.com/a/1190000000378800?utm_source=sf-similar-article
+     * https://blog.csdn.net/qq_21125183/category_8964358.html
+     * https://www.cnblogs.com/Jack-Blog/p/11991240.html
      */
 }

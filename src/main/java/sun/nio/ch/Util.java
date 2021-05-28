@@ -370,7 +370,7 @@ public class Util {
     {
         MappedByteBuffer dbb;
         if (directByteBufferRConstructor == null)
-            initDBBRConstructor();
+            initDBBRConstructor(); // 实例化 java.nio.DirectByteBufferR
         try {
             dbb = (MappedByteBuffer)directByteBufferRConstructor.newInstance(
               new Object[] { new Integer(size),

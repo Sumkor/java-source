@@ -567,7 +567,7 @@ public abstract class FileChannel
      * target channel is non-blocking and it has fewer than <tt>count</tt>
      * bytes free in its output buffer.
      *
-     * <p> This method does not modify this channel's position.  If the given
+     * <p> This method does not modify this channel's position.  If the given // 不会修改 position
      * position is greater than the file's current size then no bytes are
      * transferred.  If the target channel has a position then bytes are
      * written starting at that position and then the position is incremented
@@ -575,7 +575,7 @@ public abstract class FileChannel
      *
      * <p> This method is potentially much more efficient than a simple loop
      * that reads from this channel and writes to the target channel.  Many
-     * operating systems can transfer bytes directly from the filesystem cache
+     * operating systems can transfer bytes directly from the filesystem cache // 大多数操作系统可以将数据从文件系统传输到目标 channel，不需要进行复制（零拷贝）
      * to the target channel without actually copying them.  </p>
      *
      * @param  position
@@ -825,25 +825,25 @@ public abstract class FileChannel
     }
 
     /**
-     * Maps a region of this channel's file directly into memory.
+     * Maps a region of this channel's file directly into memory. // 将文件的一部分区域直接映射到内存
      *
      * <p> A region of a file may be mapped into memory in one of three modes:
      * </p>
      *
      * <ul>
      *
-     *   <li><p> <i>Read-only:</i> Any attempt to modify the resulting buffer
-     *   will cause a {@link java.nio.ReadOnlyBufferException} to be thrown.
+     *   <li><p> <i>Read-only:</i> Any attempt to modify the resulting buffer  // 只读模式
+     *   will cause a {@link java.nio.ReadOnlyBufferException} to be thrown.   // 对缓冲区的修改会抛出 ReadOnlyBufferException
      *   ({@link MapMode#READ_ONLY MapMode.READ_ONLY}) </p></li>
      *
-     *   <li><p> <i>Read/write:</i> Changes made to the resulting buffer will
-     *   eventually be propagated to the file; they may or may not be made
-     *   visible to other programs that have mapped the same file.  ({@link
+     *   <li><p> <i>Read/write:</i> Changes made to the resulting buffer will  // 读写模式
+     *   eventually be propagated to the file; they may or may not be made     // 对缓冲区所做的更改最终将传播到文件中
+     *   visible to other programs that have mapped the same file.  ({@link    // 它们可能对映射了相同文件的其他程序可见，也可能不可见。
      *   MapMode#READ_WRITE MapMode.READ_WRITE}) </p></li>
      *
-     *   <li><p> <i>Private:</i> Changes made to the resulting buffer will not
-     *   be propagated to the file and will not be visible to other programs
-     *   that have mapped the same file; instead, they will cause private
+     *   <li><p> <i>Private:</i> Changes made to the resulting buffer will not // 写时复制
+     *   be propagated to the file and will not be visible to other programs   // 对缓冲区所做的更改将不会传播到该文件，并且对于映射相同文件的其他程序将不可见。
+     *   that have mapped the same file; instead, they will cause private      // 相反，它们会为缓冲区所修改的部分，创建一个私有的副本。
      *   copies of the modified portions of the buffer to be created.  ({@link
      *   MapMode#PRIVATE MapMode.PRIVATE}) </p></li>
      *
@@ -859,22 +859,22 @@ public abstract class FileChannel
      * the mapping that it represents will remain valid until the buffer itself
      * is garbage-collected.
      *
-     * <p> A mapping, once established, is not dependent upon the file channel
-     * that was used to create it.  Closing the channel, in particular, has no
+     * <p> A mapping, once established, is not dependent upon the file channel  // 映射关系一旦创建，就不再依赖创建该映射关系的 file channel
+     * that was used to create it.  Closing the channel, in particular, has no  // 关闭 file channel 对映射关系没有影响
      * effect upon the validity of the mapping.
      *
-     * <p> Many of the details of memory-mapped files are inherently dependent
+     * <p> Many of the details of memory-mapped files are inherently dependent  // memory-mapped files 大部分实现都依赖于底层操作系统
      * upon the underlying operating system and are therefore unspecified.  The
      * behavior of this method when the requested region is not completely
      * contained within this channel's file is unspecified.  Whether changes
-     * made to the content or size of the underlying file, by this program or
-     * another, are propagated to the buffer is unspecified.  The rate at which
+     * made to the content or size of the underlying file, by this program or   // 对于文件内容和大小的更改，是否会传播到缓冲区，是未知的。
+     * another, are propagated to the buffer is unspecified.  The rate at which // 对于缓冲区的修改，以何种速率传播到文件，也是未知的。
      * changes to the buffer are propagated to the file is unspecified.
      *
-     * <p> For most operating systems, mapping a file into memory is more
-     * expensive than reading or writing a few tens of kilobytes of data via
+     * <p> For most operating systems, mapping a file into memory is more       // 对于大部分操作系统来说，对于几十 KB 大小的数据传输
+     * expensive than reading or writing a few tens of kilobytes of data via    // 使用 memory-mapped 比常规的 read/write 更耗资源
      * the usual {@link #read read} and {@link #write write} methods.  From the
-     * standpoint of performance it is generally only worth mapping relatively
+     * standpoint of performance it is generally only worth mapping relatively  // 建议对于大文件传输才使用 mmap
      * large files into memory.  </p>
      *
      * @param  mode

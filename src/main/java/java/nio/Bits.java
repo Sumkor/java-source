@@ -576,10 +576,10 @@ class Bits {                            // package-private
     }
 
     static {
-        long a = unsafe.allocateMemory(8);
+        long a = unsafe.allocateMemory(8); // long 类型为 8 个字节
         try {
             unsafe.putLong(a, 0x0102030405060708L);
-            byte b = unsafe.getByte(a);
+            byte b = unsafe.getByte(a); // 获取低位地址的字节
             switch (b) {
             case 0x01: byteOrder = ByteOrder.BIG_ENDIAN;     break;
             case 0x08: byteOrder = ByteOrder.LITTLE_ENDIAN;  break;

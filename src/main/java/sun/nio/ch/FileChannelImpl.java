@@ -425,7 +425,7 @@ public class FileChannelImpl
             if (!isOpen())
                 return -1;
             do {
-                n = transferTo0(fd, position, icount, targetFD);
+                n = transferTo0(fd, position, icount, targetFD); // 本地方法，使用 sendfile 做到零拷贝
             } while ((n == IOStatus.INTERRUPTED) && isOpen());
             if (n == IOStatus.UNSUPPORTED_CASE) {
                 if (target instanceof SinkChannelImpl)
@@ -604,15 +604,15 @@ public class FileChannelImpl
 
         long n;
 
-        // Attempt a direct transfer, if the kernel supports it
+        // Attempt a direct transfer, if the kernel supports it // 若内核支持则使用直接传输
         if ((n = transferToDirectly(position, icount, target)) >= 0)
             return n;
 
-        // Attempt a mapped transfer, but only to trusted channel types
+        // Attempt a mapped transfer, but only to trusted channel types // 尝试内存映射文件传输
         if ((n = transferToTrustedChannel(position, icount, target)) >= 0)
             return n;
 
-        // Slow path for untrusted targets
+        // Slow path for untrusted targets // 慢速传输
         return transferToArbitraryChannel(position, icount, target);
     }
 
@@ -923,7 +923,7 @@ public class FileChannelImpl
             long mapSize = size + pagePosition;
             try {
                 // If no exception was thrown from map0, the address is valid
-                addr = map0(imode, mapPosition, mapSize);
+                addr = map0(imode, mapPosition, mapSize); // 本地方法，创建内存映射
             } catch (OutOfMemoryError x) {
                 // An OutOfMemoryError may indicate that we've exhausted memory
                 // so force gc and re-attempt map
@@ -1202,7 +1202,7 @@ public class FileChannelImpl
     // -- Native methods --
 
     // Creates a new mapping
-    private native long map0(int prot, long position, long length)
+    private native long map0(int prot, long position, long length) // 底层是通过调用 linux 的 mmap() 函数实现
         throws IOException;
 
     // Removes an existing mapping
@@ -1210,7 +1210,7 @@ public class FileChannelImpl
 
     // Transfers from src to dst, or returns -2 if kernel can't do that
     private native long transferTo0(FileDescriptor src, long position,
-                                    long count, FileDescriptor dst);
+                                    long count, FileDescriptor dst); // 底层调用 linux 的 sendFile() 函数或 sendFile64() 函数实现
 
     // Sets or reports this file's position
     // If offset is -1, the current position is returned
