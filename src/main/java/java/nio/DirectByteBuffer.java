@@ -124,7 +124,7 @@ class DirectByteBuffer
 
         long base = 0;
         try {
-            base = unsafe.allocateMemory(size);
+            base = unsafe.allocateMemory(size); // 底层调用 C 函数库 malloc 分配虚拟内存，等到真正使用的时候才映射到物料内存
         } catch (OutOfMemoryError x) {
             Bits.unreserveMemory(size, cap);
             throw x;
@@ -136,7 +136,7 @@ class DirectByteBuffer
         } else {
             address = base;
         }
-        cleaner = Cleaner.create(this, new Deallocator(base, size, cap));
+        cleaner = Cleaner.create(this, new Deallocator(base, size, cap)); // 用于回收堆外内存
         att = null;
 
 

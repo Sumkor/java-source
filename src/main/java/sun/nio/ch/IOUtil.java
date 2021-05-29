@@ -192,7 +192,7 @@ public class IOUtil {
             return readIntoNativeBuffer(fd, dst, position, nd);
 
         // Substitute a native buffer
-        ByteBuffer bb = Util.getTemporaryDirectBuffer(dst.remaining());
+        ByteBuffer bb = Util.getTemporaryDirectBuffer(dst.remaining()); // 获取或创建一个堆外内存
         try {
             int n = readIntoNativeBuffer(fd, bb, position, nd);
             bb.flip();

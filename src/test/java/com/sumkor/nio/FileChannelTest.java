@@ -80,7 +80,7 @@ public class FileChannelTest {
     }
 
     /**
-     * 使用 sendfile 进行零拷贝
+     * 使用 sendfile 进行零拷贝（window 不支持 sendfile）
      * @see FileChannel#transferTo(long, long, java.nio.channels.WritableByteChannel)
      */
     @Test

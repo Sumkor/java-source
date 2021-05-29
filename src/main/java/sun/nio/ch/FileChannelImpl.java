@@ -484,13 +484,13 @@ public class FileChannelImpl
                 long pos = position();
                 try {
                     return transferToDirectlyInternal(position, icount,
-                                                      target, targetFD);
+                                                      target, targetFD); // 本地调用 sendfile
                 } finally {
                     position(pos);
                 }
             }
         } else {
-            return transferToDirectlyInternal(position, icount, target, targetFD);
+            return transferToDirectlyInternal(position, icount, target, targetFD); // 本地调用 sendfile
         }
     }
 
@@ -510,7 +510,7 @@ public class FileChannelImpl
         while (remaining > 0L) {
             long size = Math.min(remaining, MAPPED_TRANSFER_SIZE);
             try {
-                MappedByteBuffer dbb = map(MapMode.READ_ONLY, position, size);
+                MappedByteBuffer dbb = map(MapMode.READ_ONLY, position, size); // mmap
                 try {
                     // ## Bug: Closing this channel will not terminate the write
                     int n = target.write(dbb);
@@ -604,16 +604,16 @@ public class FileChannelImpl
 
         long n;
 
-        // Attempt a direct transfer, if the kernel supports it // 若内核支持则使用直接传输
+        // Attempt a direct transfer, if the kernel supports it // 若内核支持则使用 sendfile 直接传输
         if ((n = transferToDirectly(position, icount, target)) >= 0)
             return n;
 
-        // Attempt a mapped transfer, but only to trusted channel types // 尝试内存映射文件传输
+        // Attempt a mapped transfer, but only to trusted channel types // 尝试内存映射文件 mmap 传输，目标通道只支持 TCP/UDP/文件
         if ((n = transferToTrustedChannel(position, icount, target)) >= 0)
             return n;
 
         // Slow path for untrusted targets // 慢速传输
-        return transferToArbitraryChannel(position, icount, target);
+        return transferToArbitraryChannel(position, icount, target); // 使用直接内存传输
     }
 
     private long transferFromFileChannel(FileChannelImpl src,

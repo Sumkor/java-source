@@ -172,7 +172,7 @@ public abstract class SelectorProvider {
                                 return provider;
                             if (loadProviderAsService())
                                 return provider;
-                            provider = sun.nio.ch.DefaultSelectorProvider.create();
+                            provider = sun.nio.ch.DefaultSelectorProvider.create(); // 根据操作系统选择不同的 Selector 实现
                             return provider;
                         }
                     });
