@@ -32,7 +32,7 @@ import java.util.Set;
 
 
 /**
- * A multiplexor of {@link SelectableChannel} objects.
+ * A multiplexor of {@link SelectableChannel} objects.                         // SelectableChannel 对象的多路复用器
  *
  * <p> A selector may be created by invoking the {@link #open open} method of
  * this class, which will use the system's default {@link
@@ -44,24 +44,24 @@ import java.util.Set;
  *
  * <a name="ks"></a>
  *
- * <p> A selectable channel's registration with a selector is represented by a
- * {@link SelectionKey} object.  A selector maintains three sets of selection
+ * <p> A selectable channel's registration with a selector is represented by a // 当 channel 注册到 selector 时会生成一个 selector 对象，表示该 channel 已经注册到 selector 上。
+ * {@link SelectionKey} object.  A selector maintains three sets of selection  // selector 中具有三种 key 集合
  * keys:
  *
  * <ul>
  *
- *   <li><p> The <i>key set</i> contains the keys representing the current
- *   channel registrations of this selector.  This set is returned by the
- *   {@link #keys() keys} method. </p></li>
+ *   <li><p> The <i>key set</i> contains the keys representing the current     // key set 存放所有已注册的 SelectionKey 对象，相当于一个注册信息缓存。
+ *   channel registrations of this selector.  This set is returned by the      // 存在缓存的情况下，同一个 channel 反复注册到 selector 都会得到相同的 SelectionKey 对象。
+ *   {@link #keys() keys} method. </p></li>                                    // 这个集合由 keys() 方法返回
  *
- *   <li><p> The <i>selected-key set</i> is the set of keys such that each
- *   key's channel was detected to be ready for at least one of the operations
- *   identified in the key's interest set during a prior selection operation.
- *   This set is returned by the {@link #selectedKeys() selectedKeys} method.
+ *   <li><p> The <i>selected-key set</i> is the set of keys such that each     // selected-key set 存放所有已就绪的 SelectionKey 对象。
+ *   key's channel was detected to be ready for at least one of the operations // SelectionKey 对象可以设置对一件或多件事件感兴趣，
+ *   identified in the key's interest set during a prior selection operation.  // 只要有一件事件是就绪的，被 selector 检测到后就会把该 SelectionKey 存入 selected-key 集合。
+ *   This set is returned by the {@link #selectedKeys() selectedKeys} method.  // 这个集合由 selectedKeys() 方法返回
  *   The selected-key set is always a subset of the key set. </p></li>
  *
- *   <li><p> The <i>cancelled-key</i> set is the set of keys that have been
- *   cancelled but whose channels have not yet been deregistered.  This set is
+ *   <li><p> The <i>cancelled-key</i> set is the set of keys that have been    // selected-key set 存放所有已取消的 SelectionKey 对象。
+ *   cancelled but whose channels have not yet been deregistered.  This set is // channel 未解除注册但是 SelectionKey 已经被取消，则会把 SelectionKey 存入该集合。
  *   not directly accessible.  The cancelled-key set is always a subset of the
  *   key set. </p></li>
  *

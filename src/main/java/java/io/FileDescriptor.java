@@ -93,7 +93,7 @@ public final class FileDescriptor {
      *
      * @see     java.lang.System#in
      */
-    public static final FileDescriptor in = standardStream(0);
+    public static final FileDescriptor in = standardStream(0); // 标准输入流(键盘)
 
     /**
      * A handle to the standard output stream. Usually, this file
@@ -101,7 +101,7 @@ public final class FileDescriptor {
      * known as {@code System.out}.
      * @see     java.lang.System#out
      */
-    public static final FileDescriptor out = standardStream(1);
+    public static final FileDescriptor out = standardStream(1); // 标准输出流(屏幕)
 
     /**
      * A handle to the standard error stream. Usually, this file
@@ -110,7 +110,7 @@ public final class FileDescriptor {
      *
      * @see     java.lang.System#err
      */
-    public static final FileDescriptor err = standardStream(2);
+    public static final FileDescriptor err = standardStream(2); // 标准错误输出流(屏幕)
 
     /**
      * Tests if this file descriptor object is valid.

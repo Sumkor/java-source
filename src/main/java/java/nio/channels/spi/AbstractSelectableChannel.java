@@ -103,7 +103,7 @@ public abstract class AbstractSelectableChannel
         } else if (keys == null) {
             keys =  new SelectionKey[3];
         } else {
-            // Grow key array
+            // Grow key array // 缓存容量不够，则扩容
             int n = keys.length * 2;
             SelectionKey[] ks =  new SelectionKey[n];
             for (i = 0; i < keys.length; i++)
@@ -198,19 +198,19 @@ public abstract class AbstractSelectableChannel
             if ((ops & ~validOps()) != 0)
                 throw new IllegalArgumentException();
             if (blocking)
-                throw new IllegalBlockingModeException();
+                throw new IllegalBlockingModeException(); // 非阻塞模式才支持使用 Selector
             SelectionKey k = findKey(sel);
             if (k != null) {
-                k.interestOps(ops);
-                k.attach(att);
+                k.interestOps(ops); // SelectionKey 已经存在，则将其注册支持的操作
+                k.attach(att);      // 设置附加对象
             }
             if (k == null) {
                 // New registration
                 synchronized (keyLock) {
                     if (!isOpen())
                         throw new ClosedChannelException();
-                    k = ((AbstractSelector)sel).register(this, ops, att);
-                    addKey(k);
+                    k = ((AbstractSelector)sel).register(this, ops, att); // 创建 SelectionKey 并注册到 Selector
+                    addKey(k); // 加入缓存
                 }
             }
             return k;

@@ -40,13 +40,13 @@ public abstract class SelectorImpl
     extends AbstractSelector
 {
 
-    // The set of keys with data ready for an operation
+    // The set of keys with data ready for an operation // 存放所有就绪的SelectionKey
     protected Set<SelectionKey> selectedKeys;
 
-    // The set of keys registered with this Selector
+    // The set of keys registered with this Selector    // 存放所有注册的SelectionKey
     protected HashSet<SelectionKey> keys;
 
-    // Public views of the key sets
+    // Public views of the key sets // 供外部访问的视图
     private Set<SelectionKey> publicKeys;             // Immutable
     private Set<SelectionKey> publicSelectedKeys;     // Removal allowed, but not addition
 
@@ -58,8 +58,8 @@ public abstract class SelectorImpl
             publicKeys = keys;
             publicSelectedKeys = selectedKeys;
         } else {
-            publicKeys = Collections.unmodifiableSet(keys);
-            publicSelectedKeys = Util.ungrowableSet(selectedKeys);
+            publicKeys = Collections.unmodifiableSet(keys);        // 不可修改
+            publicSelectedKeys = Util.ungrowableSet(selectedKeys); // 可以删除、不可增加
         }
     }
 
@@ -83,7 +83,7 @@ public abstract class SelectorImpl
                 throw new ClosedSelectorException();
             synchronized (publicKeys) {
                 synchronized (publicSelectedKeys) {
-                    return doSelect(timeout);
+                    return doSelect(timeout); // 调用子类具体的实现
                 }
             }
         }
@@ -126,12 +126,12 @@ public abstract class SelectorImpl
     {
         if (!(ch instanceof SelChImpl))
             throw new IllegalSelectorException();
-        SelectionKeyImpl k = new SelectionKeyImpl((SelChImpl)ch, this);
+        SelectionKeyImpl k = new SelectionKeyImpl((SelChImpl)ch, this); // 根据 Channel、Selector 构建 SelectionKey 实例
         k.attach(attachment);
         synchronized (publicKeys) {
-            implRegister(k);
+            implRegister(k); // 调用子类具体的实现，将 k 放入 Selector 中的 keys 集合
         }
-        k.interestOps(ops);
+        k.interestOps(ops);  // 设置关注的事件集
         return k;
     }
 

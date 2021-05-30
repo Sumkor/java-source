@@ -30,33 +30,33 @@ import java.io.IOException;
 
 
 /**
- * A token representing the registration of a {@link SelectableChannel} with a
+ * A token representing the registration of a {@link SelectableChannel} with a  // 表示 SelectableChannel 在 Selector 中的注册的标记
  * {@link Selector}.
  *
- * <p> A selection key is created each time a channel is registered with a
- * selector.  A key remains valid until it is <i>cancelled</i> by invoking its
+ * <p> A selection key is created each time a channel is registered with a      // channel 每次注册到 selector 上时，都会创建一个 selection key
+ * selector.  A key remains valid until it is <i>cancelled</i> by invoking its  // 通过调用 cancel 方法，或者关闭 channel，或者关闭 selector，来作废掉一个 selection key
  * {@link #cancel cancel} method, by closing its channel, or by closing its
- * selector.  Cancelling a key does not immediately remove it from its
+ * selector.  Cancelling a key does not immediately remove it from its          // 取消一个 selection key 时，不会立即从 selector 中移除它，而是添加到 cancelled-key 集合
  * selector; it is instead added to the selector's <a
- * href="Selector.html#ks"><i>cancelled-key set</i></a> for removal during the
+ * href="Selector.html#ks"><i>cancelled-key set</i></a> for removal during the  // 等到下一次选择操作时，才移除掉该 key
  * next selection operation.  The validity of a key may be tested by invoking
  * its {@link #isValid isValid} method.
  *
  * <a name="opsets"></a>
  *
- * <p> A selection key contains two <i>operation sets</i> represented as
- * integer values.  Each bit of an operation set denotes a category of
+ * <p> A selection key contains two <i>operation sets</i> represented as        // 一个 selection key 包含两个操作集
+ * integer values.  Each bit of an operation set denotes a category of          // 操作集的每一位表示该 key 的 channel 支持的选择操作
  * selectable operations that are supported by the key's channel.
  *
  * <ul>
  *
- *   <li><p> The <i>interest set</i> determines which operation categories will
+ *   <li><p> The <i>interest set</i> determines which operation categories will // interest set 决定了 selector 的下一次选择操作会关注什么事件，如 Accept、Connect、Read、Write
  *   be tested for readiness the next time one of the selector's selection
  *   methods is invoked.  The interest set is initialized with the value given
  *   when the key is created; it may later be changed via the {@link
  *   #interestOps(int)} method. </p></li>
  *
- *   <li><p> The <i>ready set</i> identifies the operation categories for which
+ *   <li><p> The <i>ready set</i> identifies the operation categories for which // ready set 表明 key's channel 所关注的事件已经由 key's selector 检测就绪
  *   the key's channel has been detected to be ready by the key's selector.
  *   The ready set is initialized to zero when the key is created; it may later
  *   be updated by the selector during a selection operation, but it cannot be
@@ -88,7 +88,7 @@ import java.io.IOException;
  * attached via the {@link #attach attach} method and then later retrieved via
  * the {@link #attachment() attachment} method.
  *
- * <p> Selection keys are safe for use by multiple concurrent threads.  The
+ * <p> Selection keys are safe for use by multiple concurrent threads.  The      // 并发安全
  * operations of reading and writing the interest set will, in general, be
  * synchronized with certain operations of the selector.  Exactly how this
  * synchronization is performed is implementation-dependent: In a naive
