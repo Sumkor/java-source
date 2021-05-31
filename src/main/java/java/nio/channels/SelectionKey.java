@@ -30,7 +30,7 @@ import java.io.IOException;
 
 
 /**
- * A token representing the registration of a {@link SelectableChannel} with a  // 表示 SelectableChannel 在 Selector 中的注册的标记
+ * A token representing the registration of a {@link SelectableChannel} with a  // SelectorKey 是一个 Channel 注册到一个 Selector 上的注册凭证
  * {@link Selector}.
  *
  * <p> A selection key is created each time a channel is registered with a      // channel 每次注册到 selector 上时，都会创建一个 selection key
@@ -88,14 +88,14 @@ import java.io.IOException;
  * attached via the {@link #attach attach} method and then later retrieved via
  * the {@link #attachment() attachment} method.
  *
- * <p> Selection keys are safe for use by multiple concurrent threads.  The      // 并发安全
+ * <p> Selection keys are safe for use by multiple concurrent threads.  The      // 对 SelectionKey 的 interest set 操作是并发安全的
  * operations of reading and writing the interest set will, in general, be
  * synchronized with certain operations of the selector.  Exactly how this
- * synchronization is performed is implementation-dependent: In a naive
+ * synchronization is performed is implementation-dependent: In a naive          // 在一般实现中，如果正在进行某个选择操作，那么读取或写入 interest set 可能会无限期地阻塞
  * implementation, reading or writing the interest set may block indefinitely
- * if a selection operation is already in progress; in a high-performance
+ * if a selection operation is already in progress; in a high-performance        // 在高性能的实现中，可能只会暂时阻塞。
  * implementation, reading or writing the interest set may block briefly, if at
- * all.  In any case, a selection operation will always use the interest-set
+ * all.  In any case, a selection operation will always use the interest-set     // 无论在哪种情况下，所使用的 interest-set 在选择操作开始时就保持不变
  * value that was current at the moment that the operation began.  </p>
  *
  *

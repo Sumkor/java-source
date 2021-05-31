@@ -5,10 +5,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.nio.channels.spi.AbstractSelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
  * @author Sumkor
@@ -60,11 +61,11 @@ public class SelectorTest {
          * @see sun.nio.ch.EPollSelectorProvider#openSelector
          * @see sun.nio.ch.EPollSelectorImpl#EPollSelectorImpl
          *
-         * 构造方法中均会调用父类方法
+         * 构造方法中均会调用父类方法，对 key 集合进行初始化
          * @see sun.nio.ch.SelectorImpl#SelectorImpl(java.nio.channels.spi.SelectorProvider)
          */
 
-        // 使用 Channel 和 Selector 构建 SelectionKey 对象，让该 SelectionKey 关注 OP_ACCEPT 事件并注册到 Selector 之中。
+        // 将 Channel 注册到 Selector 得到注册凭证 SelectionKey 对象，让该 SelectionKey 关注 OP_ACCEPT 事件。
         // 达到的效果是：让服务端 Channel 监听客户端连接事件。一般是等待连接建立之后再监听读写事件。
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
         /**
@@ -76,7 +77,7 @@ public class SelectorTest {
          * @see java.nio.channels.spi.AbstractSelector#register(java.nio.channels.spi.AbstractSelectableChannel, int, java.lang.Object)
          * @see sun.nio.ch.SelectorImpl#register(java.nio.channels.spi.AbstractSelectableChannel, int, java.lang.Object)
          *
-         * Window 平台下注册 SelectionKey
+         * Window 平台下注册 SelectionKey，核心操作是把新建的 SelectionKey 对象存入 Selector 的 key set 之中
          * @see sun.nio.ch.WindowsSelectorImpl#implRegister(sun.nio.ch.SelectionKeyImpl)
          *
          * Linux 平台下注册 SelectionKey
@@ -87,8 +88,8 @@ public class SelectorTest {
          * @see sun.nio.ch.SelectionKeyImpl
          */
 
-        while (true) {
-            // 通过调用 select 方法，阻塞等待直到 Channel 可进行 IO 操作
+        for (int i = 0; i < 11; i++) {
+            // 选择操作，阻塞当前线程直到从已注册的 key 集合中选出一组 key，其对应的 Channel 已准备好进行I/O操作
             if (selector.select(3000) == 0) {
                 /**
                  * @see java.nio.channels.Selector#select(long)
@@ -166,7 +167,7 @@ public class SelectorTest {
         socketChannel.register(selector, SelectionKey.OP_CONNECT, ByteBuffer.allocate(256));
 
         // 等待 Channel 的 IO 操作就绪
-        while (true) {
+        for (int i = 0; i < 10; i++) {
             selector.select();
             Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
             while (keyIterator.hasNext()) {
@@ -225,45 +226,51 @@ public class SelectorTest {
 
         Selector selector = Selector.open();
         socketChannel.register(selector, SelectionKey.OP_CONNECT);
+
+        // 连接事件
         selector.select();
+        if (socketChannel.isConnectionPending()) {
+            socketChannel.finishConnect();
+        }
+        System.out.println();
         System.out.println(selector.selectedKeys());
         System.out.println(selector.keys());
 
+        // 连接事件完成，在 selected-key set 中移除该 key，但是并没有在 key set 中移除该 key
         Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
-        while (keyIterator.hasNext()) {
+        if (keyIterator.hasNext()) {
             keyIterator.next();
             keyIterator.remove();
+            System.out.println();
             System.out.println(selector.selectedKeys());
             System.out.println(selector.keys());
         }
 
-        // TODO selectedKeys 恢复到移除之前
+        // 读写事件，重复注册并不会生成新的 SelectionKey 对象！
         socketChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
         selector.select();
+        System.out.println();
         System.out.println(selector.selectedKeys());
         System.out.println(selector.keys());
+
+        /**
+         * 执行结果：
+         *
+         * [sun.nio.ch.SelectionKeyImpl@311d617d]
+         * [sun.nio.ch.SelectionKeyImpl@311d617d]
+         *
+         * []
+         * [sun.nio.ch.SelectionKeyImpl@311d617d]
+         *
+         * [sun.nio.ch.SelectionKeyImpl@311d617d]
+         * [sun.nio.ch.SelectionKeyImpl@311d617d]
+         */
     }
 
     /**
      * Java NIO类库Selector机制解析（上）
      * https://blog.csdn.net/haoel/article/details/2224055
-     */
-    @Test
-    public void selectorOpen() {
-        int MAXSIZE = 65535;
-        Selector[] selectors = new Selector[MAXSIZE];
-        try {
-            for (int i = 0; i < MAXSIZE; ++i) {
-                selectors[i] = Selector.open();
-                //selectors[i].close();
-            }
-            Thread.sleep(3000000);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    /**
+     *
      * Java NIO类库Selector机制解析（下）
      * https://blog.csdn.net/haoel/article/details/2224069
      *
@@ -283,4 +290,30 @@ public class SelectorTest {
      *
      * 可见，JDK的Selector自己和自己建的那些TCP连接或是pipe，正是用来实现Selector的notify和wakeup的功能的。
      */
+    @Test
+    public void selectorOpen() {
+        int MAXSIZE = 65535;
+        Selector[] selectors = new Selector[MAXSIZE];
+        try {
+            for (int i = 0; i < MAXSIZE; ++i) {
+                selectors[i] = Selector.open();
+                //selectors[i].close();
+            }
+            Thread.sleep(3000000);
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * select 监视的 Socket 限制
+     * sun.nio.ch.WindowsSelectorImpl
+     */
+    @Test
+    public void select() {
+        int MAX_SELECTABLE_FDS = 1024;
+        System.out.println(10 % MAX_SELECTABLE_FDS == 0);
+        System.out.println(512 % MAX_SELECTABLE_FDS == 0);
+        System.out.println(1024 % MAX_SELECTABLE_FDS == 0);
+    }
 }

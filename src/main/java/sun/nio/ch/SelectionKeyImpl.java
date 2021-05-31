@@ -42,7 +42,7 @@ public class SelectionKeyImpl
     public final SelectorImpl selector;
 
     // Index for a pollfd array in Selector that this key is registered with
-    private int index;
+    private int index; // SelectionKey 实例在 Selector 实例中的数组缓存的下标，见 WindowsSelectorImpl.channelArray
 
     private volatile int interestOps; // 感兴趣的事件集合
     private int readyOps;             // 已就绪的事件集合

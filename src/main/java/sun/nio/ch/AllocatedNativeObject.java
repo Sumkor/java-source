@@ -36,8 +36,8 @@ class AllocatedNativeObject                             // package-private
 {
 
     /**
-     * Allocates a memory area of at least <tt>size</tt> bytes outside of the
-     * Java heap and creates a native object for that area.
+     * Allocates a memory area of at least <tt>size</tt> bytes outside of the // 开辟指定大小的堆外内存
+     * Java heap and creates a native object for that area.                   // 并实例化 AllocatedNativeObject 对象指向该内存
      *
      * @param  size
      *         Number of bytes to allocate

@@ -35,7 +35,7 @@ import sun.misc.Unsafe;
 // ## In the fullness of time, this class will be eliminated
 
 /**
- * Proxies for objects that reside in native memory.
+ * Proxies for objects that reside in native memory. // 用来操作本地内存的一个代理
  */
 
 class NativeObject {                                    // package-private

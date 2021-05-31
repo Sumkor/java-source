@@ -85,7 +85,7 @@ public abstract class AbstractSelector
         this.provider = provider;
     }
 
-    private final Set<SelectionKey> cancelledKeys = new HashSet<SelectionKey>();
+    private final Set<SelectionKey> cancelledKeys = new HashSet<SelectionKey>(); // 存放所有取消的SelectionKey
 
     void cancel(SelectionKey k) {                       // package-private
         synchronized (cancelledKeys) {
@@ -206,14 +206,14 @@ public abstract class AbstractSelector
      * Thread#interrupt interrupt} method is invoked while the thread is
      * blocked in an I/O operation upon the selector.  </p>
      */
-    protected final void begin() {
+    protected final void begin() { // 由子类在执行 Selector#select 方法时调用
         if (interruptor == null) {
             interruptor = new Interruptible() {
                     public void interrupt(Thread ignore) {
                         AbstractSelector.this.wakeup();
                     }};
         }
-        AbstractInterruptibleChannel.blockedOn(interruptor);
+        AbstractInterruptibleChannel.blockedOn(interruptor); // 设置当前线程的 blocker 属性，用于执行 Thread#interrupt 时调用 Selector#wakeup 方法
         Thread me = Thread.currentThread();
         if (me.isInterrupted())
             interruptor.interrupt(me);

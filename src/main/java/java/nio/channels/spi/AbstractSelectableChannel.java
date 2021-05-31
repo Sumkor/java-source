@@ -201,7 +201,7 @@ public abstract class AbstractSelectableChannel
                 throw new IllegalBlockingModeException(); // 非阻塞模式才支持使用 Selector
             SelectionKey k = findKey(sel);
             if (k != null) {
-                k.interestOps(ops); // SelectionKey 已经存在，则将其注册支持的操作
+                k.interestOps(ops); // SelectionKey 已经存在，则为其兴趣集合添加新的事件
                 k.attach(att);      // 设置附加对象
             }
             if (k == null) {

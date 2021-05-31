@@ -32,7 +32,7 @@ public class PipeTest {
         Thread threadA = new Thread(new Runnable() {
             @Override
             public void run() {
-                Pipe.SinkChannel sinkChannel = pipe.sink();
+                Pipe.SinkChannel sinkChannel = pipe.sink(); // 发送消息
                 ByteBuffer byteBuffer = ByteBuffer.allocate(50);
                 try {
                     byteBuffer.put("i am a message. ".getBytes());
@@ -47,7 +47,7 @@ public class PipeTest {
         Thread threadB = new Thread(new Runnable() {
             @Override
             public void run() {
-                Pipe.SourceChannel sourceChannel = pipe.source();
+                Pipe.SourceChannel sourceChannel = pipe.source(); // 接收消息
                 ByteBuffer byteBuffer = ByteBuffer.allocate(50);
                 try {
                     Thread.sleep(100000);
