@@ -1,7 +1,8 @@
-package com.sumkor.nio;
+package com.sumkor.io.nio;
 
 import org.junit.Test;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
@@ -111,5 +112,55 @@ public class FileChannelTest {
         socketChannel.read(byteBuffer);
         byteBuffer.flip();
         System.out.println(new String(byteBuffer.array()));
+    }
+
+    @Test
+    public void stream_vs_channel() throws IOException {
+        FileInputStream fileInputStream = new FileInputStream("D://a.txt");
+
+        fileInputStream.read(new byte[10]);
+
+        FileChannel channel = fileInputStream.getChannel();
+        channel.read(ByteBuffer.allocate(10));
+    }
+
+    /**
+     * 分散读
+     * 从 Channel 中读取的数据分散（scatter）到多个 Buffer 中
+     */
+    @Test
+    public void scatter() throws IOException {
+        RandomAccessFile raf = new RandomAccessFile("D:\\a.txt", "rw"); // hello world
+        FileChannel fileChannel = raf.getChannel();
+
+        ByteBuffer header = ByteBuffer.allocate(6);
+        ByteBuffer body = ByteBuffer.allocate(5);
+        ByteBuffer[] bufferArray = {header, body};
+        fileChannel.read(bufferArray);
+
+        header.flip();
+        body.flip();
+        System.out.println(new String(header.array())); // hello
+        System.out.println(new String(body.array()));   // world
+    }
+
+    /**
+     * 聚集写
+     */
+    @Test
+    public void gather() throws IOException {
+        RandomAccessFile raf = new RandomAccessFile("D:\\a.txt", "rw");
+        FileChannel fileChannel = raf.getChannel();
+
+        ByteBuffer header = ByteBuffer.allocate(7);
+        header.put("header~".getBytes());
+        ByteBuffer body = ByteBuffer.allocate(5);
+        body.put("body~".getBytes());
+        ByteBuffer[] bufferArray = {header, body};
+
+        header.flip();
+        body.flip();
+
+        fileChannel.write(bufferArray); // header~body~
     }
 }

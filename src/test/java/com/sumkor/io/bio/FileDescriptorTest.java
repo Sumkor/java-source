@@ -1,4 +1,4 @@
-package com.sumkor.bio;
+package com.sumkor.io.bio;
 
 import org.junit.Test;
 
@@ -61,7 +61,7 @@ public class FileDescriptorTest {
          * 	at java.net.Socket.connect(Socket.java:538)
          * 	at java.net.Socket.<init>(Socket.java:434)
          * 	at java.net.Socket.<init>(Socket.java:211)
-         * 	at com.sumkor.bio.FileDescriptorTest.socket(FileDescriptorTest.java:48)
+         * 	at com.sumkor.io.bio.FileDescriptorTest.socket(FileDescriptorTest.java:48)
          * 	at ...
          *
          * Disconnected from the target VM, address: '127.0.0.1:62264', transport: 'socket'

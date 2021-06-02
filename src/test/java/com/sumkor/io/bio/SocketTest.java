@@ -1,4 +1,4 @@
-package com.sumkor.bio;
+package com.sumkor.io.bio;
 
 import org.junit.Test;
 

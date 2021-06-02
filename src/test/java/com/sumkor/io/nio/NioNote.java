@@ -1,4 +1,4 @@
-package com.sumkor.nio;
+package com.sumkor.io.nio;
 
 /**
  * @author Sumkor

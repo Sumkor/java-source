@@ -1,4 +1,4 @@
-package com.sumkor.nio;
+package com.sumkor.io.nio;
 
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ public class SelectorTest {
     public void server() throws IOException {
         // 打开服务端 Socket
         ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        // 服务端 Socket 监听8080端口，并配置为非阻塞模式（必须是非阻塞才可以注册 Selector）
+        // 服务端 Socket 监听8080端口，并配置为非阻塞模式（必须是非阻塞才可以注册 Selector）。可以看到，NIO 的“同步非阻塞”都是针对 Channel 而言的。
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.socket().bind(new InetSocketAddress(port));
 
