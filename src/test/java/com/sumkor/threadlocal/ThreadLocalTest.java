@@ -1,4 +1,4 @@
-package com.sumkor.pool;
+package com.sumkor.threadlocal;
 
 import org.junit.Test;
 

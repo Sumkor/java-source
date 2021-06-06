@@ -58,8 +58,8 @@ public class ByteBufferTest {
         byte b = byteBuffer.get();
         System.out.println("b = " + b);
 
-        byteBuffer.limit(10);
-        byteBuffer.position(3);
+        byteBuffer.limit(10);   // 表示第一个不应该读取或写入的元素的索引
+        byteBuffer.position(3); // 表示下一个要读取或写入的元素的索引
 
         byteBuffer.put(new byte[]{4, 5});
         System.out.println("byteBuffer = " + Arrays.toString(byteBuffer.array()));
@@ -72,8 +72,8 @@ public class ByteBufferTest {
     }
 
     /**
-     * 先把 position~limit 之间的数据拷贝到 0~n 处
-     * 再把 position 设置为 n+1，把 limit 设为 capacity
+     * 先把 position~limit 之间的数据拷贝到 0~n 处（说明 0~position 是已经读取的数据，可以废弃）
+     * 再把 position 设置为 n+1，把 limit 设为 capacity（说明新的 position~limit 之间可以写入数据）
      */
     @Test
     public void compact() {

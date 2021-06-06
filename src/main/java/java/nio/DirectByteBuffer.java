@@ -124,7 +124,7 @@ class DirectByteBuffer
 
         long base = 0;
         try {
-            base = unsafe.allocateMemory(size); // 底层调用 C 函数库 malloc 分配虚拟内存，等到真正使用的时候才映射到物料内存
+            base = unsafe.allocateMemory(size); // 底层调用 C 函数库 malloc 分配虚拟内存，等到真正使用的时候才映射到物理内存
         } catch (OutOfMemoryError x) {
             Bits.unreserveMemory(size, cap);
             throw x;
