@@ -2,6 +2,7 @@ package com.sumkor.io.nio;
 
 import org.junit.Test;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -11,6 +12,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * @author Sumkor
@@ -25,8 +28,8 @@ public class FileChannelTest {
      * Map#get      从 Map     中获取数据
      */
     @Test
-    public void fileChannel() throws Exception {
-        RandomAccessFile raf = new RandomAccessFile("D:\\a.txt", "rw");
+    public void read() throws Exception {
+        RandomAccessFile raf = new RandomAccessFile("D:\\a.txt", "r");
         FileChannel fileChannel = raf.getChannel();
         System.out.println(fileChannel.size()); // 文件大小，单位 bytes
 
@@ -44,6 +47,22 @@ public class FileChannelTest {
             bytesRead = fileChannel.read(buf);
         }
         raf.close();
+    }
+
+    @Test
+    public void open() throws IOException {
+        Path path = new File("D://a.txt").toPath();
+        FileChannel fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE);
+
+        ByteBuffer buf = ByteBuffer.allocate(48);
+        fileChannel.read(buf);
+        buf.flip();
+        System.out.println(new String(buf.array()));
+
+        buf.clear();
+        buf.put("hello world".getBytes());
+        buf.flip();
+        fileChannel.write(buf); // 追加写入
     }
 
     /**
