@@ -706,7 +706,7 @@ public class FileChannelImpl
             return 0;
         if (src instanceof FileChannelImpl)
            return transferFromFileChannel((FileChannelImpl)src,
-                                          position, count);
+                                          position, count); // 内存映射，零拷贝
 
         return transferFromArbitraryChannel(src, position, count);
     }

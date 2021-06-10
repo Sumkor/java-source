@@ -69,9 +69,6 @@ public class FileChannelTest {
      * 使用内存映射 mmap 进行零拷贝。
      * @see FileChannel#map(java.nio.channels.FileChannel.MapMode, long, long)
      *
-     * NIO详解（十）：FileChannel零拷贝技术（注意这篇文章的说法不是很严谨）
-     * https://blog.csdn.net/qq_21125183/article/details/88701448
-     *
      * 在 Java NIO 中 Channel（通道）就相当于操作系统中的内核缓冲区，而 Buffer（缓冲区）分为 HeapBuffer 和 DirectBuffer。
      * 其中 HeapBuffer 就相当于操作系统中的用户空间缓冲区； mmap 零拷贝使用的是直接内存 DirectBuffer，无需将数据复制到堆内存中！
      *

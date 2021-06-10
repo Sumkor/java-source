@@ -567,9 +567,9 @@ public abstract class FileChannel
      * target channel is non-blocking and it has fewer than <tt>count</tt>
      * bytes free in its output buffer.
      *
-     * <p> This method does not modify this channel's position.  If the given // 不会修改 position
+     * <p> This method does not modify this channel's position.  If the given // 对于源通道，不会修改 position
      * position is greater than the file's current size then no bytes are
-     * transferred.  If the target channel has a position then bytes are
+     * transferred.  If the target channel has a position then bytes are      // 对于目标通道，会修改 position
      * written starting at that position and then the position is incremented
      * by the number of bytes written.
      *

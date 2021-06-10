@@ -50,7 +50,7 @@ public class PipeTest {
                 Pipe.SourceChannel sourceChannel = pipe.source(); // 接收消息
                 ByteBuffer byteBuffer = ByteBuffer.allocate(50);
                 try {
-                    Thread.sleep(100000);
+                    Thread.sleep(1000);
                     sourceChannel.read(byteBuffer);
                     System.out.println(new String(byteBuffer.array()));
                 } catch (Exception e) {

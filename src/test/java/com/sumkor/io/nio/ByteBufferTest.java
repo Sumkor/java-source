@@ -175,4 +175,26 @@ public class ByteBufferTest {
         }
         System.out.println("byteOrder = " + byteOrder);
     }
+
+    /**
+     * -verbose:gc -Xmx10M -XX:MaxDirectMemorySize=10M
+     */
+    @Test
+    public void directBuffer() {
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(10);
+        byteBuffer.put(new byte[]{121, 123, 0, 1, 54, 1, 121, 123, 10, 11});
+
+        byteBuffer.clear();
+        byteBuffer = null;
+
+        System.gc();
+
+        /**
+         * [GC (Allocation Failure)  2048K->760K(9728K), 0.0009326 secs]
+         * [GC (Allocation Failure)  2804K->1051K(9728K), 0.0011204 secs]
+         * [GC (Allocation Failure)  3072K->1384K(9728K), 0.0464624 secs]
+         * [GC (System.gc())  1864K->1424K(9728K), 0.0036140 secs]
+         * [Full GC (System.gc())  1424K->1090K(9728K), 0.0069943 secs]
+         */
+    }
 }

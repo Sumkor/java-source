@@ -24,7 +24,7 @@ public class SocketChannelTest {
      * Stream 和 NIO Channel 对比
      *
      *     可以在同一个 Channel 中执行读和写操作，然而同一个 Stream 仅仅支持读或写.
-     *     Channel 可以异步地读写，而 Stream 是阻塞的同步读写.
+     *     Channel 可以非阻塞地读写，而 Stream 是阻塞地读写.
      *     Channel 总是从 Buffer 中读取数据，或将数据写入到 Buffer 中.
      *
      * Channel 类型有:
