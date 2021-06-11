@@ -44,7 +44,7 @@ import java.util.Set;
  *
  * <a name="ks"></a>
  *
- * <p> A selectable channel's registration with a selector is represented by a // 当 channel 注册到 selector 时会生成一个 selector 对象，表示该 channel 已经注册到 selector 上。
+ * <p> A selectable channel's registration with a selector is represented by a // 当 channel 注册到 selector 时会生成一个 SelectionKey 对象，表示该 channel 已经注册到 selector 上。
  * {@link SelectionKey} object.  A selector maintains three sets of selection  // selector 中具有三种 key 集合
  * keys:
  *

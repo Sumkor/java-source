@@ -2,6 +2,7 @@ package com.sumkor.io.nio;
 
 import org.junit.Test;
 import sun.misc.Unsafe;
+import sun.misc.VM;
 
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -177,24 +178,84 @@ public class ByteBufferTest {
     }
 
     /**
-     * -verbose:gc -Xmx10M -XX:MaxDirectMemorySize=10M
+     * -verbose:gc -XX:+PrintGCDetails -Xmx10M -Xmn3M -XX:MaxDirectMemorySize=10M
      */
     @Test
-    public void directBuffer() {
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(10);
-        byteBuffer.put(new byte[]{121, 123, 0, 1, 54, 1, 121, 123, 10, 11});
-
-        byteBuffer.clear();
+    public void bufferGC() {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 1024 * 5); // 5M
         byteBuffer = null;
-
         System.gc();
 
         /**
-         * [GC (Allocation Failure)  2048K->760K(9728K), 0.0009326 secs]
-         * [GC (Allocation Failure)  2804K->1051K(9728K), 0.0011204 secs]
-         * [GC (Allocation Failure)  3072K->1384K(9728K), 0.0464624 secs]
-         * [GC (System.gc())  1864K->1424K(9728K), 0.0036140 secs]
-         * [Full GC (System.gc())  1424K->1090K(9728K), 0.0069943 secs]
+         * 堆内存分配 5M 空间，直接分配到老年代，发生 GC 时从老年代回收
+         *
+         * [GC (Allocation Failure) [PSYoungGen: 2048K->488K(2560K)] 2048K->720K(9728K), 0.0007896 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+         * [GC (Allocation Failure) [PSYoungGen: 2534K->488K(2560K)] 2766K->1044K(9728K), 0.0082250 secs] [Times: user=0.05 sys=0.00, real=0.01 secs]
+         * [GC (Allocation Failure) [PSYoungGen: 2536K->488K(2560K)] 3092K->1347K(9728K), 0.0049060 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
+         * [GC (System.gc()) [PSYoungGen: 943K->504K(2560K)] 6922K->6507K(9728K), 0.0043910 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+         * [Full GC (System.gc()) [PSYoungGen: 504K->0K(2560K)] [ParOldGen: 6003K->1089K(7168K)] 6507K->1089K(9728K), [Metaspace: 5044K->5044K(1056768K)], 0.0099551 secs] [Times: user=0.02 sys=0.00, real=0.01 secs]
+         * Heap
+         *  PSYoungGen      total 2560K, used 120K [0x00000000ffd00000, 0x0000000100000000, 0x0000000100000000)
+         *   eden space 2048K, 5% used [0x00000000ffd00000,0x00000000ffd1e0f0,0x00000000fff00000)
+         *   from space 512K, 0% used [0x00000000fff80000,0x00000000fff80000,0x0000000100000000)
+         *   to   space 512K, 0% used [0x00000000fff00000,0x00000000fff00000,0x00000000fff80000)
+         *  ParOldGen       total 7168K, used 1089K [0x00000000ff600000, 0x00000000ffd00000, 0x00000000ffd00000)
+         *   object space 7168K, 15% used [0x00000000ff600000,0x00000000ff7107d0,0x00000000ffd00000)
+         *  Metaspace       used 5060K, capacity 5264K, committed 5504K, reserved 1056768K
+         *   class space    used 593K, capacity 627K, committed 640K, reserved 1048576K
+         */
+    }
+
+    /**
+     * -verbose:gc -XX:+PrintGCDetails -Xmx10M -Xmn3M -XX:MaxDirectMemorySize=10M
+     *
+     * 直接内存只有在使用时，才真正地分配内存。因此这里无论声明开辟多少个 10M 的直接内存，都不会造成内存溢出。
+     * 但是，在声明开辟直接内存的时候，会检查所要开辟的容量是否超过 VM 的最大直接内存容量，若超过会报内存溢出。
+     */
+    @Test
+    public void directBufferGC() {
+        System.out.println(VM.maxDirectMemory() / 1024 / 1024); // 10M
+
+        ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        ByteBuffer.allocateDirect(1024 * 1024 * 11); // 到了这一行才报内存溢出
+
+        /**
+         * java.lang.OutOfMemoryError: Direct buffer memory
+         *
+         * 	at java.nio.Bits.reserveMemory(Bits.java:693)
+         * 	at java.nio.DirectByteBuffer.<init>(DirectByteBuffer.java:123)
+         * 	at java.nio.ByteBuffer.allocateDirect(ByteBuffer.java:311)
+         * 	at com.sumkor.io.nio.ByteBufferTest.directBufferGC(ByteBufferTest.java:222)
+         */
+    }
+
+    /**
+     * -verbose:gc -XX:+PrintGCDetails -Xmx10M -Xmn3M -XX:MaxDirectMemorySize=10M
+     *
+     * 直接内存只有在使用时，才真正地分配内存。
+     * 当 VM 中已经分配了 10M 直接内存之后，无法继续声明开辟 10M 直接内存
+     */
+    @Test
+    public void directBufferGC02() {
+        System.out.println(VM.maxDirectMemory() / 1024 / 1024); // 10M
+
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024 * 1024 * 10);
+        byte[] _1M = new byte[1024 * 1024];
+        byteBuffer.put(_1M);
+        ByteBuffer.allocateDirect(1024 * 1024 * 10); // 这里报内存溢出
+
+        /**
+         * java.lang.OutOfMemoryError: Direct buffer memory
+         *
+         * 	at java.nio.Bits.reserveMemory(Bits.java:693)
+         * 	at java.nio.DirectByteBuffer.<init>(DirectByteBuffer.java:123)
+         * 	at java.nio.ByteBuffer.allocateDirect(ByteBuffer.java:311)
+         * 	at com.sumkor.io.nio.ByteBufferTest.directBufferGC02(ByteBufferTest.java:250)
          */
     }
 }
