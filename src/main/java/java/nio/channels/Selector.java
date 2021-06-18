@@ -101,11 +101,11 @@ import java.util.Set;
  *
  * <ol>
  *                                                                               // 步骤 (1)：
- *   <li><p> Each key in the cancelled-key set is removed from each key set of   // 将 cancelled-key 集合中的每个键从所有键集中移除（如果该键是键集的成员），并注销其通道。
- *   which it is a member, and its channel is deregistered.  This step leaves    // 此步骤使已取消键集成为空集。
+ *   <li><p> Each key in the cancelled-key set is removed from each key set of   // 将 cancelled-key 集合中的每个 Key 从所有键集中移除（如果该键是键集的成员），以注销该 Key 的通道在 Selector 上的注册。
+ *   which it is a member, and its channel is deregistered.  This step leaves    // 此步骤会将 cancelled-key 置为空集。
  *   the cancelled-key set empty. </p></li>
  *                                                                               // 步骤 (2)：
- *   <li><p> The underlying operating system is queried for an update as to the  // 在选择操作开始时，selector 将向底层操作系统查询每个剩余通道（remaining channel）是否准备就绪，
+ *   <li><p> The underlying operating system is queried for an update as to the  // 在选择操作开始时，selector 将向底层操作系统查询每个通道是否准备就绪，
  *   readiness of each remaining channel to perform any of the operations        // 以执行由其键的兴趣集（key's interest set）确定的任何操作。
  *   identified by its key's interest set as of the moment that the selection
  *   operation began.  For a channel that is ready for at least one such         // 对于已准备好进行至少一个此类操作的通道，将执行以下两个操作之一：

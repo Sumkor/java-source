@@ -548,7 +548,7 @@ public class DriverManager {
         return isDriverAllowed(driver, callerCL);
     }
 
-    private static boolean isDriverAllowed(Driver driver, ClassLoader classLoader) {
+    private static boolean isDriverAllowed(Driver driver, ClassLoader classLoader) { // 检查 Driver 类是否是由该 ClassLoader 加载的
         boolean result = false;
         if(driver != null) {
             Class<?> aClass = null;
@@ -583,7 +583,7 @@ public class DriverManager {
         AccessController.doPrivileged(new PrivilegedAction<Void>() {
             public Void run() {
 
-                ServiceLoader<Driver> loadedDrivers = ServiceLoader.load(Driver.class);
+                ServiceLoader<Driver> loadedDrivers = ServiceLoader.load(Driver.class); // 采用 SPI 机制加载数据库驱动
                 Iterator<Driver> driversIterator = loadedDrivers.iterator();
 
                 /* Load these drivers, so that they can be instantiated.
@@ -655,7 +655,7 @@ public class DriverManager {
         // Remember the first exception that gets raised so we can reraise it.
         SQLException reason = null;
 
-        for(DriverInfo aDriver : registeredDrivers) {
+        for(DriverInfo aDriver : registeredDrivers) { // 遍历已注册的数据库驱动
             // If the caller does not have permission to load the driver then
             // skip it.
             if(isDriverAllowed(aDriver.driver, callerCL)) {

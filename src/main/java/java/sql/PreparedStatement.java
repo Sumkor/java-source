@@ -31,8 +31,8 @@ import java.io.Reader;
 import java.io.InputStream;
 
 /**
- * An object that represents a precompiled SQL statement.
- * <P>A SQL statement is precompiled and stored in a
+ * An object that represents a precompiled SQL statement.                             // 表示预编译的 SQL 语句的对象。
+ * <P>A SQL statement is precompiled and stored in a                                  // SQL 语句被预编译并存储在 PreparedStatement 对象中。然后可以使用此对象多次高效地执行该语句。
  * <code>PreparedStatement</code> object. This object can then be used to
  * efficiently execute this statement multiple times.
  *
