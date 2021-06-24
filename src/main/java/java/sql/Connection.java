@@ -375,32 +375,32 @@ public interface Connection  extends Wrapper, AutoCloseable {
     String getCatalog() throws SQLException;
 
     /**
-     * A constant indicating that transactions are not supported.
+     * A constant indicating that transactions are not supported. // 不支持事务
      */
     int TRANSACTION_NONE             = 0;
 
     /**
-     * A constant indicating that
-     * dirty reads, non-repeatable reads and phantom reads can occur.
-     * This level allows a row changed by one transaction to be read
+     * A constant indicating that                                          // 未提交读。
+     * dirty reads, non-repeatable reads and phantom reads can occur.      // 可能会出现脏读、不可重复读、幻读。
+     * This level allows a row changed by one transaction to be read       // 可能会读取到其他会话中未提交事务修改的数据（脏读）
      * by another transaction before any changes in that row have been
-     * committed (a "dirty read").  If any of the changes are rolled back,
+     * committed (a "dirty read").  If any of the changes are rolled back, // 如果第一个事务中所有更改都被回滚，则第二个事务将获取无效的行。
      * the second transaction will have retrieved an invalid row.
      */
     int TRANSACTION_READ_UNCOMMITTED = 1;
 
     /**
-     * A constant indicating that
-     * dirty reads are prevented; non-repeatable reads and phantom
-     * reads can occur.  This level only prohibits a transaction
-     * from reading a row with uncommitted changes in it.
+     * A constant indicating that                                  // 提交读。
+     * dirty reads are prevented; non-repeatable reads and phantom // 避免了脏读，但是可能会出现不可重复读、幻读。
+     * reads can occur.  This level only prohibits a transaction   // 只能读取到已经提交的数据。
+     * from reading a row with uncommitted changes in it.          // 出现不可重复读的原因是：在其他事务提交的前后，当前事务读取到的数据可能不一致。
      */
     int TRANSACTION_READ_COMMITTED   = 2;
 
     /**
-     * A constant indicating that
-     * dirty reads and non-repeatable reads are prevented; phantom
-     * reads can occur.  This level prohibits a transaction from
+     * A constant indicating that                                     // 可重复读。
+     * dirty reads and non-repeatable reads are prevented; phantom    // 避免了脏读、不可重复读，但是可能会出现幻读。
+     * reads can occur.  This level prohibits a transaction from      // 在同一个事务内，任意时刻的查询结果，都与事务开始的时刻的查询结果是一致的。（）
      * reading a row with uncommitted changes in it, and it also
      * prohibits the situation where one transaction reads a row,
      * a second transaction alters the row, and the first transaction
@@ -410,13 +410,13 @@ public interface Connection  extends Wrapper, AutoCloseable {
     int TRANSACTION_REPEATABLE_READ  = 4;
 
     /**
-     * A constant indicating that
-     * dirty reads, non-repeatable reads and phantom reads are prevented.
-     * This level includes the prohibitions in
+     * A constant indicating that                                              // 串行读。
+     * dirty reads, non-repeatable reads and phantom reads are prevented.      // 避免了脏读、不可重复读、幻读。
+     * This level includes the prohibitions in                                 // 完全串行化的读，每次读都需要获得表级共享锁，读写相互都会阻塞。
      * <code>TRANSACTION_REPEATABLE_READ</code> and further prohibits the
-     * situation where one transaction reads all rows that satisfy
-     * a <code>WHERE</code> condition, a second transaction inserts a row that
-     * satisfies that <code>WHERE</code> condition, and the first transaction
+     * situation where one transaction reads all rows that satisfy             // 幻读指的是：第一个事务在指定 where 条件下读到了所有的行，
+     * a <code>WHERE</code> condition, a second transaction inserts a row that // 接着第二个事务 insert 了一个符合该 where 条件的行，
+     * satisfies that <code>WHERE</code> condition, and the first transaction  // 最后第一个事务重新发起 where 查询，读到了第二个事务新插入的行。
      * rereads for the same condition, retrieving the additional
      * "phantom" row in the second read.
      */
