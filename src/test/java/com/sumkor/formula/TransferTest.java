@@ -2,12 +2,12 @@ package com.sumkor.formula;
 
 import org.junit.Test;
 
+import java.math.BigDecimal;
+import java.util.LinkedList;
 import java.util.Stack;
 
 /**
- * 将公式转换为后缀表达式，再进行运算
- * https://blog.csdn.net/qq_27512671/article/details/82982362
- * 本例只支持个位数，不支持小数点和多位数
+ * TransferTest 的增强版，支持多位数、小数点
  *
  * @author Sumkor
  * @since 2021/7/6
@@ -15,73 +15,120 @@ import java.util.Stack;
 public class TransferTest {
 
     @Test
-    public void transferTest() {
-//        String str = "1+2*(3-4*(5+6))"; // 123456+*-*+
-//        String str = "(1-2)*3+4"; // 12-3*4+
-        String str = "5-1*(5+6)+2"; // 5156+*2+-
-        System.out.println(transfer(str));
+    public void calculateTest() {
+//        String str = "5-1*(5+6)+2";
+//        String str = "50-1*(5+6)+2";
+//        String str = "(50.5-1)*(5+6)+2";
+//        String str = "1+2*(3-4*(5+6))";
+//        String str = "1/2*(3-4*(5+6))";
+        String str = "6+12/2+((2-5)-1)+2";
+        System.out.println(calculate(str));
     }
-
     /**
-     * 中缀表达式转后缀表达式
-     * 例如 a+b*(c-d) 转为后缀表达式就是 abcd-*+
-     *
-     * 后缀表达式实际上是将原始表达式划分为【数字】和【运算符】两部分
-     * 其中，【数字】以原始表达式从左到右的方式排序，【运算符】以优先级从左到右排序
+     * 1. 将中缀表达式转后缀表达式，例如 a+b*(c-d) 转为后缀表达式就是 abcd-*+
+     * 2. 根据后缀表达式进行计算
      */
-    public static String transfer(String mathStr) {
-        // 标记输出结果
-        StringBuilder result = new StringBuilder();
-        // 1.初始化一个运算符栈。
-        Stack<Character> stack = new Stack<>();
+    public BigDecimal calculate(String mathStr) {
         if (mathStr == null || mathStr.length() == 0) {
             return null;
         }
-        System.out.println("--------------");
-        System.out.println("中缀表达式：" + mathStr);
+        // 后缀表达式链（LIFO）
+        LinkedList<String> postfixList = new LinkedList<>();
+        // 运算符栈（FIFO）
+        Stack<Character> optStack = new Stack<>();
+        // 多位数链（LIFO）
+        LinkedList<Character> multiDigitList = new LinkedList<>();
         char[] arr = mathStr.toCharArray();
-        // 2.从算数表达式输入的字符串中依次从左向右每次读取一个字符。
-        for (char s : arr) {
-            // 3.如果当前字符是数字（操作数），则直接填写到后缀表达式。
-            if (Character.isDigit(s)) {
-                result.append(s);
-            }
-            // 4.如果当前字符是（左括号，将其压入运算符栈。
-            else if ('(' == s) {
-                stack.push(s);
-            }
-            // 5.如果当前字符为运算符，则
-            else if ('+' == s || '-' == s || '*' == s || '/' == s) {
-                if (!stack.isEmpty()) {
-                    char stackTop = stack.pop();
-                    // 当此运算符的优先级高于栈顶元素的时候，则将此运算符压入运算符栈
-                    if (compare(s, stackTop)) {
-                        stack.push(stackTop);
+        for (char c : arr) {
+            if (Character.isDigit(c) || '.' == c) {
+                multiDigitList.addLast(c);
+            } else {
+                // 处理当前的运算符之前，先处理多位数链中暂存的数据
+                if (!multiDigitList.isEmpty()) {
+                    StringBuilder temp = new StringBuilder();
+                    while (!multiDigitList.isEmpty()) {
+                        temp.append(multiDigitList.removeFirst());
                     }
-                    // 否则，弹出栈顶运算符到后缀表达式，并且将当前运算符压栈
+                    postfixList.addLast(temp.toString());
+                }
+            }
+            // 如果当前字符是左括号，将其压入运算符栈
+            if ('(' == c) {
+                optStack.push(c);
+            }
+            // 如果当前字符为运算符
+            else if ('+' == c || '-' == c || '*' == c || '/' == c) {
+                while (!optStack.isEmpty()) {
+                    char stackTop = optStack.pop();
+                    // 若当前运算符的优先级高于栈顶元素，则一起入栈
+                    if (compare(c, stackTop)) {
+                        optStack.push(stackTop);
+                        break;
+                    }
+                    // 否则，弹出栈顶运算符到后缀表达式，继续下一次循环
                     else {
-                        result.append(stackTop);
+                        postfixList.addLast(String.valueOf(stackTop));
                     }
                 }
-                stack.push(s);
+                optStack.push(c);
             }
-            // 6.如果当前字符是）右括号，反复将栈顶元素弹出到后缀表达式，直到栈顶元素是左括号（为止，并将左括号从栈中弹出丢弃。
-            else if (s == ')') {
-                while (!stack.isEmpty()) {
-                    char item = stack.pop();
-                    if (item != '(') {
-                        result.append(item);
+            // 如果当前字符是右括号，反复将运算符栈顶元素弹出到后缀表达式，直到栈顶元素是左括号（为止，并将左括号从栈中弹出丢弃。
+            else if (c == ')') {
+                while (!optStack.isEmpty()) {
+                    char stackTop = optStack.pop();
+                    if (stackTop != '(') {
+                        postfixList.addLast(String.valueOf(stackTop));
                     } else {
                         break;
                     }
                 }
             }
         }
-        while (!stack.isEmpty()) {
-            result.append(stack.pop());
+        // 遍历结束时，若多位数链中具有数据，说明公式是以数字结尾
+        if (!multiDigitList.isEmpty()) {
+            StringBuilder temp = new StringBuilder();
+            while (!multiDigitList.isEmpty()) {
+                temp.append(multiDigitList.removeLast());
+            }
+            postfixList.addLast(temp.toString());
         }
-        System.out.println("后缀表达式：" + result.toString());
-        return result.toString();
+        // 遍历结束时，运算符栈若有数据，说明是由括号所致，需要补回去
+        while (!optStack.isEmpty()) {
+            postfixList.addLast(String.valueOf(optStack.pop()));
+        }
+        System.out.println("后缀表达式：" + postfixList.toString());
+        // 操作数栈
+        Stack<BigDecimal> numStack = new Stack<>();
+        while (!postfixList.isEmpty()) {
+            String item = postfixList.removeFirst();
+            BigDecimal a, b;
+            switch (item) {
+                case "+":
+                    a = numStack.pop();
+                    b = numStack.pop();
+                    numStack.push(b.add(a));
+                    break;
+                case "-":
+                    a = numStack.pop();
+                    b = numStack.pop();
+                    numStack.push(b.subtract(a));
+                    break;
+                case "*":
+                    a = numStack.pop();
+                    b = numStack.pop();
+                    numStack.push(b.multiply(a));
+                    break;
+                case "/":
+                    a = numStack.pop();
+                    b = numStack.pop();
+                    numStack.push(b.divide(a));
+                    break;
+                default:
+                    numStack.push(new BigDecimal(item));
+                    break;
+            }
+        }
+        return numStack.pop();
     }
 
     /**
@@ -99,56 +146,13 @@ public class TransferTest {
     }
 
     @Test
-    public void testCompare() {
-        System.out.println(compare('*', '/')); // false
-        System.out.println(compare('*', '+')); // true
-        System.out.println(compare('*', '(')); // true
-        System.out.println(compare('*', ')')); // false
-    }
-
-    /**
-     * 根据后缀表达式，计算结果
-     */
-    public static int calculate(String transferToPostfix) {
-        Stack<Integer> stack = new Stack<>();
-        char[] c = transferToPostfix.toCharArray();
-        int a, b;
-        for (char value : c) {
-            switch (value) {
-                case '+':
-                    a = Integer.parseInt(stack.pop().toString());
-                    b = Integer.parseInt(stack.pop().toString());
-                    stack.push(b + a);
-                    break;
-                case '-':
-                    a = Integer.parseInt(stack.pop().toString());
-                    b = Integer.parseInt(stack.pop().toString());
-                    stack.push(b - a);
-                    break;
-                case '*':
-                    a = Integer.parseInt(stack.pop().toString());
-                    b = Integer.parseInt(stack.pop().toString());
-                    stack.push(b * a);
-                    break;
-                case '/':
-                    a = Integer.parseInt(stack.pop().toString());
-                    b = Integer.parseInt(stack.pop().toString());
-                    stack.push(b / a);
-                    break;
-                default:
-                    stack.push(Integer.valueOf(Character.toString(value)));
-                    break;
-            }
-        }
-        return stack.pop();
-    }
-
-    @Test
-    public void calculateTest() {
-        String str = "5-1*(5+6)+2";
-        String transfer = transfer(str);
-        System.out.println(transfer);
-        assert transfer != null;
-        System.out.println(calculate(transfer));
+    public void stackToString() {
+        Stack<String> stack = new Stack<>();
+        stack.push("a");
+        stack.push("b");
+        stack.push("c");
+        System.out.println(stack.toString());
+        stack.clear();
+        System.out.println(stack.toString());
     }
 }
