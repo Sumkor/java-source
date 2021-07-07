@@ -3,6 +3,7 @@ package com.sumkor.formula;
 import org.junit.Test;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.LinkedList;
 import java.util.Stack;
 
@@ -21,14 +22,14 @@ public class TransferTest {
 //        String str = "(50.5-1)*(5+6)+2";
 //        String str = "1+2*(3-4*(5+6))";
 //        String str = "1/2*(3-4*(5+6))";
-        String str = "6+12/2+((2-5)-1)+2";
+        String str = "43*(2+1)+2*32+98";
         System.out.println(calculate(str));
     }
     /**
      * 1. 将中缀表达式转后缀表达式，例如 a+b*(c-d) 转为后缀表达式就是 abcd-*+
      * 2. 根据后缀表达式进行计算
      */
-    public BigDecimal calculate(String mathStr) {
+    public static BigDecimal calculate(String mathStr) {
         if (mathStr == null || mathStr.length() == 0) {
             return null;
         }
@@ -88,7 +89,7 @@ public class TransferTest {
         if (!multiDigitList.isEmpty()) {
             StringBuilder temp = new StringBuilder();
             while (!multiDigitList.isEmpty()) {
-                temp.append(multiDigitList.removeLast());
+                temp.append(multiDigitList.removeFirst());
             }
             postfixList.addLast(temp.toString());
         }
@@ -96,7 +97,7 @@ public class TransferTest {
         while (!optStack.isEmpty()) {
             postfixList.addLast(String.valueOf(optStack.pop()));
         }
-        System.out.println("后缀表达式：" + postfixList.toString());
+//        System.out.println("后缀表达式：" + postfixList.toString());
         // 操作数栈
         Stack<BigDecimal> numStack = new Stack<>();
         while (!postfixList.isEmpty()) {
@@ -121,7 +122,7 @@ public class TransferTest {
                 case "/":
                     a = numStack.pop();
                     b = numStack.pop();
-                    numStack.push(b.divide(a));
+                    numStack.push(b.divide(a, 2, RoundingMode.HALF_UP));
                     break;
                 default:
                     numStack.push(new BigDecimal(item));
