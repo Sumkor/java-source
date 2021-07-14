@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Stack;
 
 /**
- * TransferTest 的增强版，支持多位数、小数点
+ * 数学公式计算，支持多位数、小数点
  *
  * @author Sumkor
  * @since 2021/7/6
@@ -17,14 +17,28 @@ public class TransferTest {
 
     @Test
     public void calculateTest() {
-//        String str = "5-1*(5+6)+2";
-//        String str = "50-1*(5+6)+2";
-//        String str = "(50.5-1)*(5+6)+2";
-//        String str = "1+2*(3-4*(5+6))";
-//        String str = "1/2*(3-4*(5+6))";
-        String str = "43*(2+1)+2*32+98";
-        System.out.println(calculate(str));
+        String str = "5-1*(5+6)+2";
+        System.out.println(str + " = " + calculate(str));
+
+        str = "50-1*(5+6)+2";
+        System.out.println(str + " = " + calculate(str));
+
+        str = "(50.5-1)*(5+6)+2";
+        System.out.println(str + " = " + calculate(str));
+
+        str = "1+2*(3-4*(5+6))";
+        System.out.println(str + " = " + calculate(str));
+
+        str = "1/2*(3-4*(5+6))*10";
+        System.out.println(str + " = " + calculate(str));
+
+        str = "43*(2+1)+2*32+98";
+        System.out.println(str + " = " + calculate(str));
+
+        str = "3-10*2+5";
+        System.out.println(str + " = " + calculate(str));
     }
+
     /**
      * 1. 将中缀表达式转后缀表达式，例如 a+b*(c-d) 转为后缀表达式就是 abcd-*+
      * 2. 根据后缀表达式进行计算
@@ -33,11 +47,20 @@ public class TransferTest {
         if (mathStr == null || mathStr.length() == 0) {
             return null;
         }
-        // 后缀表达式链（LIFO）
+        LinkedList<String> postfixList = getPostfix(mathStr);
+        // System.out.println("后缀表达式：" + postfixList.toString());
+        return doCalculate(postfixList);
+    }
+
+    /**
+     * 将中缀表达式，转换为后缀表达式，支持多位数、小数
+     */
+    private static LinkedList<String> getPostfix(String mathStr) {
+        // 后缀表达式链（FIFO）
         LinkedList<String> postfixList = new LinkedList<>();
-        // 运算符栈（FIFO）
+        // 运算符栈（FILO）
         Stack<Character> optStack = new Stack<>();
-        // 多位数链（LIFO）
+        // 多位数链（FIFO）
         LinkedList<Character> multiDigitList = new LinkedList<>();
         char[] arr = mathStr.toCharArray();
         for (char c : arr) {
@@ -73,7 +96,7 @@ public class TransferTest {
                 }
                 optStack.push(c);
             }
-            // 如果当前字符是右括号，反复将运算符栈顶元素弹出到后缀表达式，直到栈顶元素是左括号（为止，并将左括号从栈中弹出丢弃。
+            // 如果当前字符是右括号，反复将运算符栈顶元素弹出到后缀表达式，直到栈顶元素是左括号为止，并将左括号从栈中弹出丢弃。
             else if (c == ')') {
                 while (!optStack.isEmpty()) {
                     char stackTop = optStack.pop();
@@ -97,7 +120,13 @@ public class TransferTest {
         while (!optStack.isEmpty()) {
             postfixList.addLast(String.valueOf(optStack.pop()));
         }
-//        System.out.println("后缀表达式：" + postfixList.toString());
+        return postfixList;
+    }
+
+    /**
+     * 根据后缀表达式，得到计算结果，保留两位小数
+     */
+    private static BigDecimal doCalculate(LinkedList<String> postfixList) {
         // 操作数栈
         Stack<BigDecimal> numStack = new Stack<>();
         while (!postfixList.isEmpty()) {
@@ -129,7 +158,11 @@ public class TransferTest {
                     break;
             }
         }
-        return numStack.pop();
+        BigDecimal result = numStack.pop();
+        if (result != null) {
+            result = result.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros();
+        }
+        return result;
     }
 
     /**
@@ -137,12 +170,15 @@ public class TransferTest {
      * 返回 true 表示 curr 优先级大于 stackTop
      */
     private static boolean compare(char curr, char stackTop) {
-        if (stackTop == '(') { // 左括号会直接入栈，这里是其他运算符与栈顶左括号对比
+        // 左括号会直接入栈，这里是其他运算符与栈顶左括号对比
+        if (stackTop == '(') {
             return true;
         }
+        // 乘除法的优先级大于加减法
         if (curr == '*' || curr == '/') {
             return stackTop == '+' || stackTop == '-';
         }
+        // 优先级相同
         return false;
     }
 

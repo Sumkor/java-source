@@ -33,17 +33,17 @@ public class FormulaTest {
      */
     @Test
     public void vs() throws ScriptException {
+        long start = System.currentTimeMillis();
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("js");
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             String str = "43*(2+1.4)+2*32/(3-2.1)" + "+" + i;
             Object result = engine.eval(str);
         }
         System.out.println("耗时：" + (System.currentTimeMillis() - start));
 
         start = System.currentTimeMillis();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             String str = "43*(2+1.4)+2*32/(3-2.1)" + "+" + i;
             BigDecimal result = TransferTest.calculate(str);
         }
