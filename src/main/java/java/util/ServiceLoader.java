@@ -341,7 +341,7 @@ public final class ServiceLoader<S>
             }
             if (configs == null) {
                 try {
-                    String fullName = PREFIX + service.getName();
+                    String fullName = PREFIX + service.getName(); // eg. META-INF/services/com.sumkor.spi.IMyServiceLoader
                     if (loader == null)
                         configs = ClassLoader.getSystemResources(fullName);
                     else
@@ -354,9 +354,9 @@ public final class ServiceLoader<S>
                 if (!configs.hasMoreElements()) {
                     return false;
                 }
-                pending = parse(service, configs.nextElement());
+                pending = parse(service, configs.nextElement()); // 一次性读取文件内容至List集合中，返回该集合的迭代器
             }
-            nextName = pending.next();
+            nextName = pending.next(); // 取得迭代器的下一个内容，eg. com.sumkor.spi.MyServiceLoaderImpl1
             return true;
         }
 
@@ -367,17 +367,17 @@ public final class ServiceLoader<S>
             nextName = null;
             Class<?> c = null;
             try {
-                c = Class.forName(cn, false, loader);
+                c = Class.forName(cn, false, loader); // 反射获取类类型
             } catch (ClassNotFoundException x) {
                 fail(service,
                      "Provider " + cn + " not found");
             }
-            if (!service.isAssignableFrom(c)) {
+            if (!service.isAssignableFrom(c)) { // 校验：父类 isAssignableFrom 子类
                 fail(service,
                      "Provider " + cn  + " not a subtype");
             }
             try {
-                S p = service.cast(c.newInstance());
+                S p = service.cast(c.newInstance()); // 实例化
                 providers.put(cn, p);
                 return p;
             } catch (Throwable x) {
@@ -463,7 +463,7 @@ public final class ServiceLoader<S>
      *          service
      */
     public Iterator<S> iterator() {
-        return new Iterator<S>() {
+        return new Iterator<S>() { // 匿名内部类
 
             Iterator<Map.Entry<String,S>> knownProviders
                 = providers.entrySet().iterator();
