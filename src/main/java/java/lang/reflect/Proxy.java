@@ -414,8 +414,8 @@ public class Proxy implements java.io.Serializable {
         }
 
         // If the proxy class defined by the given loader implementing
-        // the given interfaces exists, this will simply return the cached copy;
-        // otherwise, it will create the proxy class via the ProxyClassFactory
+        // the given interfaces exists, this will simply return the cached copy; // 如果缓存中存在，则返回缓存的拷贝
+        // otherwise, it will create the proxy class via the ProxyClassFactory   // 否则，使用 ProxyClassFactory 来创建类
         return proxyClassCache.get(loader, interfaces);
     }
 
@@ -623,7 +623,7 @@ public class Proxy implements java.io.Serializable {
             }
 
             if (proxyPkg == null) {
-                // if no non-public proxy interfaces, use com.sun.proxy package
+                // if no non-public proxy interfaces, use com.sun.proxy package // 构建代理类的包路径，默认为 com.sun.proxy
                 proxyPkg = ReflectUtil.PROXY_PACKAGE + ".";
             }
 
@@ -631,7 +631,7 @@ public class Proxy implements java.io.Serializable {
              * Choose a name for the proxy class to generate.
              */
             long num = nextUniqueNumber.getAndIncrement();
-            String proxyName = proxyPkg + proxyClassNamePrefix + num;
+            String proxyName = proxyPkg + proxyClassNamePrefix + num; // 代理类类名
 
             /*
              * Generate the specified proxy class.
@@ -640,7 +640,7 @@ public class Proxy implements java.io.Serializable {
                 proxyName, interfaces, accessFlags);
             try {
                 return defineClass0(loader, proxyName,
-                                    proxyClassFile, 0, proxyClassFile.length);
+                                    proxyClassFile, 0, proxyClassFile.length); // 本地方法，生成代理类
             } catch (ClassFormatError e) {
                 /*
                  * A ClassFormatError here means that (barring bugs in the
@@ -716,7 +716,7 @@ public class Proxy implements java.io.Serializable {
         /*
          * Look up or generate the designated proxy class.
          */
-        Class<?> cl = getProxyClass0(loader, intfs);
+        Class<?> cl = getProxyClass0(loader, intfs); // 查找或生成代理类
 
         /*
          * Invoke its constructor with the designated invocation handler.
@@ -726,9 +726,9 @@ public class Proxy implements java.io.Serializable {
                 checkNewProxyPermission(Reflection.getCallerClass(), cl);
             }
 
-            final Constructor<?> cons = cl.getConstructor(constructorParams);
+            final Constructor<?> cons = cl.getConstructor(constructorParams); // 构造函数，eg. public com.sun.proxy.$Proxy4(java.lang.reflect.InvocationHandler)
             final InvocationHandler ih = h;
-            if (!Modifier.isPublic(cl.getModifiers())) {
+            if (!Modifier.isPublic(cl.getModifiers())) { // 获取cl类的修饰语，判断是否为public
                 AccessController.doPrivileged(new PrivilegedAction<Void>() {
                     public Void run() {
                         cons.setAccessible(true);
@@ -736,7 +736,7 @@ public class Proxy implements java.io.Serializable {
                     }
                 });
             }
-            return cons.newInstance(new Object[]{h});
+            return cons.newInstance(new Object[]{h}); // 实例化代理类，将 InvocationHandler 实例作为代理类的构造入参
         } catch (IllegalAccessException|InstantiationException e) {
             throw new InternalError(e.toString(), e);
         } catch (InvocationTargetException e) {

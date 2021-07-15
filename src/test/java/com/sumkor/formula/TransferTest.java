@@ -178,7 +178,7 @@ public class TransferTest {
         if (curr == '*' || curr == '/') {
             return stackTop == '+' || stackTop == '-';
         }
-        // 优先级相同
+        // 运算符优先级相同时，先入栈的优先级更高
         return false;
     }
 

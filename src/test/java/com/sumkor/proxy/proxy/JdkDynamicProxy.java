@@ -24,7 +24,7 @@ public class JdkDynamicProxy implements InvocationHandler {
         return (T) Proxy.newProxyInstance(
                 target.getClass().getClassLoader(),
                 target.getClass().getInterfaces(),
-                this
+                this // 将当前类实例传递给 Proxy 的 InvocationHandler 属性。后续调用代理类的方法时，实际调用当前类的invoke方法。
         );
     }
 
