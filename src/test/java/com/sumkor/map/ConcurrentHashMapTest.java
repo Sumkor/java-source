@@ -2,12 +2,14 @@ package com.sumkor.map;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
 
 /**
  * @see java.util.concurrent.ConcurrentHashMap
@@ -15,6 +17,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * @since 2021/2/11
  */
 public class ConcurrentHashMapTest {
+
+    //region 基本操作
 
     /**
      * 存入
@@ -174,6 +178,10 @@ public class ConcurrentHashMapTest {
         map.put(1, null);
     }
 
+    //endregion 基本操作
+
+    //region 复合操作
+
     /**
      * key 不存在则存入，返回旧值
      */
@@ -293,7 +301,70 @@ public class ConcurrentHashMapTest {
         System.out.println("======  end  =============");
     }
 
-    //-------------------------------------------------------------
+    /**
+     * 探究如何出现死锁？
+     * 死锁的例子见单元测试 deadLock04
+     */
+    @Test
+    public void computeIfAbsent01() {
+        ConcurrentHashMap<Integer, Integer> map = new ConcurrentHashMap<>();
+        map.put(1, 1);
+        map.computeIfAbsent(1, (key) -> key + key);
+    }
+
+    /**
+     * ConcurrentHashMap.computeIfAbsent(k,f) locks bin when k present
+     * https://bugs.openjdk.java.net/browse/JDK-8161372
+     *
+     * 执行结果：把线程快照 dump 出来，可用看到每个线程都是 BLOCKED 状态
+     */
+    @Test
+    public void deadLock04() throws InterruptedException {
+        final int MAP_SIZE = 20;
+        final int THREADS = 20;
+        final ConcurrentHashMap<Integer, Integer> map = new ConcurrentHashMap<>();
+
+        for (int i = 0; i < MAP_SIZE; i++) {
+            map.put(i, i);
+        }
+
+        Thread.sleep(5000);
+
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (int i = 0; i < THREADS; i++) {
+            Thread t = new Thread() {
+                public void run() {
+                    int i = 0;
+                    int result = 0;
+                    while (result < Integer.MAX_VALUE) {
+                        i = (i + 1) % MAP_SIZE;
+                         result += map.computeIfAbsent(i, (key) -> key + key);
+//                        result += computeIfAbsent(map, i, (key) -> key + key);
+                    }
+                }
+            };
+            threads.add(t);
+            t.start();
+        }
+        threads.get(0).join();
+    }
+
+    /**
+     * Mybatis 中的解决方法
+     * org.apache.ibatis.util.MapUtil#computeIfAbsent
+     */
+    public static <K, V> V computeIfAbsent(Map<K, V> map, K key, Function<K, V> mappingFunction) {
+        V value = map.get(key);
+        if (value != null) {
+            return value;
+        }
+        System.out.println("---");
+        return map.computeIfAbsent(key, mappingFunction::apply);
+    }
+
+    //endregion 复合操作
+
+    //region 扩容操作
 
     /**
      * 扩容时 sizeCtl = -N
@@ -542,7 +613,9 @@ public class ConcurrentHashMapTest {
         System.out.println("--------------------------");
     }
 
-    //-------------------------------------------------------------
+    //endregion 扩容
+
+    //region 其他
 
     /**
      * node 指针赋值的调试，这里看到实际是被编译器优化过了
@@ -605,4 +678,6 @@ public class ConcurrentHashMapTest {
         System.out.println(atomicInteger.incrementAndGet()); // 57
         System.out.println(atomicInteger.get()); // 57
     }
+
+    //endregion 其他
 }

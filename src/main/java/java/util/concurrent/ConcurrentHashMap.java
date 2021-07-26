@@ -1650,10 +1650,10 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
             Node<K,V> f; int n, i, fh;
             if (tab == null || (n = tab.length) == 0)
                 tab = initTable();
-            else if ((f = tabAt(tab, i = (n - 1) & h)) == null) {
+            else if ((f = tabAt(tab, i = (n - 1) & h)) == null) { // 如果table的i位置为空，则执行mappingFunction表达式
                 Node<K,V> r = new ReservationNode<K,V>();
                 synchronized (r) {
-                    if (casTabAt(tab, i, null, r)) { // 在 table 的 i 位置插入预留节点 r（其key和value均为null）
+                    if (casTabAt(tab, i, null, r)) { // 在table的i位置插入预留节点r（其key和value均为null）
                         binCount = 1;
                         Node<K,V> node = null;
                         try {
@@ -1671,15 +1671,15 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                 tab = helpTransfer(tab, f);
             else {
                 boolean added = false;
-                synchronized (f) {
+                synchronized (f) { // 如果table的i位置不为空，则需要遍历该位置上的链表或树结构
                     if (tabAt(tab, i) == f) {
-                        if (fh >= 0) {
+                        if (fh >= 0) { // 如果是链表结构
                             binCount = 1;
                             for (Node<K,V> e = f;; ++binCount) {
                                 K ek; V ev;
                                 if (e.hash == h &&
                                     ((ek = e.key) == key ||
-                                     (ek != null && key.equals(ek)))) {
+                                     (ek != null && key.equals(ek)))) { // key在链表上存在，则直接跳出，返回已有的value
                                     val = e.val;
                                     break;
                                 }
@@ -1693,7 +1693,7 @@ public class ConcurrentHashMap<K,V> extends AbstractMap<K,V>
                                 }
                             }
                         }
-                        else if (f instanceof TreeBin) {
+                        else if (f instanceof TreeBin) { // 如果是树结构
                             binCount = 2;
                             TreeBin<K,V> t = (TreeBin<K,V>)f;
                             TreeNode<K,V> r, p;

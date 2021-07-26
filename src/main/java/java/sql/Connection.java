@@ -400,7 +400,7 @@ public interface Connection  extends Wrapper, AutoCloseable {
     /**
      * A constant indicating that                                     // 可重复读。
      * dirty reads and non-repeatable reads are prevented; phantom    // 避免了脏读、不可重复读，但是可能会出现幻读。
-     * reads can occur.  This level prohibits a transaction from      // 在同一个事务内，任意时刻的查询结果，都与事务开始的时刻的查询结果是一致的。（）
+     * reads can occur.  This level prohibits a transaction from      // 在同一个事务内，任意时刻的查询结果，都与事务开始的时刻的查询结果是一致的。
      * reading a row with uncommitted changes in it, and it also
      * prohibits the situation where one transaction reads a row,
      * a second transaction alters the row, and the first transaction

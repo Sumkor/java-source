@@ -55,6 +55,9 @@ public class TransactionTest {
         Assert.assertEquals(transactionIsolation, Connection.TRANSACTION_REPEATABLE_READ);
     }
 
+    /**
+     * 设置事务隔离级别
+     */
     @Test
     public void setTransactionIsolation() throws SQLException {
         DriverManager.setLogWriter(new PrintWriter(System.out));
