@@ -302,21 +302,28 @@ public class ConcurrentHashMapTest {
     }
 
     /**
-     * 探究如何出现死锁？
-     * 死锁的例子见单元测试 deadLock04
-     */
-    @Test
-    public void computeIfAbsent01() {
-        ConcurrentHashMap<Integer, Integer> map = new ConcurrentHashMap<>();
-        map.put(1, 1);
-        map.computeIfAbsent(1, (key) -> key + key);
-    }
-
-    /**
      * ConcurrentHashMap.computeIfAbsent(k,f) locks bin when k present
      * https://bugs.openjdk.java.net/browse/JDK-8161372
      *
      * 执行结果：把线程快照 dump 出来，可用看到每个线程都是 BLOCKED 状态
+     *
+     * 问题分析：
+     * https://zhuanlan.zhihu.com/p/364340936
+     *
+     * computeIfAbsent 首先判断缓存 map 中是否存在指定 key 的值，如果不存在，会自动调用 mappingFunction (key) 计算 key 的 value，然后将 key = value 放入到缓存 Map。
+     * ConcurrentHashMap 中重写了 computeIfAbsent 方法确保 mappingFunction 中的操作是线程安全的。
+     * 官方说明中一段：
+     * The entire method invocation is performed atomically, so the function is applied at most once per key.
+     * Some attempted update operations on this map by other threads may be blocked while computation is in progress,
+     * so the computation should be short and simple, and must not attempt to update any other mappings of this map.
+     * 可以看到，为了保证原子性，当对相同 key 进行修改时，可能造成线程阻塞。
+     * 显而易见这会造成比较严重的性能问题。
+     *
+     * 很多开发者都以为 computeIfAbsent 是不会造成线程 block 的，但事实却是相反的。
+     * 而 Java 官方当时认为这个方法的设计没问题。但反思之后也觉得，在性能还不错的 ConcurrentHashMap 中有这么个拉胯兄弟确实不太合适。
+     * 所以，官方在 JDK9 中修复了这个问题。
+     *
+     * 总结，其实就是多个线程同时阻塞在 synchronized 上，导致的性能问题。而这种阻塞其实是没必要的，可以避免。
      */
     @Test
     public void deadLock04() throws InterruptedException {
