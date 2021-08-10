@@ -7,7 +7,7 @@ import net.sf.cglib.proxy.MethodProxy;
 import java.lang.reflect.Method;
 
 /**
- * CGlib 动态代理
+ * CGlib 动态代理（工具类）
  *
  * @author Sumkor
  * @since 2021/6/22
@@ -17,7 +17,7 @@ public class CglibDynamicProxy implements MethodInterceptor {
     private Object target;
 
     /**
-     * 传入原始对象，获取代理对象
+     * 传入原始对象（原始类），获取代理对象（代理类）
      */
     @SuppressWarnings("unchecked")
     public <T> T getInstance(Object target) {

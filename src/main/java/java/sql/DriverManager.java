@@ -661,7 +661,7 @@ public class DriverManager {
             if(isDriverAllowed(aDriver.driver, callerCL)) {
                 try {
                     println("    trying " + aDriver.driver.getClass().getName());
-                    Connection con = aDriver.driver.connect(url, info);
+                    Connection con = aDriver.driver.connect(url, info); // 建立数据库连接，返回连接对象
                     if (con != null) {
                         // Success!
                         println("getConnection returning " + aDriver.driver.getClass().getName());
