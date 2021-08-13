@@ -23,7 +23,11 @@ public class JDBCTest {
          * 加载 DriverManager 类，执行静态方法块，会加载数据库驱动
          * @see java.sql.DriverManager#loadInitialDrivers()
          *
-         * 其中，采用 SPI 机制加载数据库驱动
+         * 读取配置文件 META-INF/services/java.sql.Driver
+         * @see ServiceLoader.LazyIterator#hasNext()
+         * @see ServiceLoader.LazyIterator#hasNextService()
+         *
+         * 反射实例化 Driver 驱动类
          * @see java.util.ServiceLoader.LazyIterator#next()
          * @see ServiceLoader.LazyIterator#nextService()
          *
@@ -137,7 +141,7 @@ public class JDBCTest {
      * https://www.cnblogs.com/progor/p/9096463.html#navigator
      */
     @Test
-    public void queryWithParam() throws SQLException {
+    public void queryByParam() throws SQLException {
         DriverManager.setLogWriter(new PrintWriter(System.out));
         Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "test", "test");
         PreparedStatement preparedStatement = conn.prepareStatement("select * from t_student where id = ? and age = ?");
@@ -180,6 +184,26 @@ public class JDBCTest {
 
     }
 
+    /**
+     * 批量操作
+     */
+    @Test
+    public void updateBatch() throws SQLException {
+        DriverManager.setLogWriter(new PrintWriter(System.out));
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "test", "test");
+        PreparedStatement preparedStatement = conn.prepareStatement("update t_student set age = ? where id = ?");
+
+        preparedStatement.setInt(1, 10);
+        preparedStatement.setString(2, "1");
+        preparedStatement.addBatch();
+
+        preparedStatement.setInt(1, 10);
+        preparedStatement.setString(2, "2");
+        preparedStatement.addBatch();
+
+        int[] result = preparedStatement.executeBatch();
+        System.out.println("result = " + result.length);
+    }
 
     @Test
     public void ping() throws SQLException {
