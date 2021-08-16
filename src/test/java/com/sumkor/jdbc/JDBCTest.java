@@ -12,6 +12,21 @@ import java.util.ServiceLoader;
  */
 public class JDBCTest {
 
+    /**
+     * 表结构：
+     create table t_student
+     (
+     id      bigint auto_increment
+     primary key,
+     address varchar(255) null,
+     age     int          not null,
+     name    varchar(255) null
+     );
+     */
+
+    /**
+     * 无参查询
+     */
     @Test
     public void query() throws Exception {
 //        Class.forName("com.mysql.jdbc.Driver");
@@ -117,14 +132,24 @@ public class JDBCTest {
          * 读取二进制数据，并构造返回结果
          * @see com.mysql.cj.protocol.a.TextResultsetReader#read(int, boolean, com.mysql.cj.protocol.a.NativePacketPayload, com.mysql.cj.protocol.ColumnDefinition, com.mysql.cj.protocol.ProtocolEntityFactory)
          *
-         * 首先读取返回结果的字段信息，构造 {@link com.mysql.cj.result.Field} 对象，再封装到 {@link com.mysql.cj.result.DefaultColumnDefinition} 对象中
+         * 1. 首先读取返回结果的字段信息，构造 {@link com.mysql.cj.result.Field} 对象
          * @see com.mysql.cj.protocol.a.NativeProtocol#read(java.lang.Class, com.mysql.cj.protocol.ProtocolEntityFactory)
          * @see com.mysql.cj.protocol.a.ColumnDefinitionReader#read(com.mysql.cj.protocol.ProtocolEntityFactory)
          *
-         * 再读取返回结果的字段值信息，封装为 {@link com.mysql.cj.protocol.ResultsetRow} 对象，再封装到 {@link com.mysql.cj.jdbc.result.ResultSetImpl} 对象中
+         * 再封装到 {@link com.mysql.cj.result.DefaultColumnDefinition} 对象中
+         * @see com.mysql.cj.protocol.a.ColumnDefinitionFactory#createFromFields(com.mysql.cj.result.Field[])
+         *
+         * 2. 再读取返回结果的字段值信息，封装为 {@link com.mysql.cj.protocol.ResultsetRow} 对象
          * @see com.mysql.cj.protocol.a.NativeProtocol#read(java.lang.Class, com.mysql.cj.protocol.ProtocolEntityFactory)
          * @see com.mysql.cj.protocol.a.ResultsetRowReader#read(com.mysql.cj.protocol.ProtocolEntityFactory)
+         *
+         * 再封装到 {@link com.mysql.cj.jdbc.result.ResultSetImpl} 对象中
          * @see com.mysql.cj.protocol.a.TextRowFactory#createFromMessage(com.mysql.cj.protocol.a.NativePacketPayload)
+         *
+         * 3. 最后构造对象 ResultsetRow -> ResultsetRows -> Resultset
+         * @see com.mysql.cj.jdbc.result.ResultSetFactory#createFromProtocolEntity(com.mysql.cj.protocol.ProtocolEntity)
+         * @see com.mysql.cj.jdbc.result.ResultSetFactory#createFromResultsetRows(int, int, com.mysql.cj.protocol.ResultsetRows)
+         * @see com.mysql.cj.jdbc.result.ResultSetImpl#ResultSetImpl(com.mysql.cj.protocol.ResultsetRows, com.mysql.cj.jdbc.JdbcConnection, com.mysql.cj.jdbc.StatementImpl)
          */
 
         while (resultSet.next()) {
@@ -210,9 +235,10 @@ public class JDBCTest {
         DriverManager.setLogWriter(new PrintWriter(System.out));
         Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "test", "test");
         Statement statement = conn.createStatement();
-        ResultSet resultSet = statement.executeQuery("/* ping */");
-        Object object = resultSet.getObject(1);
-        System.out.println("object = " + object);
+        statement.executeQuery("/* ping */");
+//        ResultSet resultSet = statement.executeQuery("/* ping */");
+//        Object object = resultSet.getObject(1);
+//        System.out.println("object = " + object);
     }
 
     @Test
