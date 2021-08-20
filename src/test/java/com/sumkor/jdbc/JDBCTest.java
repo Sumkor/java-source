@@ -143,7 +143,7 @@ public class JDBCTest {
          * @see com.mysql.cj.protocol.a.NativeProtocol#read(java.lang.Class, com.mysql.cj.protocol.ProtocolEntityFactory)
          * @see com.mysql.cj.protocol.a.ResultsetRowReader#read(com.mysql.cj.protocol.ProtocolEntityFactory)
          *
-         * 再封装到 {@link com.mysql.cj.jdbc.result.ResultSetImpl} 对象中
+         * 再封装到 {@link com.mysql.cj.protocol.a.result.ByteArrayRow} 对象中
          * @see com.mysql.cj.protocol.a.TextRowFactory#createFromMessage(com.mysql.cj.protocol.a.NativePacketPayload)
          *
          * 3. 最后构造对象 ResultsetRow -> ResultsetRows -> Resultset
@@ -153,7 +153,17 @@ public class JDBCTest {
          */
 
         while (resultSet.next()) {
-            System.out.println("id:" + resultSet.getInt(1) + " address:" + resultSet.getString(2) + " name:" + resultSet.getString(4));
+            System.out.println("id:" + resultSet.getInt("id") + " address:" + resultSet.getString(2) + " name:" + resultSet.getString(4));
+            /**
+             * 通过 columnLabel 字段名获取字段的值
+             * @see com.mysql.cj.jdbc.result.ResultSetImpl#getInt(java.lang.String)
+             * @see com.mysql.cj.jdbc.result.ResultSetImpl#findColumn(java.lang.String)
+             * @see com.mysql.cj.result.DefaultColumnDefinition#findColumn(java.lang.String, boolean, int)
+             * 获取字段名所属的下标，最后也是根据下标来取值
+             *
+             * 通过 columnIndex 字段下标获取字段的值
+             * @see com.mysql.cj.jdbc.result.ResultSetImpl#getInt(int)
+             */
         }
 
     }
@@ -228,6 +238,47 @@ public class JDBCTest {
 
         int[] result = preparedStatement.executeBatch();
         System.out.println("result = " + result.length);
+    }
+
+    /**
+     * 自增 id
+     */
+    @Test
+    public void insert() throws SQLException {
+        DriverManager.setLogWriter(new PrintWriter(System.out));
+
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "test", "test");
+        String sql = "insert into t_student (address, age, name) values ('address01', 11, 'name01')";
+        PreparedStatement preparedStatement = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS);
+        /**
+         * @see com.mysql.cj.jdbc.ConnectionImpl#prepareStatement(java.lang.String, int)
+         * @see com.mysql.cj.jdbc.ClientPreparedStatement#setRetrieveGeneratedKeys(boolean)
+         */
+
+        preparedStatement.execute();
+        /**
+         * @see com.mysql.cj.jdbc.ClientPreparedStatement#execute()
+         * @see com.mysql.cj.jdbc.ClientPreparedStatement#executeInternal(int, com.mysql.cj.protocol.Message, boolean, boolean, com.mysql.cj.protocol.ColumnDefinition, boolean)
+         * @see com.mysql.cj.NativeSession#execSQL(com.mysql.cj.Query, java.lang.String, int, com.mysql.cj.protocol.a.NativePacketPayload, boolean, com.mysql.cj.protocol.ProtocolEntityFactory, com.mysql.cj.protocol.ColumnDefinition, boolean)
+         * @see com.mysql.cj.protocol.a.NativeProtocol#sendQueryPacket(com.mysql.cj.Query, com.mysql.cj.protocol.a.NativePacketPayload, int, boolean, com.mysql.cj.protocol.ColumnDefinition, com.mysql.cj.protocol.ProtocolEntityFactory)
+         * @see com.mysql.cj.protocol.a.NativeProtocol#sendCommand(com.mysql.cj.protocol.Message, boolean, int)
+         *
+         * 发送完毕，读取到的二进制数据为 00 01 0a 02，也就是 columnCount 为 0，而第三个值 0a 表示十进制的 10，也就是当前由 MySQL 自动生成的 id
+         *
+         * 读取响应结果，由于这里的 columnCount 为 0，不会读取字段信息
+         * @see com.mysql.cj.protocol.a.TextResultsetReader#read(int, boolean, com.mysql.cj.protocol.a.NativePacketPayload, com.mysql.cj.protocol.ColumnDefinition, com.mysql.cj.protocol.ProtocolEntityFactory)
+         *
+         * 而是把二进制包解析为 OkPacket 对象，这个二进制包就会包含 updateId 信息！
+         * @see com.mysql.cj.protocol.a.NativeProtocol#readServerStatusForResultSets(com.mysql.cj.protocol.a.NativePacketPayload, boolean)
+         * @see com.mysql.cj.protocol.a.result.OkPacket#parse(com.mysql.cj.protocol.a.NativePacketPayload, java.lang.String)
+         *
+         * 后面把 OkPacket 对象的信息放入到 ResultSet 里面，供 JDBC 层面获取
+         */
+
+        ResultSet resultSet = preparedStatement.getGeneratedKeys();
+        resultSet.next();
+        int id = resultSet.getInt(1);
+        System.out.println("id = " + id);
     }
 
     @Test
