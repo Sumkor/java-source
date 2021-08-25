@@ -216,7 +216,40 @@ public class JDBCTest {
         while (resultSet.next()) {
             System.out.println("id:" + resultSet.getInt(1) + " address:" + resultSet.getString(2) + " name:" + resultSet.getString(4));
         }
+    }
 
+    /**
+     * PreparedStatement 如何预防 SQL 注入
+     *
+     * select * from t_student where id = ?
+     * 输入 1' OR '1' = '1
+     * 若拼接完整 SQL 为：
+     * select * from t_student where id = '1' OR '1' = '1'
+     * 则称为发生了 SQL 注入
+     */
+    @Test
+    public void queryAttack() throws SQLException {
+        DriverManager.setLogWriter(new PrintWriter(System.out));
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "test", "test");
+        PreparedStatement preparedStatement = conn.prepareStatement("select * from t_student where id = ?");
+        preparedStatement.setString(1, "1' OR '1' = '1");
+        /**
+         * 设置转义符合将 ' 改为 ''
+         * @see com.mysql.cj.ClientPreparedQueryBindings#setString(int, java.lang.String)
+         */
+        ResultSet resultSet = preparedStatement.executeQuery();
+        /**
+         * @see com.mysql.cj.jdbc.ClientPreparedStatement#executeQuery()
+         * @see com.mysql.cj.AbstractPreparedQuery#fillSendPacket()
+         * @see com.mysql.cj.jdbc.ClientPreparedStatement#executeInternal(int, com.mysql.cj.protocol.Message, boolean, boolean, com.mysql.cj.protocol.ColumnDefinition, boolean)
+         *
+         * 最后得到完整的 SQL 为：
+         * select * from t_student where id = '1'' OR ''1'' = ''1'
+         */
+
+        while (resultSet.next()) {
+            System.out.println("id:" + resultSet.getInt(1) + " address:" + resultSet.getString(2) + " name:" + resultSet.getString(4));
+        }
     }
 
     /**
@@ -242,6 +275,7 @@ public class JDBCTest {
 
     /**
      * 自增 id
+     * 底层实现：在发送查询的时候，数据库返回响应，携带当前自增的 id
      */
     @Test
     public void insert() throws SQLException {
@@ -276,6 +310,9 @@ public class JDBCTest {
          */
 
         ResultSet resultSet = preparedStatement.getGeneratedKeys();
+        /**
+         * @see com.mysql.cj.jdbc.StatementImpl#getGeneratedKeys()
+         */
         resultSet.next();
         int id = resultSet.getInt(1);
         System.out.println("id = " + id);
