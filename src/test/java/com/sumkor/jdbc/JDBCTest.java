@@ -53,7 +53,12 @@ public class JDBCTest {
          * @see java.sql.DriverManager#registerDriver(java.sql.Driver)
          */
 
-        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb", "test", "test");
+        /**
+         * URL 中的参数配置，见
+         * @see com.mysql.cj.conf.PropertyKey
+         * 其中超时时间，单位为毫秒
+         */
+        Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/testdb?connectTimeout=1000&socketTimeout=5000", "test", "test");
         /**
          * @see java.sql.DriverManager#getConnection(java.lang.String, java.util.Properties, java.lang.Class)
          *
@@ -79,6 +84,9 @@ public class JDBCTest {
          * @see com.mysql.cj.NativeSession#connect(com.mysql.cj.conf.HostInfo, java.lang.String, java.lang.String, java.lang.String, int, com.mysql.cj.TransactionEventHandler)
          * @see com.mysql.cj.protocol.a.NativeSocketConnection#connect(java.lang.String, int, com.mysql.cj.conf.PropertySet, com.mysql.cj.exceptions.ExceptionInterceptor, com.mysql.cj.log.Log, int)
          * @see com.mysql.cj.protocol.StandardSocketFactory#connect(java.lang.String, int, com.mysql.cj.conf.PropertySet, int)
+         *
+         * 其中配置 Socket，默认为长连接
+         * @see com.mysql.cj.protocol.StandardSocketFactory#configureSocket(java.net.Socket, com.mysql.cj.conf.PropertySet)
          */
 
         Statement statement = conn.createStatement();

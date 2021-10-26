@@ -182,16 +182,18 @@ public class ByteBufferTest {
      */
     @Test
     public void bufferGC() {
+        System.out.println("---------------------");
         ByteBuffer byteBuffer = ByteBuffer.allocate(1024 * 1024 * 5); // 5M
         byteBuffer = null;
         System.gc();
 
         /**
-         * 堆内存分配 5M 空间，直接分配到老年代，发生 GC 时从老年代回收
+         * 需要在堆内存中分配 5M 空间，直接分配到老年代，发生 GC 时从老年代回收
          *
          * [GC (Allocation Failure) [PSYoungGen: 2048K->488K(2560K)] 2048K->720K(9728K), 0.0007896 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
          * [GC (Allocation Failure) [PSYoungGen: 2534K->488K(2560K)] 2766K->1044K(9728K), 0.0082250 secs] [Times: user=0.05 sys=0.00, real=0.01 secs]
          * [GC (Allocation Failure) [PSYoungGen: 2536K->488K(2560K)] 3092K->1347K(9728K), 0.0049060 secs] [Times: user=0.00 sys=0.00, real=0.01 secs]
+         * ---------------------
          * [GC (System.gc()) [PSYoungGen: 943K->504K(2560K)] 6922K->6507K(9728K), 0.0043910 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
          * [Full GC (System.gc()) [PSYoungGen: 504K->0K(2560K)] [ParOldGen: 6003K->1089K(7168K)] 6507K->1089K(9728K), [Metaspace: 5044K->5044K(1056768K)], 0.0099551 secs] [Times: user=0.02 sys=0.00, real=0.01 secs]
          * Heap
