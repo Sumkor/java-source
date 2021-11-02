@@ -42,12 +42,6 @@ public class SelectorTest {
      */
     @Test
     public void server() throws IOException {
-        // 打开服务端 Socket
-        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-        // 服务端 Socket 监听8080端口，并配置为非阻塞模式（必须是非阻塞才可以注册 Selector）。可以看到，NIO 的“同步非阻塞”都是针对 Channel 而言的。
-        serverSocketChannel.configureBlocking(false);
-        serverSocketChannel.socket().bind(new InetSocketAddress(port));
-
         // 打开 Selector
         Selector selector = Selector.open();
         /**
@@ -64,6 +58,12 @@ public class SelectorTest {
          * 构造方法中均会调用父类方法，对 key 集合进行初始化
          * @see sun.nio.ch.SelectorImpl#SelectorImpl(java.nio.channels.spi.SelectorProvider)
          */
+
+        // 打开服务端 Socket
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        // 服务端 Socket 监听8080端口，并配置为非阻塞模式（必须是非阻塞才可以注册 Selector）。可以看到，NIO 的“同步非阻塞”都是针对 Channel 而言的。
+        serverSocketChannel.configureBlocking(false);
+        serverSocketChannel.socket().bind(new InetSocketAddress(port));
 
         // 将 Channel 注册到 Selector 得到注册凭证 SelectionKey 对象，让该 SelectionKey 关注 OP_ACCEPT 事件。
         // 达到的效果是：让服务端 Channel 监听客户端连接事件。一般是等待连接建立之后再监听读写事件。
@@ -157,12 +157,14 @@ public class SelectorTest {
      */
     @Test
     public void client() throws IOException {
+        // 打开 Selector
+        Selector selector = Selector.open();
+
         // 连接服务端
         SocketChannel socketChannel = SocketChannel.open();
         socketChannel.configureBlocking(false);
         socketChannel.connect(new InetSocketAddress("localhost", port));
 
-        Selector selector = Selector.open();
         // 将 Channel 注册到 Selector（准确来说是构造 SelectionKey 注册到 Selector）
         socketChannel.register(selector, SelectionKey.OP_CONNECT, ByteBuffer.allocate(256));
 

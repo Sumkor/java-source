@@ -206,17 +206,17 @@ public abstract class AbstractSelector
      * Thread#interrupt interrupt} method is invoked while the thread is
      * blocked in an I/O operation upon the selector.  </p>
      */
-    protected final void begin() { // 由子类在执行 Selector#select 方法时调用
+    protected final void begin() { // 由子类在执行 Selector#select 方法时调用，该方法需与 end 方法配套调用
         if (interruptor == null) {
             interruptor = new Interruptible() {
                     public void interrupt(Thread ignore) {
                         AbstractSelector.this.wakeup();
                     }};
         }
-        AbstractInterruptibleChannel.blockedOn(interruptor); // 设置当前线程的 blocker 属性，用于执行 Thread#interrupt 时调用 Selector#wakeup 方法
+        AbstractInterruptibleChannel.blockedOn(interruptor); // 设置当前线程的 blocker 属性，用于执行 Thread#interrupt 时触发调用 blocker#interrupt
         Thread me = Thread.currentThread();
         if (me.isInterrupted())
-            interruptor.interrupt(me);
+            interruptor.interrupt(me); // 如果线程已中断，则调用 blocker#interrupt -> Selector#wakeup 唤醒线程
     }
 
     /**

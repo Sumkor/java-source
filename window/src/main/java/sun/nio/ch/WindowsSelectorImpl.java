@@ -139,33 +139,33 @@ final class WindowsSelectorImpl extends SelectorImpl {
         if (channelArray == null)
             throw new ClosedSelectorException();
         this.timeout = timeout; // set selector timeout
-        processDeregisterQueue();
+        processDeregisterQueue(); // 对 cancelled-key 集合中的 Key 进行注销
         if (interruptTriggered) {
             resetWakeupSocket();
             return 0;
         }
         // Calculate number of helper threads needed for poll. If necessary
         // threads are created here and start waiting on startLock
-        adjustThreadsCount();
+        adjustThreadsCount(); // 开启协助线程，同样去调用本地方法 poll0()
         finishLock.reset(); // reset finishLock
         // Wakeup helper threads, waiting on startLock, so they start polling.
         // Redundant threads will exit here after wakeup.
-        startLock.startThreads();
+        startLock.startThreads(); // 唤醒协助线程
         // do polling in the main thread. Main thread is responsible for
         // first MAX_SELECTABLE_FDS entries in pollArray.
         try {
-            begin();
+            begin(); // 设置主线程唤醒方式
             try {
-                subSelector.poll();
+                subSelector.poll(); // 调用本地方法 poll0()
             } catch (IOException e) {
                 finishLock.setException(e); // Save this exception
             }
             // Main thread is out of poll(). Wakeup others and wait for them
             if (threads.size() > 0)
                 finishLock.waitForHelperThreads();
-          } finally {
-              end();
-          }
+        } finally {
+            end(); // 清除主线程唤醒方式
+        }
         // Done with poll(). Set wakeupSocket to nonsignaled  for the next run.
         finishLock.checkForException();
         processDeregisterQueue();
@@ -183,7 +183,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
         // previous one. Incrementing runsCounter and notifying threads will
         // trigger another round of poll.
         private long runsCounter;
-       // Triggers threads, waiting on this lock to start polling.
+        // Triggers threads, waiting on this lock to start polling.
         private synchronized void startThreads() {
             runsCounter++; // next run
             notifyAll(); // wake up threads.
@@ -429,7 +429,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
                     return;
                 // call poll()
                 try {
-                    subSelector.poll(index);
+                    subSelector.poll(index); // 调用本地方法 poll0()
                 } catch (IOException e) {
                     // Save this exception and let other threads finish.
                     finishLock.setException(e);
@@ -447,7 +447,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
         if (threadsCount > threads.size()) {
             // More threads needed. Start more threads.
             for (int i = threads.size(); i < threadsCount; i++) {
-                SelectThread newThread = new SelectThread(i);
+                SelectThread newThread = new SelectThread(i); // 选择操作中用到的协助线程
                 threads.add(newThread);
                 newThread.setDaemon(true);
                 newThread.start();
@@ -573,7 +573,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
             }
             ski.setIndex(-1);
         }
-        channelArray[totalChannels - 1] = null;
+        channelArray[totalChannels - 1] = null; // 取消 Channel 的注册
         totalChannels--;
         if ( totalChannels != 1 && totalChannels % MAX_SELECTABLE_FDS == 1) {
             totalChannels--;
