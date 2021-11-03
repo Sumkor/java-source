@@ -111,7 +111,7 @@ public abstract class AbstractSelectableChannel
             keys = ks;
             i = keyCount;
         }
-        keys[i] = k;
+        keys[i] = k; // 存入缓存
         keyCount++;
     }
 

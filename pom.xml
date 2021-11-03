@@ -11,6 +11,7 @@
     <modules>
         <module>share</module>
         <module>window</module>
+        <module>solaris</module>
     </modules>
 
     <properties>
