@@ -39,4 +39,8 @@ http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/rev/e1ea97ad19af
 
 在 IDEA 的 Maven 配置中，忽略当前项目中 window、solaris 项目的 pom.xml 文件
 
-![maven-settion](maven-settion.png)
+![maven-setting](maven-setting.png)
+
+在 IDEA 的 Project Structure 配置中，设置当前项目为 JDK 的 SourcePath，去掉 jdk1.8.0_91/src.zip，将当前项目作为 JDK 的源码。
+
+![project-structure](project-structure.png)
