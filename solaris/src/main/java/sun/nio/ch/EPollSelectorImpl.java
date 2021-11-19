@@ -40,14 +40,14 @@ class EPollSelectorImpl
 {
 
     // File descriptors used for interrupt
-    protected int fd0;
-    protected int fd1;
+    protected int fd0; // 管道的读端文件描述符
+    protected int fd1; // 管道的写端文件描述符
 
     // The poll object
-    EPollArrayWrapper pollWrapper;
+    EPollArrayWrapper pollWrapper; // 调用底层Epoll算法的包装类
 
     // Maps from file descriptors to keys
-    private Map<Integer,SelectionKeyImpl> fdToKey;
+    private Map<Integer,SelectionKeyImpl> fdToKey; // 保存文件描述符句柄和的 SelectionKey 的映射关系
 
     // True if this Selector has been closed
     private volatile boolean closed = false;
@@ -62,7 +62,7 @@ class EPollSelectorImpl
      */
     EPollSelectorImpl(SelectorProvider sp) throws IOException {
         super(sp);
-        long pipeFds = IOUtil.makePipe(false);
+        long pipeFds = IOUtil.makePipe(false); // 创建单向管道
         fd0 = (int) (pipeFds >>> 32);
         fd1 = (int) pipeFds;
         try {
@@ -87,15 +87,15 @@ class EPollSelectorImpl
     protected int doSelect(long timeout) throws IOException {
         if (closed)
             throw new ClosedSelectorException();
-        processDeregisterQueue();
+        processDeregisterQueue(); // 对 cancelled-key 集合中的 Key 进行注销
         try {
             begin();
-            pollWrapper.poll(timeout);
+            pollWrapper.poll(timeout); // 调用本地方法 epollWait
         } finally {
             end();
         }
         processDeregisterQueue();
-        int numKeysUpdated = updateSelectedKeys();
+        int numKeysUpdated = updateSelectedKeys(); // 更新 SelectedKeys 的 readyOps，并判断是否加入 selected-key-set
         if (pollWrapper.interrupted()) {
             // Clear the wakeup pipe
             pollWrapper.putEventOps(pollWrapper.interruptedIndex(), 0);

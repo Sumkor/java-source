@@ -58,10 +58,10 @@ final class WindowsSelectorImpl extends SelectorImpl {
     // The list of SelectableChannels serviced by this Selector. Every mod
     // MAX_SELECTABLE_FDS entry is bogus, to align this array with the poll
     // array,  where the corresponding entry is occupied by the wakeupSocket
-    private SelectionKeyImpl[] channelArray = new SelectionKeyImpl[INIT_CAP];
+    private SelectionKeyImpl[] channelArray = new SelectionKeyImpl[INIT_CAP]; // 存放注册的 SelectionKey
 
     // The global native poll array holds file decriptors and event masks
-    private PollArrayWrapper pollWrapper;
+    private PollArrayWrapper pollWrapper; // 底层的本机轮询数组包装对象，用于存放 Socket 文件描述符和事件掩码
 
     // The number of valid entries in  poll array, including entries occupied
     // by wakeup socket handle.
@@ -72,10 +72,10 @@ final class WindowsSelectorImpl extends SelectorImpl {
     private int threadsCount = 0;
 
     // A list of helper threads for select.
-    private final List<SelectThread> threads = new ArrayList<SelectThread>();
+    private final List<SelectThread> threads = new ArrayList<SelectThread>(); // 辅助线程，多个线程有助于提高高并发时的性能
 
     //Pipe used as a wakeup object.
-    private final Pipe wakeupPipe;
+    private final Pipe wakeupPipe; // 用于唤醒辅助线程
 
     // File descriptors corresponding to source and sink
     private final int wakeupSourceFd, wakeupSinkFd;
@@ -84,7 +84,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
     private Object closeLock = new Object();
 
     // Maps file descriptors to their indices in  pollArray
-    private final static class FdMap extends HashMap<Integer, MapEntry> {
+    private final static class FdMap extends HashMap<Integer, MapEntry> { // 保存文件描述符和 SelectionKey 的映射关系
         static final long serialVersionUID = 0L;
         private MapEntry get(int desc) {
             return get(new Integer(desc));
@@ -146,11 +146,11 @@ final class WindowsSelectorImpl extends SelectorImpl {
         }
         // Calculate number of helper threads needed for poll. If necessary
         // threads are created here and start waiting on startLock
-        adjustThreadsCount(); // 开启协助线程，同样去调用本地方法 poll0()
+        adjustThreadsCount(); // 开启协助线程，等待主线程调度
         finishLock.reset(); // reset finishLock
         // Wakeup helper threads, waiting on startLock, so they start polling.
         // Redundant threads will exit here after wakeup.
-        startLock.startThreads(); // 唤醒协助线程
+        startLock.startThreads(); // 唤醒协助线程，触发它们去调用本地方法 poll0()
         // do polling in the main thread. Main thread is responsible for
         // first MAX_SELECTABLE_FDS entries in pollArray.
         try {
@@ -176,7 +176,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
     }
 
     // Helper threads wait on this lock for the next poll.
-    private final StartLock startLock = new StartLock();
+    private final StartLock startLock = new StartLock(); // 辅助线程使用该锁等待主线程的开始信号
 
     private final class StartLock {
         // A variable which distinguishes the current run of doSelect from the
@@ -213,7 +213,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
 
     // Main thread waits on this lock, until all helper threads are done
     // with poll().
-    private final FinishLock finishLock = new FinishLock();
+    private final FinishLock finishLock = new FinishLock(); // 主线程用该锁等待所有辅助线程执行完毕
 
     private final class FinishLock  {
         // Number of helper threads, that did not finish yet.
@@ -275,7 +275,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
         }
     }
 
-    private final class SubSelector {
+    private final class SubSelector { // 调用 JNI 的 poll 方法，处理就绪的 SelectionKey
         private final int pollArrayIndex; // starting index in pollArray to poll
         // These arrays will hold result of native select().
         // The first element of each array is the number of selected sockets.
@@ -425,7 +425,7 @@ final class WindowsSelectorImpl extends SelectorImpl {
             while (true) { // poll loop
                 // wait for the start of poll. If this thread has become
                 // redundant, then exit.
-                if (startLock.waitForStart(this))
+                if (startLock.waitForStart(this)) // 等待主线程调度，返回空说明当前协助线程失效，则退出
                     return;
                 // call poll()
                 try {

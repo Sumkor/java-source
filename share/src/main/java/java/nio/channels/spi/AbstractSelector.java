@@ -216,7 +216,7 @@ public abstract class AbstractSelector
         AbstractInterruptibleChannel.blockedOn(interruptor); // 设置当前线程的 blocker 属性，用于执行 Thread#interrupt 时触发调用 blocker#interrupt
         Thread me = Thread.currentThread();
         if (me.isInterrupted())
-            interruptor.interrupt(me); // 如果线程已中断，则调用 blocker#interrupt -> Selector#wakeup 唤醒线程
+            interruptor.interrupt(me); // 如果线程已中断，则立即调用 blocker#interrupt -> Selector#wakeup 唤醒线程
     }
 
     /**

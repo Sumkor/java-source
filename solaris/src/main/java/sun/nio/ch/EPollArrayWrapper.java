@@ -334,10 +334,10 @@ class EPollArrayWrapper {
         init();
     }
 
-    private native int epollCreate();
-    private native void epollCtl(int epfd, int opcode, int fd, int events);
+    private native int epollCreate(); // 建立一个 epoll 对象，在 epoll 文件系统中给这个句柄分配资源
+    private native void epollCtl(int epfd, int opcode, int fd, int events); // 向 epoll 对象中添加或删除文件句柄及监控事件
     private native int epollWait(long pollAddress, int numfds, long timeout,
-                                 int epfd) throws IOException;
+                                 int epfd) throws IOException; // 收集发生事件的文件描述符
     private static native int sizeofEPollEvent();
     private static native int offsetofData();
     private static native void interrupt(int fd);
