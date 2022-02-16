@@ -37,7 +37,9 @@ public class CglibDynamicProxy implements MethodInterceptor {
     @Override
     public Object intercept(Object object, Method method, Object[] args, MethodProxy proxy) throws Throwable {
         System.out.println(System.currentTimeMillis() + " 方法代理开始");
-        Object result = proxy.invokeSuper(object, args);
+        // 入参MethodProxy具有被代理方法的信息，采用fastClass机制直接调用方法，而不是通过反射来调用，效率更高
+        Object result = proxy.invokeSuper(object, args); // 当 object 为代理对象的时候，这里底层是直接调用原始类的方法
+        // Object result = proxy.invoke(object, args);   // 当 object 为原始对象的时候，才可以调用这个方法，否则会进入死循环
         System.out.println(System.currentTimeMillis() + " 方法代理结束");
         return result;
     }

@@ -5,13 +5,18 @@ import com.sumkor.proxy.entity.LandlordImpl;
 import com.sumkor.proxy.proxy.CglibDynamicProxy;
 import com.sumkor.proxy.proxy.JdkDynamicProxy;
 import com.sumkor.proxy.proxy.LandlordProxy;
+import net.sf.cglib.core.DebuggingClassWriter;
 import net.sf.cglib.proxy.Enhancer;
 import org.junit.Test;
+import sun.misc.ProxyGenerator;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Proxy;
 
 /**
- * 代理：房东把房子委托给了中介， 中介帮他带人看房子，然后收取中介费。
+ * 代理：房东把房子委托给了中介，中介帮他带人看房子，然后收取中介费。
  *
  * @author Sumkor
  * @since 2021/6/22
@@ -91,6 +96,16 @@ public class ProxyTest {
          * 由 {@link Proxy#newProxyInstance(java.lang.ClassLoader, java.lang.Class[], java.lang.reflect.InvocationHandler)} 生成代理类实例
          * 其中 {@link Proxy.ProxyClassFactory#apply(java.lang.ClassLoader, java.lang.Class[])} 生成代理类的代码
          */
+
+        // 将生成的class写入到文件夹中
+        /*try {
+            byte[] proxyClassFile = ProxyGenerator.generateProxyClass("$Proxy4", new Class[]{Landlord.class});
+            FileOutputStream fileOutputStream = new FileOutputStream("D:\\proxy\\jdk\\classes\\$Proxy4.class");
+            fileOutputStream.write(proxyClassFile);
+            fileOutputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
     }
 
     /**
@@ -98,6 +113,8 @@ public class ProxyTest {
      */
     @Test
     public void cglib() {
+        // 将生成的class写入到文件夹中
+        // System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY, "D:\\proxy\\cglib\\classes");
         Landlord landlord = new LandlordImpl();
         CglibDynamicProxy dynamicProxy = new CglibDynamicProxy();
         Landlord landlordProxy = dynamicProxy.getInstance(landlord);
@@ -349,7 +366,7 @@ public class ProxyTest {
      *             methodInterceptor = this.CGLIB$CALLBACK_0;
      *         }
      *         if (methodInterceptor != null) {
-     *             Object object = methodInterceptor.intercept(this, CGLIB$rent$0$Method, CGLIB$emptyArgs, CGLIB$rent$0$Proxy);
+     *             Object object = methodInterceptor.intercept(this, CGLIB$rent$0$Method, CGLIB$emptyArgs, CGLIB$rent$0$Proxy); // 调用 com.sumkor.proxy.proxy.CglibDynamicProxy#intercept
      *             return object == null ? false : (Boolean)object;
      *         }
      *         return super.rent();
@@ -442,7 +459,7 @@ public class ProxyTest {
      *         CGLIB$clone$4$Proxy = MethodProxy.create(class_2, class_, "()Ljava/lang/Object;", "clone", "CGLIB$clone$4");
      *         class_2 = Class.forName("com.sumkor.proxy.entity.LandlordImpl");
      *         CGLIB$rent$0$Method = ReflectUtils.findMethods(new String[]{"rent", "()Z"}, class_2.getDeclaredMethods())[0];
-     *         CGLIB$rent$0$Proxy = MethodProxy.create(class_2, class_, "()Z", "rent", "CGLIB$rent$0");
+     *         CGLIB$rent$0$Proxy = MethodProxy.create(class_2, class_, "()Z", "rent", "CGLIB$rent$0"); // 创建 MethodProxy 对象，包含 rent 原始方法和代理方法的信息
      *     }
      *
      *     private static final void CGLIB$BIND_CALLBACKS(Object object) {
