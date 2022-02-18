@@ -557,14 +557,14 @@ public class Proxy implements java.io.Serializable {
     private static final class ProxyClassFactory
         implements BiFunction<ClassLoader, Class<?>[], Class<?>>
     {
-        // prefix for all proxy class names
+        // prefix for all proxy class names // 动态代理类的前缀名称
         private static final String proxyClassNamePrefix = "$Proxy";
 
-        // next number to use for generation of unique proxy class names
+        // next number to use for generation of unique proxy class names // 用于生成代理类的数字名称
         private static final AtomicLong nextUniqueNumber = new AtomicLong();
 
         @Override
-        public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {
+        public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) { // 代理工厂生成代理类
 
             Map<Class<?>, Boolean> interfaceSet = new IdentityHashMap<>(interfaces.length);
             for (Class<?> intf : interfaces) {
@@ -631,16 +631,16 @@ public class Proxy implements java.io.Serializable {
              * Choose a name for the proxy class to generate.
              */
             long num = nextUniqueNumber.getAndIncrement();
-            String proxyName = proxyPkg + proxyClassNamePrefix + num; // 代理类类名
+            String proxyName = proxyPkg + proxyClassNamePrefix + num; // 生成代理类类名 eg. com.sun.proxy.$Proxy4
 
             /*
              * Generate the specified proxy class.
              */
-            byte[] proxyClassFile = ProxyGenerator.generateProxyClass(
+            byte[] proxyClassFile = ProxyGenerator.generateProxyClass( // 真正的生成代理类的字节码
                 proxyName, interfaces, accessFlags);
             try {
                 return defineClass0(loader, proxyName,
-                                    proxyClassFile, 0, proxyClassFile.length); // 本地方法，生成代理类
+                                    proxyClassFile, 0, proxyClassFile.length); // 本地方法，根据二进制字节码返回相应的 Class 实例
             } catch (ClassFormatError e) {
                 /*
                  * A ClassFormatError here means that (barring bugs in the

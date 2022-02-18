@@ -51,3 +51,6 @@ package java.lang.annotation;
 @Target(ElementType.ANNOTATION_TYPE)
 public @interface Inherited {
 }
+// 在父类的注解上使用该元注解，使得子类可以继承得到父类的注解。
+// 注意只有在父类上使用有效，在接口上的注解中使用该元注解是无效的。
+// https://blog.csdn.net/ab411919134/article/details/81252516

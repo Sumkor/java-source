@@ -336,9 +336,9 @@ public class ProxyGenerator {
                                             int accessFlags)
     {
         ProxyGenerator gen = new ProxyGenerator(name, interfaces, accessFlags);
-        final byte[] classFile = gen.generateClassFile();
+        final byte[] classFile = gen.generateClassFile(); // 生成代理类的字节码
 
-        if (saveGeneratedFiles) {
+        if (saveGeneratedFiles) { // 根据参数配置, 决定是否把生成的字节码（.class文件）保存到本地磁盘
             java.security.AccessController.doPrivileged(
             new java.security.PrivilegedAction<Void>() {
                 public Void run() {

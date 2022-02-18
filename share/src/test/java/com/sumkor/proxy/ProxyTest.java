@@ -85,6 +85,9 @@ public class ProxyTest {
      */
     @Test
     public void jdk() {
+        // 将 Proxy.newProxyInstance 生成的动态代理类存放到磁盘中，默认生成路径 com.sun.proxy 包下
+        // System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
+
         Landlord landlord = new LandlordImpl();
         JdkDynamicProxy dynamicProxy = new JdkDynamicProxy();
         Landlord landlordProxy = dynamicProxy.getProxy(landlord);
