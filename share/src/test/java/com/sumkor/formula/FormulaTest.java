@@ -2,6 +2,9 @@ package com.sumkor.formula;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
@@ -33,6 +36,7 @@ public class FormulaTest {
      */
     @Test
     public void vs() throws ScriptException {
+        // JDK 内置
         long start = System.currentTimeMillis();
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("js");
@@ -40,14 +44,27 @@ public class FormulaTest {
             String str = "43*(2+1.4)+2*32/(3-2.1)" + "+" + i;
             Object result = engine.eval(str);
         }
-        System.out.println("耗时：" + (System.currentTimeMillis() - start));
+        System.out.println("JDK 内置引擎，耗时：" + (System.currentTimeMillis() - start));
 
+        // 算法
         start = System.currentTimeMillis();
         for (int i = 0; i < 1000; i++) {
             String str = "43*(2+1.4)+2*32/(3-2.1)" + "+" + i;
             BigDecimal result = TransferTest.calculate(str);
+            System.out.println("result = " + result);
         }
-        System.out.println("耗时：" + (System.currentTimeMillis() - start));
+        System.out.println("后缀表达式算法，耗时：" + (System.currentTimeMillis() - start));
+
+        // Spring EL
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 1000; i++) {
+            String str = "43*(2+1.4)+2*32/(3-2.1)" + "+" + i;
+            ExpressionParser parser = new SpelExpressionParser();
+            Expression exp = parser.parseExpression(str);
+            BigDecimal bigDecimal = exp.getValue(BigDecimal.class);
+            System.out.println("bigDecimal = " + bigDecimal);
+        }
+        System.out.println("Spring EL，耗时：" + (System.currentTimeMillis() - start));
     }
 
     /**
