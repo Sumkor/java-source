@@ -336,7 +336,7 @@ public class ReflectionFactory {
             return constructorToCall;
         }
 
-        ConstructorAccessor acc = new MethodAccessorGenerator().
+        ConstructorAccessor acc = new MethodAccessorGenerator(). // 通过字节码生成 ConstructorAccessor，实现类为 SerializationConstructorAccessorImpl
             generateSerializationConstructor(classToInstantiate,
                                              constructorToCall.getParameterTypes(),
                                              constructorToCall.getExceptionTypes(),
@@ -354,7 +354,7 @@ public class ReflectionFactory {
                                           getConstructorAnnotations(constructorToCall),
                                           langReflectAccess().
                                           getConstructorParameterAnnotations(constructorToCall));
-        setConstructorAccessor(c, acc);
+        setConstructorAccessor(c, acc); // 通过反射，将 ConstructorAccessor 设置在 Constructor 之中，ConstructorAccessor 用于在执行 Constructor#newInstance 时创建实例
         return c;
     }
 

@@ -29,9 +29,13 @@ public class ReflectionFactoryTest {
         }
     }
 
+    /**
+     * 用 ReflectionFactory 实现不调用构造函数创建对象
+     */
     @Test
     public void test() throws Exception {
         ReflectionFactory reflectionFactory = ReflectionFactory.getReflectionFactory();
+        // 根据 Object 的构造器，创建 Student 的构造器
         Constructor<?> constructor = reflectionFactory.newConstructorForSerialization(Student.class, Object.class.getDeclaredConstructor());
         constructor.setAccessible(true);
         Student student = (Student) constructor.newInstance();
