@@ -104,7 +104,7 @@ package java.util.concurrent;
  *         use(result);
  * }}</pre>
  */
-public class ExecutorCompletionService<V> implements CompletionService<V> {
+public class ExecutorCompletionService<V> implements CompletionService<V> { // 提交一批任务给线程池，可以从阻塞队列中获取先完结的任务的执行结果
     private final Executor executor;
     private final AbstractExecutorService aes;
     private final BlockingQueue<Future<V>> completionQueue;
@@ -112,7 +112,7 @@ public class ExecutorCompletionService<V> implements CompletionService<V> {
     /**
      * FutureTask extension to enqueue upon completion
      */
-    private class QueueingFuture extends FutureTask<Void> {
+    private class QueueingFuture extends FutureTask<Void> { // 对提交给线程池的 FutureTask 进行改写
         QueueingFuture(RunnableFuture<V> task) {
             super(task, null);
             this.task = task;
